@@ -25,12 +25,14 @@ const getUserFx = createEffect(async () => {
 const signInFx = createEffect(async (input: SignInInput) => {
     const { error } = await authClient.signIn.email(SignInInputZod.parse(input));
     if (error) throw new Error(error.message ?? 'Could not sign in. Please try again.');
-    await getUserFx();
+    const { user } = await getUserFx();
+    if (!user) throw new Error('Your session could not be verified. Please sign in again.');
 });
 const signUpFx = createEffect(async (input: SignUpInput) => {
     const { error } = await authClient.signUp.email(SignUpInputZod.parse(input));
     if (error) throw new Error(error.message ?? 'Could not create your account. Please try again.');
-    await getUserFx();
+    const { user } = await getUserFx();
+    if (!user) throw new Error('Your session could not be verified. Please sign in again.');
 });
 const signOutFx = createEffect(async () => {
     const { error } = await authClient.signOut();
