@@ -2,7 +2,7 @@ import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
 import { useEffect } from 'react';
-import { ArrowRight, Layers3, LoaderCircle } from 'lucide-react';
+import { ArrowRight, Layers3 } from 'lucide-react';
 import { SignInInputZod, SignUpInputZod } from '@repo/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -132,9 +132,14 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
                                 {error}
                             </p>
                         )}
-                        <Button type="submit" size="lg" className="mt-3 w-full" disabled={isPending}>
-                            {isPending ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" /> : <ArrowRight className="size-4" />}
-                            {isPending ? 'Please wait…' : mode === 'register' ? 'Create account' : 'Sign in'}
+                        <Button
+                            type="submit"
+                            className="mt-3 w-full"
+                            loading={isPending}
+                            leadingIcon={ArrowRight}
+                            aria-label={isPending ? 'Please wait…' : undefined}
+                        >
+                            {mode === 'register' ? 'Create account' : 'Sign in'}
                         </Button>
                     </form>
                     <p className="text-muted-foreground mt-7 text-center text-sm">

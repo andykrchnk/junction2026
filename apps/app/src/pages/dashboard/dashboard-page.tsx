@@ -48,14 +48,15 @@ export function DashboardPage() {
                 <Button
                     className="ml-auto md:mt-5 md:ml-0 md:justify-start"
                     variant="ghost"
-                    size="sm"
+                    size="compact"
                     onClick={() => {
                         void handleSignOut();
                     }}
-                    disabled={isPending}
+                    loading={isPending}
+                    leadingIcon={LogOut}
+                    aria-label={isPending ? 'Signing out…' : undefined}
                 >
-                    <LogOut className="size-4" />
-                    {isPending ? 'Signing out…' : 'Sign out'}
+                    Sign out
                 </Button>
             </aside>
             <main className="min-w-0 flex-1 px-6 py-7 md:px-12">

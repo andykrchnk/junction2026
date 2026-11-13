@@ -4,7 +4,7 @@ Construction drawing intelligence workspace. The application foundation follows 
 
 ## Applications
 
-- `apps/app` (`@repo/app`): TanStack Start in SPA mode, shadcn/ui, Tailwind, TanStack Form, typed tRPC and Effector.
+- `apps/app` (`@repo/app`): TanStack Start in SPA mode, Fluid Functionalism components first with shadcn/ui fallback, Tailwind, TanStack Form, typed tRPC and Effector.
 - `apps/server` (`@repo/server`): Hono on Bun, tRPC and Better Auth email/password accounts backed by MongoDB Atlas.
 - `packages/types` (`@repo/types`): shared Zod schemas and inferred contracts.
 - `.agents`: scoped engineering patterns and review/PR skills. See [AGENTS.md](AGENTS.md).
