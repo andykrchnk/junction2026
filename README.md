@@ -5,7 +5,7 @@ Construction drawing intelligence workspace. The application foundation follows 
 ## Applications
 
 - `apps/app` (`@repo/app`): TanStack Start in SPA mode, Fluid Functionalism components first with shadcn/ui fallback, Tailwind, TanStack Form, typed tRPC and Effector.
-- `apps/server` (`@repo/server`): Hono on Bun, tRPC and Better Auth email/password accounts backed by MongoDB Atlas.
+- `apps/server` (`@repo/server`): Hono on Bun, tRPC, Mongoose application users and Better Auth email/password identities backed by MongoDB Atlas.
 - `packages/types` (`@repo/types`): shared Zod schemas and inferred contracts.
 - `.agents`: scoped engineering patterns and review/PR skills. See [AGENTS.md](AGENTS.md).
 - `research`: supplied challenge research and dataset inspection.
@@ -26,7 +26,9 @@ Set `MONGODB_URI` to an Atlas connection URI, `MONGODB_DB_NAME` to this project'
 pnpm dev
 ```
 
-The dashboard runs at `http://localhost:3000`; the API at `http://localhost:3001`. `/register` creates an account and signs in, `/login` signs in, and `/` requires a server-validated session. Sign-out revokes the session and clears the frontend identity/cache. Better Auth owns `betterauth-users`, `betterauth-accounts`, `betterauth-sessions` and `betterauth-verifications`. Passwords are handled by Better Auth, not application code.
+The dashboard runs at `http://localhost:3000`; the API at `http://localhost:3001`. `/register` creates an account and signs in, `/login` signs in, and `/` requires a server-validated session and application user. Sign-out revokes the session and clears the frontend identity/cache. Better Auth owns `betterauth-users`, `betterauth-accounts`, `betterauth-sessions` and `betterauth-verifications`. Passwords are handled by Better Auth, not application code.
+
+Application profiles live in a separate `users` collection with independent IDs, a unique `betterAuthUserId` link, email and timestamps. Renwio-style schema/DTO modules are exposed through `db.user`; request context distinguishes identity, session and application user. Signup retains Better Auth's validation and rate limits, creates the application profile before returning success, and compensates by removing the identity if profile creation fails. Startup initializes the application user indexes. Mongoose and Better Auth share the same Atlas client.
 
 `VITE_API_URL` is public and is embedded at build time. Database credentials and the auth secret belong only in the root server `.env` and server deployment variables. Email verification, password-reset email delivery and document ingestion are outside this foundation.
 

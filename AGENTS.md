@@ -26,7 +26,7 @@ Renwio's typed tRPC client and Better Auth client own transport. Effector owns a
 
 ## Server
 
-Hono owns HTTP orchestration. tRPC validates shared input/output contracts and enforces authorization. Better Auth owns credentials and sessions. Use MongoDB Atlas; no database container. Keep environment validation at startup and never expose secrets through client bundles, logs or error responses.
+Hono owns HTTP orchestration. tRPC validates shared input/output contracts and enforces authorization. Better Auth is the identity provider and owns credentials and sessions; application users live in `users`, linked by `betterAuthUserId`. Follow Renwio's Mongoose schema/DTO modules and `db.user` facade, with distinct identity/session/application-user request context. Use the shared MongoDB Atlas connection; no database container. Keep environment validation at startup and never expose secrets through client bundles, logs or error responses.
 
 ## Verification
 
