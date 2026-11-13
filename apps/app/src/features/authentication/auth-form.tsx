@@ -12,14 +12,11 @@ import { $$user } from '@/entities/user/model';
 type AuthFormProps = { mode: 'sign-in' | 'register' };
 export function AuthForm(props: Readonly<AuthFormProps>) {
     const { mode } = props;
-    const { error, isPending, user } = useUnit({ error: $$user.$error, isPending: $$user.$isPending, user: $$user.$user });
+    const { error, isPending } = useUnit({ error: $$user.$error, isPending: $$user.$isPending });
     const navigate = useNavigate();
     useEffect(() => {
         $$user.formOpened();
     }, [mode]);
-    useEffect(() => {
-        if (user) void navigate({ to: '/', replace: true });
-    }, [user, navigate]);
     const form = useForm({
         defaultValues: { email: '', password: '' },
         validators: {
@@ -29,9 +26,15 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
             },
         },
         onSubmit: async ({ value }) => {
-            // The owning Effector model records expected auth errors for display below.
-            if (mode === 'register') await $$user.signUpFx(value).catch(() => undefined);
-            else await $$user.signInFx(value).catch(() => undefined);
+            try {
+                if (mode === 'register') await $$user.signUpFx(value);
+                else await $$user.signInFx(value);
+            } catch {
+                // The owning Effector model records expected auth errors for display below.
+                return;
+            }
+            // Route validation refreshes the user model; navigate once per successful submission.
+            await navigate({ to: '/', replace: true });
         },
     });
     return (
