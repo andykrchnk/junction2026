@@ -1,0 +1,16 @@
+FROM node:26-alpine AS builder
+WORKDIR /app
+RUN npm install --global pnpm@11.25.0
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps ./apps
+COPY packages ./packages
+RUN pnpm install --frozen-lockfile
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+RUN pnpm --filter @repo/app build
+
+FROM nginx:1.28-alpine AS runner
+COPY apps/app/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/apps/app/dist/client /usr/share/nginx/html
+EXPOSE 8080
+CMD ["nginx", "-g", "daemon off;"]

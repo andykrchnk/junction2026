@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/dist
+**/.tanstack
+**/.output
+**/.turbo
+**/.env
+**/.env.*
+research
+artifacts

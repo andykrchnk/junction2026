@@ -1,0 +1,18 @@
+FROM oven/bun:1.2.22 AS bun
+FROM node:26-bookworm-slim AS builder
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
+WORKDIR /app
+RUN npm install --global pnpm@11.25.0
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps ./apps
+COPY packages ./packages
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @repo/server build
+
+FROM oven/bun:1.2.22 AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder --chown=bun:bun /app/apps/server/dist/index.js ./index.js
+USER bun
+EXPOSE 8080
+CMD ["bun", "index.js"]

@@ -8,15 +8,18 @@
         "format": "prettier --write .",
         "check-types": "turbo run check-types",
         "format:check": "prettier --check .",
-        "test": "turbo run test"
+        "test": "turbo run test",
+        "check-infra": "tsc --noEmit -p .railway/tsconfig.json"
     },
     "devDependencies": {
+        "@typescript/native": "npm:typescript@7.0.2",
+        "eslint": "^9.39.4",
         "prettier": "3.9.6",
+        "railway": "3.17.0",
         "turbo": "^2.11.11",
         "typescript": "npm:@typescript/typescript6@^6.0.2",
-        "eslint": "^9.39.4",
         "typescript-eslint": "^8.65.0",
-        "@typescript/native": "npm:typescript@7.0.2"
+        "@types/node": "^24.0.0"
     },
     "packageManager": "pnpm@11.25.0",
     "engines": {
