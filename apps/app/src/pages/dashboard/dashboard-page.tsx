@@ -38,11 +38,10 @@ export function DashboardPage() {
                     <Separator />
                     <div className="mt-6 flex items-center gap-3">
                         <Avatar>
-                            <AvatarFallback>{user?.name.slice(0, 1).toUpperCase()}</AvatarFallback>
+                            <AvatarFallback>{user?.email.slice(0, 1).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">{user?.name}</p>
-                            <p className="text-muted-foreground truncate text-xs">{user?.email}</p>
+                            <p className="truncate text-sm font-medium">{user?.email}</p>
                         </div>
                     </div>
                 </div>

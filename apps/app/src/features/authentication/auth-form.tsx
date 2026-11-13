@@ -21,7 +21,7 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
         if (user) void navigate({ to: '/', replace: true });
     }, [user, navigate]);
     const form = useForm({
-        defaultValues: { name: '', email: '', password: '' },
+        defaultValues: { email: '', password: '' },
         validators: {
             onSubmit: ({ value }) => {
                 const result = (mode === 'register' ? SignUpInputZod : SignInInputZod).safeParse(value);
@@ -84,24 +84,6 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
                             void form.handleSubmit();
                         }}
                     >
-                        {mode === 'register' && (
-                            <form.Field name="name">
-                                {(field) => (
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name">Full name</Label>
-                                        <Input
-                                            id="name"
-                                            autoComplete="name"
-                                            placeholder="Alex Morgan"
-                                            value={field.state.value}
-                                            onChange={(e) => field.handleChange(e.target.value)}
-                                            required
-                                            maxLength={100}
-                                        />
-                                    </div>
-                                )}
-                            </form.Field>
-                        )}
                         <form.Field name="email">
                             {(field) => (
                                 <div className="space-y-2">

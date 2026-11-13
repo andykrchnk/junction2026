@@ -29,7 +29,8 @@ const signInFx = createEffect(async (input: SignInInput) => {
     if (!user) throw new Error('Your session could not be verified. Please sign in again.');
 });
 const signUpFx = createEffect(async (input: SignUpInput) => {
-    const { error } = await authClient.signUp.email(SignUpInputZod.parse(input));
+    // Better Auth requires a name string even though registration only collects email and password.
+    const { error } = await authClient.signUp.email({ ...SignUpInputZod.parse(input), name: '' });
     if (error) throw new Error(error.message ?? 'Could not create your account. Please try again.');
     const { user } = await getUserFx();
     if (!user) throw new Error('Your session could not be verified. Please sign in again.');
