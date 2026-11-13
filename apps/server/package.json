@@ -12,8 +12,7 @@
         "start": "bun dist/index.js",
         "build": "bun build src/app/index.ts --target=bun --outfile=dist/index.js",
         "check-types": "tsc --noEmit",
-        "lint": "eslint src",
-        "test": "bun test"
+        "lint": "eslint src"
     },
     "dependencies": {
         "@hono/trpc-server": "0.4.2",

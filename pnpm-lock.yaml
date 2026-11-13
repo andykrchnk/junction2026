@@ -157,10 +157,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.6.7
-    devDependencies:
-      '@types/bun':
-        specifier: latest
-        version: 1.4.4
 
 packages:
 
