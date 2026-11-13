@@ -1,0 +1,31 @@
+{
+    "name": "@repo/server",
+    "private": true,
+    "type": "module",
+    "exports": {
+        "./router": {
+            "types": "./src/trpc/app.trpc.ts"
+        }
+    },
+    "scripts": {
+        "dev": "bun --env-file=../../.env --hot src/app/index.ts",
+        "start": "bun dist/index.js",
+        "build": "bun build src/app/index.ts --target=bun --outfile=dist/index.js",
+        "check-types": "tsc --noEmit",
+        "lint": "eslint src"
+    },
+    "dependencies": {
+        "@better-auth/mongo-adapter": "1.7.23",
+        "@hono/trpc-server": "0.4.2",
+        "@repo/types": "workspace:*",
+        "@trpc/server": "11.28.0",
+        "better-auth": "1.7.23",
+        "hono": "^4.7.11",
+        "mongodb": "7.8.0",
+        "mongoose": "^9.12.1",
+        "zod": "^4.3.6"
+    },
+    "devDependencies": {
+        "@types/bun": "latest"
+    }
+}

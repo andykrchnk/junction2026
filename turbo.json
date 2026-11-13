@@ -1,0 +1,23 @@
+{
+    "$schema": "https://turborepo.dev/schema.json",
+    "ui": "tui",
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build"],
+            "env": ["VITE_API_URL"],
+            "inputs": ["$TURBO_DEFAULT$", ".env*"],
+            "outputs": ["dist/**", ".output/**"]
+        },
+        "lint": {
+            "dependsOn": ["^lint"]
+        },
+        "check-types": {
+            "dependsOn": ["^check-types"]
+        },
+        "dev": {
+            "cache": false,
+            "persistent": true,
+            "passThroughEnv": ["MONGODB_URI", "MONGODB_DB_NAME", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "APP_ORIGIN", "PORT"]
+        }
+    }
+}

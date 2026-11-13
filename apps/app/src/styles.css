@@ -1,0 +1,158 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-sans: 'Avenir Next', 'Segoe UI', sans-serif;
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--secondary);
+    --color-accent-foreground: var(--foreground);
+    --color-destructive: #ac3029;
+    --color-border: var(--border);
+    --color-input: var(--border);
+    --color-ring: var(--primary);
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --color-hover: var(--hover);
+    --color-active: var(--active);
+    --color-selected: var(--selected);
+    --color-destructive-light: var(--destructive-light);
+    --text-display: var(--fs-display);
+    --text-display--line-height: var(--lh-display);
+    --text-title: var(--fs-title);
+    --text-title--line-height: var(--lh-title);
+    --text-subtitle: var(--fs-subtitle);
+    --text-subtitle--line-height: var(--lh-subtitle);
+    --text-body: var(--fs-body);
+    --text-body--line-height: var(--lh-body);
+    --text-caption: var(--fs-caption);
+    --text-caption--line-height: var(--lh-caption);
+    --text-micro: var(--fs-micro);
+    --text-micro--line-height: var(--lh-micro);
+    --color-tint-hover: var(--tint-hover);
+    --color-tint: var(--tint);
+    --color-fluid-accent: var(--fluid-accent);
+    @keyframes spinner-turn {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    @keyframes spinner-breathe {
+        0%,
+        100% {
+            stroke-dasharray: 0.01 49.99;
+            stroke-dashoffset: -25;
+        }
+        50% {
+            stroke-dasharray: 26 24;
+            stroke-dashoffset: -12;
+        }
+    }
+}
+
+:root {
+    --background: #f7f7f2;
+    --foreground: #26342e;
+    --card: #fdfdfa;
+    --primary: #365846;
+    --primary-foreground: #fafbf5;
+    --secondary: #e8ede4;
+    --muted: #eff0e9;
+    --muted-foreground: #68746b;
+    --border: #dce0d5;
+    --hover: rgb(0 0 0 / 0.04);
+    --active: rgb(0 0 0 / 0.07);
+    --selected: var(--secondary);
+    --destructive-light: #fef2f2;
+    --overlay: 0 0 0;
+    --fluid-accent: var(--primary);
+    --focus-ring: var(--fluid-accent);
+    --tint: rgb(0 0 0 / 0.08);
+    --tint-hover: rgb(0 0 0 / 0.065);
+    --z-sticky: 30;
+    --z-overlay: 40;
+    --z-modal: 50;
+    --z-popover: 60;
+    --z-tooltip: 70;
+    --fs-display: 28px;
+    --lh-display: 34px;
+    --fs-display-compact: 24px;
+    --lh-display-compact: 30px;
+    --fs-title: 16px;
+    --lh-title: 22px;
+    --fs-title-compact: 15px;
+    --lh-title-compact: 20px;
+    --fs-subtitle: 14px;
+    --lh-subtitle: 20px;
+    --fs-subtitle-compact: 13px;
+    --lh-subtitle-compact: 18px;
+    --fs-body: 13px;
+    --lh-body: 20px;
+    --fs-body-compact: 12px;
+    --lh-body-compact: 18px;
+    --fs-caption: 12px;
+    --lh-caption: 16px;
+    --fs-caption-compact: 11px;
+    --lh-caption-compact: 14px;
+    --fs-micro: 11px;
+    --lh-micro: 14px;
+    --fs-micro-compact: 10px;
+    --lh-micro-compact: 12px;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground m-0 font-sans antialiased;
+    }
+    ::selection {
+        background-color: color-mix(in oklab, var(--fluid-accent, #6b97ff) 25%, transparent);
+    }
+    .dark ::selection {
+        background-color: color-mix(in oklab, var(--fluid-accent, #6b97ff) 40%, transparent);
+    }
+    :focus-visible {
+        outline: 1px solid var(--focus-ring, #6b97ff);
+        outline-offset: 2px;
+        border-radius: var(--shape-input-radius, 8px);
+    }
+    a:focus-visible {
+        border-radius: 2px;
+    }
+}
+
+.dark {
+    --hover: rgb(255 255 255 / 0.06);
+    --active: rgb(255 255 255 / 0.1);
+    --selected: #525252;
+    --destructive-light: #450a0a;
+    --overlay: 255 255 255;
+    --tint: rgb(255 255 255 / 0.25);
+    --tint-hover: rgb(255 255 255 / 0.2);
+}
+@media (prefers-reduced-motion: no-preference) {
+    html.transitioning *,
+    html.transitioning *::before,
+    html.transitioning *::after {
+        transition:
+            border-radius 180ms ease-in-out,
+            background-color 180ms ease-in-out,
+            color 180ms ease-in-out,
+            border-color 180ms ease-in-out,
+            fill 180ms ease-in-out,
+            stroke 180ms ease-in-out !important;
+    }
+}
