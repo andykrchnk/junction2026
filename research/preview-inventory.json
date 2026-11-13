@@ -1,0 +1,4622 @@
+[
+  {
+    "name": "junction-dataset-preview/README.md",
+    "bytes": 2253,
+    "compressed": 1133
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/LICENSE.md",
+    "bytes": 923,
+    "compressed": 478
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-11397.png",
+    "bytes": 44754,
+    "compressed": 44754
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-11400.png",
+    "bytes": 360137,
+    "compressed": 360137
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-11960.png",
+    "bytes": 13683,
+    "compressed": 13683
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-12200.png",
+    "bytes": 87116,
+    "compressed": 87116
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-13685.png",
+    "bytes": 599406,
+    "compressed": 599406
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-1732.png",
+    "bytes": 153547,
+    "compressed": 153547
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-2002.png",
+    "bytes": 369406,
+    "compressed": 369406
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-2194.png",
+    "bytes": 745582,
+    "compressed": 745582
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-34.png",
+    "bytes": 234648,
+    "compressed": 234648
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-6327.png",
+    "bytes": 72763,
+    "compressed": 72763
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-7513.png",
+    "bytes": 104313,
+    "compressed": 104313
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-8389.png",
+    "bytes": 838215,
+    "compressed": 838215
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/colorful-8759.png",
+    "bytes": 370251,
+    "compressed": 370251
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-10306.png",
+    "bytes": 234034,
+    "compressed": 234034
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-10785.png",
+    "bytes": 72943,
+    "compressed": 72943
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-108.png",
+    "bytes": 186321,
+    "compressed": 186321
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-1097.png",
+    "bytes": 123514,
+    "compressed": 123514
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-11377.png",
+    "bytes": 71269,
+    "compressed": 71269
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-11384.png",
+    "bytes": 78736,
+    "compressed": 78736
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-11459.png",
+    "bytes": 108540,
+    "compressed": 108540
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-11553.png",
+    "bytes": 73662,
+    "compressed": 73662
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-1212.png",
+    "bytes": 134094,
+    "compressed": 134094
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-12126.png",
+    "bytes": 233299,
+    "compressed": 233299
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-12235.png",
+    "bytes": 90370,
+    "compressed": 90370
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-12239.png",
+    "bytes": 50005,
+    "compressed": 50005
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-12761.png",
+    "bytes": 243878,
+    "compressed": 243878
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-13029.png",
+    "bytes": 125610,
+    "compressed": 125610
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-13107.png",
+    "bytes": 283961,
+    "compressed": 283961
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-13137.png",
+    "bytes": 258452,
+    "compressed": 258452
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-1391.png",
+    "bytes": 67053,
+    "compressed": 67053
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-1500.png",
+    "bytes": 99687,
+    "compressed": 99687
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-1506.png",
+    "bytes": 268771,
+    "compressed": 268771
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-1647.png",
+    "bytes": 19896,
+    "compressed": 19896
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-1655.png",
+    "bytes": 433946,
+    "compressed": 433946
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-20147.png",
+    "bytes": 493720,
+    "compressed": 493720
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-3086.png",
+    "bytes": 363413,
+    "compressed": 363413
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-3692.png",
+    "bytes": 192814,
+    "compressed": 192814
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-5080.png",
+    "bytes": 328205,
+    "compressed": 328205
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-5682.png",
+    "bytes": 221003,
+    "compressed": 221003
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-5815.png",
+    "bytes": 33765,
+    "compressed": 33765
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-6565.png",
+    "bytes": 575833,
+    "compressed": 575833
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-6732.png",
+    "bytes": 67994,
+    "compressed": 67994
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-698.png",
+    "bytes": 43559,
+    "compressed": 43559
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-729.png",
+    "bytes": 84558,
+    "compressed": 84558
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-7768.png",
+    "bytes": 388404,
+    "compressed": 388404
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-7932.png",
+    "bytes": 294346,
+    "compressed": 294346
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-8026.png",
+    "bytes": 138439,
+    "compressed": 138439
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-8033.png",
+    "bytes": 264787,
+    "compressed": 264787
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-8177.png",
+    "bytes": 124607,
+    "compressed": 124607
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-8488.png",
+    "bytes": 265907,
+    "compressed": 265907
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-8530.png",
+    "bytes": 142859,
+    "compressed": 142859
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-8781.png",
+    "bytes": 449145,
+    "compressed": 449145
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-9770.png",
+    "bytes": 515282,
+    "compressed": 515282
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality-9775.png",
+    "bytes": 231443,
+    "compressed": 231443
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1000.png",
+    "bytes": 268347,
+    "compressed": 268347
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10000.png",
+    "bytes": 219821,
+    "compressed": 219821
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10026.png",
+    "bytes": 164683,
+    "compressed": 164683
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10096.png",
+    "bytes": 30685,
+    "compressed": 30685
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10142.png",
+    "bytes": 222271,
+    "compressed": 222271
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10161.png",
+    "bytes": 110685,
+    "compressed": 110685
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10196.png",
+    "bytes": 110014,
+    "compressed": 110014
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10254.png",
+    "bytes": 629635,
+    "compressed": 629635
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10290.png",
+    "bytes": 384051,
+    "compressed": 384051
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10321.png",
+    "bytes": 606122,
+    "compressed": 606122
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10368.png",
+    "bytes": 138954,
+    "compressed": 138954
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10370.png",
+    "bytes": 133533,
+    "compressed": 133533
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10491.png",
+    "bytes": 1075586,
+    "compressed": 1075586
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10498.png",
+    "bytes": 345136,
+    "compressed": 345136
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10545.png",
+    "bytes": 141160,
+    "compressed": 141160
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10571.png",
+    "bytes": 296418,
+    "compressed": 296418
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-10581.png",
+    "bytes": 224479,
+    "compressed": 224479
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11007.png",
+    "bytes": 1178728,
+    "compressed": 1178728
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11011.png",
+    "bytes": 2248515,
+    "compressed": 2248515
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11012.png",
+    "bytes": 1311144,
+    "compressed": 1311144
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11059.png",
+    "bytes": 456197,
+    "compressed": 456197
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11142.png",
+    "bytes": 241786,
+    "compressed": 241786
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11169.png",
+    "bytes": 296774,
+    "compressed": 296774
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11257.png",
+    "bytes": 275305,
+    "compressed": 275305
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11280.png",
+    "bytes": 59938,
+    "compressed": 59938
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11319.png",
+    "bytes": 5066074,
+    "compressed": 5066074
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11426.png",
+    "bytes": 1023815,
+    "compressed": 1023815
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11465.png",
+    "bytes": 246753,
+    "compressed": 246753
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1153.png",
+    "bytes": 160171,
+    "compressed": 160171
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11566.png",
+    "bytes": 575572,
+    "compressed": 575572
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11572.png",
+    "bytes": 101587,
+    "compressed": 101587
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11602.png",
+    "bytes": 842116,
+    "compressed": 842116
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1169.png",
+    "bytes": 101693,
+    "compressed": 101693
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11769.png",
+    "bytes": 186624,
+    "compressed": 186624
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11786.png",
+    "bytes": 8910453,
+    "compressed": 8910453
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11826.png",
+    "bytes": 130554,
+    "compressed": 130554
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11866.png",
+    "bytes": 135512,
+    "compressed": 135512
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11877.png",
+    "bytes": 247775,
+    "compressed": 247775
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11926.png",
+    "bytes": 181911,
+    "compressed": 181911
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-11975.png",
+    "bytes": 365687,
+    "compressed": 365687
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12027.png",
+    "bytes": 1048158,
+    "compressed": 1048158
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12077.png",
+    "bytes": 2505312,
+    "compressed": 2505312
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12085.png",
+    "bytes": 407383,
+    "compressed": 407383
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12166.png",
+    "bytes": 344566,
+    "compressed": 344566
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12188.png",
+    "bytes": 321398,
+    "compressed": 321398
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12232.png",
+    "bytes": 85029,
+    "compressed": 85029
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12245.png",
+    "bytes": 125658,
+    "compressed": 125658
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1241.png",
+    "bytes": 306570,
+    "compressed": 306570
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12415.png",
+    "bytes": 204423,
+    "compressed": 204423
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12454.png",
+    "bytes": 67565,
+    "compressed": 67565
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12617.png",
+    "bytes": 1740274,
+    "compressed": 1740274
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12684.png",
+    "bytes": 133656,
+    "compressed": 133656
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12688.png",
+    "bytes": 187566,
+    "compressed": 187566
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12698.png",
+    "bytes": 208232,
+    "compressed": 208232
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12864.png",
+    "bytes": 483158,
+    "compressed": 483158
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-12943.png",
+    "bytes": 52971,
+    "compressed": 52971
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13040.png",
+    "bytes": 149894,
+    "compressed": 149894
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13048.png",
+    "bytes": 275657,
+    "compressed": 275657
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13075.png",
+    "bytes": 261060,
+    "compressed": 261060
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13161.png",
+    "bytes": 201685,
+    "compressed": 201685
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13210.png",
+    "bytes": 472606,
+    "compressed": 472606
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13309.png",
+    "bytes": 137584,
+    "compressed": 137584
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13326.png",
+    "bytes": 129976,
+    "compressed": 129976
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13388.png",
+    "bytes": 63059,
+    "compressed": 63059
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1357.png",
+    "bytes": 267839,
+    "compressed": 267839
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13607.png",
+    "bytes": 209479,
+    "compressed": 209479
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1368.png",
+    "bytes": 591648,
+    "compressed": 591648
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13767.png",
+    "bytes": 288746,
+    "compressed": 288746
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13794.png",
+    "bytes": 324322,
+    "compressed": 324322
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-13843.png",
+    "bytes": 844149,
+    "compressed": 844149
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1402.png",
+    "bytes": 559477,
+    "compressed": 559477
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14155.png",
+    "bytes": 483798,
+    "compressed": 483798
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14339.png",
+    "bytes": 275557,
+    "compressed": 275557
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14341.png",
+    "bytes": 587727,
+    "compressed": 587727
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14441.png",
+    "bytes": 445976,
+    "compressed": 445976
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14494.png",
+    "bytes": 23326,
+    "compressed": 23326
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-145.png",
+    "bytes": 248622,
+    "compressed": 248622
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14533.png",
+    "bytes": 429170,
+    "compressed": 429170
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14566.png",
+    "bytes": 400828,
+    "compressed": 400828
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14612.png",
+    "bytes": 66816,
+    "compressed": 66816
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14759.png",
+    "bytes": 588109,
+    "compressed": 588109
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14762.png",
+    "bytes": 550646,
+    "compressed": 550646
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14809.png",
+    "bytes": 317264,
+    "compressed": 317264
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-14812.png",
+    "bytes": 269806,
+    "compressed": 269806
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1524.png",
+    "bytes": 206028,
+    "compressed": 206028
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-16.png",
+    "bytes": 449163,
+    "compressed": 449163
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1706.png",
+    "bytes": 2883234,
+    "compressed": 2883234
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1772.png",
+    "bytes": 158061,
+    "compressed": 158061
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1778.png",
+    "bytes": 320170,
+    "compressed": 320170
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-18.png",
+    "bytes": 1384525,
+    "compressed": 1384525
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1814.png",
+    "bytes": 217186,
+    "compressed": 217186
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1838.png",
+    "bytes": 72070,
+    "compressed": 72070
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1886.png",
+    "bytes": 1865553,
+    "compressed": 1865553
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1903.png",
+    "bytes": 164772,
+    "compressed": 164772
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1933.png",
+    "bytes": 185204,
+    "compressed": 185204
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-1967.png",
+    "bytes": 319639,
+    "compressed": 319639
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-20071.png",
+    "bytes": 576977,
+    "compressed": 576977
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-20093.png",
+    "bytes": 211894,
+    "compressed": 211894
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-2014.png",
+    "bytes": 185725,
+    "compressed": 185725
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-2100.png",
+    "bytes": 527383,
+    "compressed": 527383
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-2105.png",
+    "bytes": 440565,
+    "compressed": 440565
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-2145.png",
+    "bytes": 141100,
+    "compressed": 141100
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-2164.png",
+    "bytes": 476737,
+    "compressed": 476737
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-247.png",
+    "bytes": 111581,
+    "compressed": 111581
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-2512.png",
+    "bytes": 244230,
+    "compressed": 244230
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-2530.png",
+    "bytes": 510117,
+    "compressed": 510117
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-2580.png",
+    "bytes": 1121233,
+    "compressed": 1121233
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-2609.png",
+    "bytes": 263749,
+    "compressed": 263749
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-3660.png",
+    "bytes": 183514,
+    "compressed": 183514
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-3710.png",
+    "bytes": 247277,
+    "compressed": 247277
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-381.png",
+    "bytes": 190577,
+    "compressed": 190577
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-3819.png",
+    "bytes": 877047,
+    "compressed": 877047
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-3915.png",
+    "bytes": 709923,
+    "compressed": 709923
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-3919.png",
+    "bytes": 356376,
+    "compressed": 356376
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-392.png",
+    "bytes": 179538,
+    "compressed": 179538
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4064.png",
+    "bytes": 1748289,
+    "compressed": 1748289
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4068.png",
+    "bytes": 152494,
+    "compressed": 152494
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-41.png",
+    "bytes": 261799,
+    "compressed": 261799
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4517.png",
+    "bytes": 117552,
+    "compressed": 117552
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4561.png",
+    "bytes": 109571,
+    "compressed": 109571
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4609.png",
+    "bytes": 325466,
+    "compressed": 325466
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4685.png",
+    "bytes": 307650,
+    "compressed": 307650
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4711.png",
+    "bytes": 306957,
+    "compressed": 306957
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4845.png",
+    "bytes": 209264,
+    "compressed": 209264
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4855.png",
+    "bytes": 94252,
+    "compressed": 94252
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4897.png",
+    "bytes": 197086,
+    "compressed": 197086
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-4914.png",
+    "bytes": 147615,
+    "compressed": 147615
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-5006.png",
+    "bytes": 128018,
+    "compressed": 128018
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-5028.png",
+    "bytes": 147637,
+    "compressed": 147637
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-504.png",
+    "bytes": 244495,
+    "compressed": 244495
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-5602.png",
+    "bytes": 150850,
+    "compressed": 150850
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-5640.png",
+    "bytes": 334560,
+    "compressed": 334560
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-5742.png",
+    "bytes": 67985,
+    "compressed": 67985
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-5788.png",
+    "bytes": 247525,
+    "compressed": 247525
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-5906.png",
+    "bytes": 482169,
+    "compressed": 482169
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-594.png",
+    "bytes": 149795,
+    "compressed": 149795
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6001.png",
+    "bytes": 358097,
+    "compressed": 358097
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6037.png",
+    "bytes": 457235,
+    "compressed": 457235
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6051.png",
+    "bytes": 543818,
+    "compressed": 543818
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6081.png",
+    "bytes": 444342,
+    "compressed": 444342
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6212.png",
+    "bytes": 258476,
+    "compressed": 258476
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6299.png",
+    "bytes": 263051,
+    "compressed": 263051
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6352.png",
+    "bytes": 67600,
+    "compressed": 67600
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6355.png",
+    "bytes": 450635,
+    "compressed": 450635
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6369.png",
+    "bytes": 265764,
+    "compressed": 265764
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6387.png",
+    "bytes": 277781,
+    "compressed": 277781
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6402.png",
+    "bytes": 451480,
+    "compressed": 451480
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6405.png",
+    "bytes": 180490,
+    "compressed": 180490
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6467.png",
+    "bytes": 220754,
+    "compressed": 220754
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6581.png",
+    "bytes": 63765,
+    "compressed": 63765
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-6642.png",
+    "bytes": 420422,
+    "compressed": 420422
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-672.png",
+    "bytes": 269741,
+    "compressed": 269741
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7041.png",
+    "bytes": 96949,
+    "compressed": 96949
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7098.png",
+    "bytes": 381159,
+    "compressed": 381159
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-745.png",
+    "bytes": 346327,
+    "compressed": 346327
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7549.png",
+    "bytes": 106203,
+    "compressed": 106203
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7567.png",
+    "bytes": 256382,
+    "compressed": 256382
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7598.png",
+    "bytes": 832558,
+    "compressed": 832558
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7607.png",
+    "bytes": 431580,
+    "compressed": 431580
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7688.png",
+    "bytes": 287968,
+    "compressed": 287968
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7731.png",
+    "bytes": 630848,
+    "compressed": 630848
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7787.png",
+    "bytes": 862945,
+    "compressed": 862945
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7838.png",
+    "bytes": 70572,
+    "compressed": 70572
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7858.png",
+    "bytes": 179672,
+    "compressed": 179672
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7894.png",
+    "bytes": 317117,
+    "compressed": 317117
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-7924.png",
+    "bytes": 319782,
+    "compressed": 319782
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-8022.png",
+    "bytes": 411171,
+    "compressed": 411171
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-8029.png",
+    "bytes": 427914,
+    "compressed": 427914
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-8321.png",
+    "bytes": 54061,
+    "compressed": 54061
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-8394.png",
+    "bytes": 282548,
+    "compressed": 282548
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-8604.png",
+    "bytes": 731026,
+    "compressed": 731026
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-8638.png",
+    "bytes": 462071,
+    "compressed": 462071
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-8639.png",
+    "bytes": 508230,
+    "compressed": 508230
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-8705.png",
+    "bytes": 405736,
+    "compressed": 405736
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-8737.png",
+    "bytes": 2204188,
+    "compressed": 2204188
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-8755.png",
+    "bytes": 414042,
+    "compressed": 414042
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9135.png",
+    "bytes": 307576,
+    "compressed": 307576
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9173.png",
+    "bytes": 641793,
+    "compressed": 641793
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9198.png",
+    "bytes": 222291,
+    "compressed": 222291
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9386.png",
+    "bytes": 149898,
+    "compressed": 149898
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9405.png",
+    "bytes": 97692,
+    "compressed": 97692
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9460.png",
+    "bytes": 199129,
+    "compressed": 199129
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9488.png",
+    "bytes": 148902,
+    "compressed": 148902
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9661.png",
+    "bytes": 315607,
+    "compressed": 315607
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9680.png",
+    "bytes": 667284,
+    "compressed": 667284
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9787.png",
+    "bytes": 398596,
+    "compressed": 398596
+  },
+  {
+    "name": "junction-dataset-preview/data/cubicasa5k/high_quality_architectural-9833.png",
+    "bytes": 316516,
+    "compressed": 316516
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/08535_item_227MGO6YEPEBMMWO6AGJPHLSAT4AK4QU.jpg",
+    "bytes": 1284728,
+    "compressed": 1284728
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/0940415__nn0ZWZ6.jpg",
+    "bytes": 1918089,
+    "compressed": 1918089
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/0940415__nn5Vdgp.jpg",
+    "bytes": 784803,
+    "compressed": 784803
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/10501_bib_rnod_219661.jpg",
+    "bytes": 522572,
+    "compressed": 522572
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/10501_bib_rnod_221974.jpg",
+    "bytes": 1235965,
+    "compressed": 1235965
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/1101_https___www_searchculture_gr_aggregator_edm_theocharakis_000163_111587.jpg",
+    "bytes": 118905,
+    "compressed": 118905
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/1236_item_4TYM2B7XPZQA4GOQRRNZF6WXAHF4LIIT.jpg",
+    "bytes": 95996,
+    "compressed": 95996
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/126_https___www_searchculture_gr_aggregator_edm_travelogues_000116_32193.jpg",
+    "bytes": 123474,
+    "compressed": 123474
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/126_https___www_searchculture_gr_aggregator_edm_travelogues_000116_44772.jpg",
+    "bytes": 234226,
+    "compressed": 234226
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/1274_mnm_pm_object_NPR_F_19051.jpg",
+    "bytes": 69400,
+    "compressed": 69400
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/1373_https___ekultura_hr_purl_url_3QITLCNVUHH3JO2FUE4MUAATNINR5W5H.jpg",
+    "bytes": 294684,
+    "compressed": 294684
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/1373_https___ekultura_hr_purl_url_4UTLLA7T2TB2DEO24EL2AR5J67EY7IWG.jpg",
+    "bytes": 493604,
+    "compressed": 493604
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/1373_https___ekultura_hr_purl_url_4YXP4KDFOK4B52PYUM6GMQQPBW4ZBBZE.jpg",
+    "bytes": 435848,
+    "compressed": 435848
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/1448_https___id_kulturpool_at_4170c3ba_9e88_4f85_aff0_cbc0d37ef8f5_cho.jpg",
+    "bytes": 81256,
+    "compressed": 81256
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/1472__3dac17fa2f5a18d24152.jpg",
+    "bytes": 1436177,
+    "compressed": 1436177
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/150__REB01_000190990.jpg",
+    "bytes": 147536,
+    "compressed": 147536
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/15508_https___id_kulturpool_at_0098166d_8996_4fd2_9461_b6aa15673744_cho.jpg",
+    "bytes": 86132,
+    "compressed": 86132
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/15508_https___id_kulturpool_at_018d11ea_8487_4855_afe2_97a9452e16bb_cho.jpg",
+    "bytes": 118650,
+    "compressed": 118650
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/15508_https___id_kulturpool_at_04d9b378_d86d_4af1_aca0_6af083d0539f_cho.jpg",
+    "bytes": 230169,
+    "compressed": 230169
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/198_1X134752.jpg",
+    "bytes": 259321,
+    "compressed": 259321
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2021633_AtlantisPubliek_detail_aspx_xmldescid_15315664.jpg",
+    "bytes": 306775,
+    "compressed": 306775
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2021633_AtlantisPubliek_detail_aspx_xmldescid_15315798.jpg",
+    "bytes": 100967,
+    "compressed": 100967
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2021803_KPCPBF6Ap12586.jpg",
+    "bytes": 754940,
+    "compressed": 754940
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2021803_KPCPBF6Ap12591.jpg",
+    "bytes": 1048098,
+    "compressed": 1048098
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2021803_KPCPBF6Ap12601.jpg",
+    "bytes": 1066973,
+    "compressed": 1066973
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2021803_KPCPBF6Ap1Nr11590.jpg",
+    "bytes": 977722,
+    "compressed": 977722
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2024903_photography_ProvidedCHO_KU_Leuven_9987991080101488.jpg",
+    "bytes": 1037317,
+    "compressed": 1037317
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2024903_photography_ProvidedCHO_KU_Leuven_9989295550101488.jpg",
+    "bytes": 815243,
+    "compressed": 815243
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2048001_AP_10219175.jpg",
+    "bytes": 150401,
+    "compressed": 150401
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2048001_AP_10356145.jpg",
+    "bytes": 119806,
+    "compressed": 119806
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2048128_130890.jpg",
+    "bytes": 1603867,
+    "compressed": 1603867
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2058401__providedCHO_7caffaeb_4234_bea1_cbeb_454c463a2e74.jpg",
+    "bytes": 77203,
+    "compressed": 77203
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2058632_0e814e33_d7d1_8201_1085_4b3839c80dfb_media_d7440664_1f32_3844_e435_5d48bb102106.jpg",
+    "bytes": 334061,
+    "compressed": 334061
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2064129_Museu_ProvidedCHO_museum_digital_8118__technical_number.jpg",
+    "bytes": 837376,
+    "compressed": 837376
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/2064129_Museu_ProvidedCHO_museum_digital_8962__technical_number.jpg",
+    "bytes": 503669,
+    "compressed": 503669
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/283_4788_DS.jpg",
+    "bytes": 170756,
+    "compressed": 170756
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/285_gam10205.jpg",
+    "bytes": 88416,
+    "compressed": 88416
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/332_BVE0816359.jpg",
+    "bytes": 755770,
+    "compressed": 755770
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/355_https___hispana_mcu_es_lod_oai_riunet_upv_es_10251____190836_ent0.jpg",
+    "bytes": 90157,
+    "compressed": 90157
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/356_item_23OUDGKBHQ4XVWEEFGV6LLMWMM5ZOURD.jpg",
+    "bytes": 420662,
+    "compressed": 420662
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/378_https___repozitorij_muo_hr__pr_i_id_10506.jpg",
+    "bytes": 60650,
+    "compressed": 60650
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/401_item_AT6IUNOBNECINIMBPPGVXXLTZ27TPISM.jpg",
+    "bytes": 68019,
+    "compressed": 68019
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/401_item_EJUKXP7EJ7V2BMXUB2QGV7NSFYRWZLZR.jpg",
+    "bytes": 61814,
+    "compressed": 61814
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/401_item_QWKGCOX6OGLOOF7QPOTPOQC5VBPJBIQN.jpg",
+    "bytes": 109315,
+    "compressed": 109315
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/401_item_WNSIKNCUAOU7YVENMDKVZ2NVJ56IJFIC.jpg",
+    "bytes": 62044,
+    "compressed": 62044
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/534_e812ee50_42af_4a65_b663_f62a28a5e367.jpg",
+    "bytes": 73720,
+    "compressed": 73720
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/543_https___hispana_mcu_es_lod_oai_ciconia_gobex_es_32126_ent1.jpg",
+    "bytes": 163802,
+    "compressed": 163802
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/744_item_3460833.jpg",
+    "bytes": 615293,
+    "compressed": 615293
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/756__021028337724.jpg",
+    "bytes": 206717,
+    "compressed": 206717
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/764_item_2524290.jpg",
+    "bytes": 388357,
+    "compressed": 388357
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/773_https___catalonica_bnc_cat_catalonicahub_lod_oai_mdc_csuc_cat_manuelamat____363_ent0.jpg",
+    "bytes": 35796,
+    "compressed": 35796
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/773_https___catalonica_bnc_cat_catalonicahub_lod_oai_mdc_csuc_cat_manuelamat____417_ent0.jpg",
+    "bytes": 46932,
+    "compressed": 46932
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/773_https___catalonica_bnc_cat_catalonicahub_lod_oai_mdc_csuc_cat_manuelamat____479_ent0.jpg",
+    "bytes": 44933,
+    "compressed": 44933
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/773_https___catalonica_bnc_cat_catalonicahub_lod_oai_mdc_csuc_cat_materialsBC____554_ent0.jpg",
+    "bytes": 107513,
+    "compressed": 107513
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/894_urn___mint_think_code_io_europeana_france_Inv_I_24.jpg",
+    "bytes": 20100,
+    "compressed": 20100
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/894_urn___mint_think_code_io_europeana_france_Inv_I_26.jpg",
+    "bytes": 44316,
+    "compressed": 44316
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/91625_nomu_photo_NMAR0000251.jpg",
+    "bytes": 179124,
+    "compressed": 179124
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/91676_arkm_object_ARKM1991_08_01_06.jpg",
+    "bytes": 80585,
+    "compressed": 80585
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/9200579_pads48ck.jpg",
+    "bytes": 106641,
+    "compressed": 106641
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/9200579_rj2e4afq.jpg",
+    "bytes": 110713,
+    "compressed": 110713
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/9200579_t47tcgax.jpg",
+    "bytes": 168992,
+    "compressed": 168992
+  },
+  {
+    "name": "junction-dataset-preview/data/europeana/LICENSE.md",
+    "bytes": 19638,
+    "compressed": 6886
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/LICENSE.md",
+    "bytes": 35218,
+    "compressed": 5691
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139877703731200_160449953667200.jpg",
+    "bytes": 554593,
+    "compressed": 554593
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139877703731200_160449985395400.jpg",
+    "bytes": 506067,
+    "compressed": 506067
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139877703731200_160499796228700.jpg",
+    "bytes": 698005,
+    "compressed": 698005
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139877703731200_160499798085100.jpg",
+    "bytes": 839396,
+    "compressed": 839396
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139877703731200_160499799412200.jpg",
+    "bytes": 475287,
+    "compressed": 475287
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139877703731200_160499802723400.jpg",
+    "bytes": 271210,
+    "compressed": 271210
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878141203200_167723039046600.jpg",
+    "bytes": 1267245,
+    "compressed": 1267245
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878141203200_167869668163900.jpg",
+    "bytes": 492705,
+    "compressed": 492705
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_145259665492200.jpg",
+    "bytes": 651690,
+    "compressed": 651690
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_146761793020700.jpg",
+    "bytes": 251452,
+    "compressed": 251452
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_146761804461500.jpg",
+    "bytes": 417836,
+    "compressed": 417836
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_146770432574000.jpg",
+    "bytes": 357972,
+    "compressed": 357972
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_148481528334200.jpg",
+    "bytes": 319157,
+    "compressed": 319157
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_148489686524200.jpg",
+    "bytes": 497615,
+    "compressed": 497615
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_148533813505500.jpg",
+    "bytes": 655371,
+    "compressed": 655371
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_168267108801700.jpg",
+    "bytes": 239930,
+    "compressed": 239930
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_168871545482000.jpg",
+    "bytes": 808381,
+    "compressed": 808381
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_169320587174900.jpg",
+    "bytes": 1219491,
+    "compressed": 1219491
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139878174949000_169320758442600.jpg",
+    "bytes": 793393,
+    "compressed": 793393
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_154954464757300.jpg",
+    "bytes": 966049,
+    "compressed": 966049
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_154954507467100.jpg",
+    "bytes": 1025983,
+    "compressed": 1025983
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_154961312925000.jpg",
+    "bytes": 951230,
+    "compressed": 951230
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_154961520091200.jpg",
+    "bytes": 771648,
+    "compressed": 771648
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_154961521041100.jpg",
+    "bytes": 1157804,
+    "compressed": 1157804
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_154962139748300.jpg",
+    "bytes": 973921,
+    "compressed": 973921
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_154962294190100.jpg",
+    "bytes": 661952,
+    "compressed": 661952
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_155058447270400.jpg",
+    "bytes": 786121,
+    "compressed": 786121
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_155058463506800.jpg",
+    "bytes": 763146,
+    "compressed": 763146
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_155058474648300.jpg",
+    "bytes": 881179,
+    "compressed": 881179
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_155058532955700.jpg",
+    "bytes": 578389,
+    "compressed": 578389
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_155058575663400.jpg",
+    "bytes": 1331832,
+    "compressed": 1331832
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_155058585795000.jpg",
+    "bytes": 745678,
+    "compressed": 745678
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_155058763152300.jpg",
+    "bytes": 983007,
+    "compressed": 983007
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_155058772725500.jpg",
+    "bytes": 901522,
+    "compressed": 901522
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_165556131605700.jpg",
+    "bytes": 1331274,
+    "compressed": 1331274
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_165556136414500.jpg",
+    "bytes": 967260,
+    "compressed": 967260
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_166229997512300.jpg",
+    "bytes": 989559,
+    "compressed": 989559
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_166237811478300.jpg",
+    "bytes": 1127425,
+    "compressed": 1127425
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_166697252652300.jpg",
+    "bytes": 1030946,
+    "compressed": 1030946
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_166748810810000.jpg",
+    "bytes": 778042,
+    "compressed": 778042
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_166748816343600.jpg",
+    "bytes": 1418328,
+    "compressed": 1418328
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_166749105256500.jpg",
+    "bytes": 1008531,
+    "compressed": 1008531
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_167163278794600.jpg",
+    "bytes": 833835,
+    "compressed": 833835
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139879309684900_167163501330600.jpg",
+    "bytes": 1082094,
+    "compressed": 1082094
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139880702810000_141269158087700.jpg",
+    "bytes": 2480214,
+    "compressed": 2480214
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569238970000.jpg",
+    "bytes": 637519,
+    "compressed": 637519
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569315264900.jpg",
+    "bytes": 1140665,
+    "compressed": 1140665
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569319330600.jpg",
+    "bytes": 1391394,
+    "compressed": 1391394
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569377034300.jpg",
+    "bytes": 885965,
+    "compressed": 885965
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569380859700.jpg",
+    "bytes": 777113,
+    "compressed": 777113
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569382051300.jpg",
+    "bytes": 701404,
+    "compressed": 701404
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569518611700.jpg",
+    "bytes": 629632,
+    "compressed": 629632
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569543016200.jpg",
+    "bytes": 782679,
+    "compressed": 782679
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569550459000.jpg",
+    "bytes": 995517,
+    "compressed": 995517
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569556006600.jpg",
+    "bytes": 1184353,
+    "compressed": 1184353
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.139881104940300_168569566239300.jpg",
+    "bytes": 739857,
+    "compressed": 739857
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.144784947553900_168743795351300.jpg",
+    "bytes": 650519,
+    "compressed": 650519
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.144784947553900_168743797776100.jpg",
+    "bytes": 423867,
+    "compressed": 423867
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.144784947553900_168743926443700.jpg",
+    "bytes": 918076,
+    "compressed": 918076
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.144784947553900_168743926791600.jpg",
+    "bytes": 255883,
+    "compressed": 255883
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.144784947553900_168743929466800.jpg",
+    "bytes": 321982,
+    "compressed": 321982
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.144784947553900_168744488538700.jpg",
+    "bytes": 1060957,
+    "compressed": 1060957
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.144784947553900_168744489650100.jpg",
+    "bytes": 1144559,
+    "compressed": 1144559
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.144784947553900_168744491684000.jpg",
+    "bytes": 827246,
+    "compressed": 827246
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.144784947553900_169225694132000.jpg",
+    "bytes": 2116277,
+    "compressed": 2116277
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/hka.144784947553900_169228053869500.jpg",
+    "bytes": 909152,
+    "compressed": 909152
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.01a30b06-eb5f-4677-9ec2-1a3fb5406471.jpg",
+    "bytes": 799996,
+    "compressed": 799996
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.01dbe6fa-60d2-4654-bce1-d381a0f22d75.jpg",
+    "bytes": 393107,
+    "compressed": 393107
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.020d5a29-44ad-462a-9495-a6a33c5aef59.jpg",
+    "bytes": 322503,
+    "compressed": 322503
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.0a7c48fc-a3d0-4894-af92-527cfd88fa05.jpg",
+    "bytes": 325459,
+    "compressed": 325459
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.17e237d5-6613-4a50-8583-8df630b0aff3.jpg",
+    "bytes": 302472,
+    "compressed": 302472
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.1bb07a72-fe89-4fae-9db0-0b6e9324aaf5.jpg",
+    "bytes": 193824,
+    "compressed": 193824
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.27a3b889-94b2-4751-b19d-d7b577043fe4.jpg",
+    "bytes": 560221,
+    "compressed": 560221
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.2eae9dac-24f3-4ea3-9f17-e57bf1a5546c.jpg",
+    "bytes": 174101,
+    "compressed": 174101
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.38e547a7-05d5-4023-8b81-7873329b48c1.jpg",
+    "bytes": 742677,
+    "compressed": 742677
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.56c8cb77-c245-4b12-8bdb-e9b8fee824a0.jpg",
+    "bytes": 492190,
+    "compressed": 492190
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.6700a962-8a7c-43c0-b4a9-75bed8c013dc.jpg",
+    "bytes": 743726,
+    "compressed": 743726
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.6b46ad15-25cf-452c-b358-b2ac84d49c08.jpg",
+    "bytes": 416948,
+    "compressed": 416948
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.799ba82b-3070-47ae-ac20-1c36d985af21.jpg",
+    "bytes": 608977,
+    "compressed": 608977
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.7dbd0882-e60d-4f86-9667-ea2bee90cce5.jpg",
+    "bytes": 556539,
+    "compressed": 556539
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.86f49a52-42f6-4df1-92b8-d09a75f0e1b6.jpg",
+    "bytes": 650254,
+    "compressed": 650254
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.87a40015-7367-4de7-82e4-5ddc5748bcfe.jpg",
+    "bytes": 957531,
+    "compressed": 957531
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.905778db-daee-46c1-b134-982b11f77b8c.jpg",
+    "bytes": 330456,
+    "compressed": 330456
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.92dccccd-42aa-40c4-8ec5-0b776b72187a.jpg",
+    "bytes": 711930,
+    "compressed": 711930
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.964b8490-3405-4643-a73e-1cf6794c53b6.jpg",
+    "bytes": 118025,
+    "compressed": 118025
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.a1f6e22b-a16c-4f25-9183-25327ed58418.jpg",
+    "bytes": 678764,
+    "compressed": 678764
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.b69eb730-c26a-432d-89bb-fea94d5ca8e2.jpg",
+    "bytes": 480501,
+    "compressed": 480501
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.bb0552be-3051-4f73-9527-426657a857d5.jpg",
+    "bytes": 831391,
+    "compressed": 831391
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.ca483f23-27cf-4b18-a518-43dce0658c12.jpg",
+    "bytes": 659345,
+    "compressed": 659345
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.ca8c0d82-0bab-4010-852d-264d706c1655.jpg",
+    "bytes": 208161,
+    "compressed": 208161
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.de24fed7-eeca-4a2f-b7ed-5bce32514c61.jpg",
+    "bytes": 691646,
+    "compressed": 691646
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.de7ea19e-7a68-4ed0-b8c4-68bfd1f1a989.jpg",
+    "bytes": 560111,
+    "compressed": 560111
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.e82b3ea2-82f7-41d4-908b-8d9f103c93a2.jpg",
+    "bytes": 657703,
+    "compressed": 657703
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.ec34b0e6-783f-4e2a-ac64-e795390138a3.jpg",
+    "bytes": 662732,
+    "compressed": 662732
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.f22e3f2f-a53d-4578-9dbe-24d93e264edb.jpg",
+    "bytes": 635459,
+    "compressed": 635459
+  },
+  {
+    "name": "junction-dataset-preview/data/finna/mfa.f4d8c7a8-9173-46f7-9fa8-161ec5032db9.jpg",
+    "bytes": 187376,
+    "compressed": 187376
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/LICENSE.md",
+    "bytes": 27284,
+    "compressed": 6067
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/al1159_sheet_00001.jpg",
+    "bytes": 1246487,
+    "compressed": 1246487
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/al1170_sheet_00001.jpg",
+    "bytes": 854028,
+    "compressed": 854028
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/al1194_sheet_00006.jpg",
+    "bytes": 670564,
+    "compressed": 670564
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/al1276_sheet_00001.jpg",
+    "bytes": 1006072,
+    "compressed": 1006072
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ar0109_sheet_00002.jpg",
+    "bytes": 646231,
+    "compressed": 646231
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ar0142_sheet_00005.jpg",
+    "bytes": 510693,
+    "compressed": 510693
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/az0258_sheet_00018.jpg",
+    "bytes": 1046327,
+    "compressed": 1046327
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/az0602_sheet_00002.jpg",
+    "bytes": 897659,
+    "compressed": 897659
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/az0602_sheet_00003.jpg",
+    "bytes": 806823,
+    "compressed": 806823
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/az0604_sheet_00002.jpg",
+    "bytes": 1050878,
+    "compressed": 1050878
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/az0605_sheet_00002.jpg",
+    "bytes": 514746,
+    "compressed": 514746
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ca3442_sheet_00008.jpg",
+    "bytes": 1140227,
+    "compressed": 1140227
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ca3445_sheet_00007.jpg",
+    "bytes": 652177,
+    "compressed": 652177
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ca3881_sheet_00004.jpg",
+    "bytes": 1384250,
+    "compressed": 1384250
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ca3891_sheet_00001.jpg",
+    "bytes": 662059,
+    "compressed": 662059
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ca4035_sheet_00001.jpg",
+    "bytes": 701314,
+    "compressed": 701314
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/co0475_sheet_00004.jpg",
+    "bytes": 861694,
+    "compressed": 861694
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/co0928_sheet_00002.jpg",
+    "bytes": 348285,
+    "compressed": 348285
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ct0109_sheet_00002.jpg",
+    "bytes": 696026,
+    "compressed": 696026
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ct0115_sheet_00013.jpg",
+    "bytes": 834228,
+    "compressed": 834228
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ct0137_sheet_00005.jpg",
+    "bytes": 514817,
+    "compressed": 514817
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ct0140_sheet_00001.jpg",
+    "bytes": 466103,
+    "compressed": 466103
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ct0720_sheet_00001.jpg",
+    "bytes": 514548,
+    "compressed": 514548
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ct0721_sheet_00001.jpg",
+    "bytes": 582853,
+    "compressed": 582853
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/dc0626_sheet_00002.jpg",
+    "bytes": 582937,
+    "compressed": 582937
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/dc0766_sheet_00002.jpg",
+    "bytes": 881958,
+    "compressed": 881958
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/de0014_sheet_00005.jpg",
+    "bytes": 587584,
+    "compressed": 587584
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/de0318_sheet_00002.jpg",
+    "bytes": 583842,
+    "compressed": 583842
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/fl0156_sheet_00001.jpg",
+    "bytes": 864374,
+    "compressed": 864374
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/hi0822_sheet_00014.jpg",
+    "bytes": 1142045,
+    "compressed": 1142045
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/mt0047_sheet_00002.jpg",
+    "bytes": 452075,
+    "compressed": 452075
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/mt0124_sheet_00002.jpg",
+    "bytes": 585287,
+    "compressed": 585287
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/mt0414_sheet_00004.jpg",
+    "bytes": 267701,
+    "compressed": 267701
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/mt0473_sheet_00008.jpg",
+    "bytes": 332531,
+    "compressed": 332531
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/mt0514_sheet_00005.jpg",
+    "bytes": 553405,
+    "compressed": 553405
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nc0024_sheet_00002.jpg",
+    "bytes": 575723,
+    "compressed": 575723
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nc0042_sheet_00001.jpg",
+    "bytes": 710394,
+    "compressed": 710394
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nd0030_sheet_00002.jpg",
+    "bytes": 570906,
+    "compressed": 570906
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ne0098_sheet_00001.jpg",
+    "bytes": 509488,
+    "compressed": 509488
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nh0177_sheet_00002.jpg",
+    "bytes": 384498,
+    "compressed": 384498
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nh0275_sheet_00009.jpg",
+    "bytes": 517455,
+    "compressed": 517455
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nh0300_sheet_00007.jpg",
+    "bytes": 543367,
+    "compressed": 543367
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nm0262_sheet_00001.jpg",
+    "bytes": 1117333,
+    "compressed": 1117333
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nm0300_sheet_00005.jpg",
+    "bytes": 310108,
+    "compressed": 310108
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nm0302_sheet_00001.jpg",
+    "bytes": 662194,
+    "compressed": 662194
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nm0325_sheet_00003.jpg",
+    "bytes": 624233,
+    "compressed": 624233
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nv0369_sheet_00001.jpg",
+    "bytes": 209820,
+    "compressed": 209820
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nv0390_sheet_00001.jpg",
+    "bytes": 240041,
+    "compressed": 240041
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nv0395_sheet_00001.jpg",
+    "bytes": 451560,
+    "compressed": 451560
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nv0444_sheet_00004.jpg",
+    "bytes": 325888,
+    "compressed": 325888
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/nv0474_sheet_00001.jpg",
+    "bytes": 314266,
+    "compressed": 314266
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ny2026_sheet_00006.jpg",
+    "bytes": 492677,
+    "compressed": 492677
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ny2037_sheet_00001.jpg",
+    "bytes": 630239,
+    "compressed": 630239
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ny2059_sheet_00018.jpg",
+    "bytes": 741043,
+    "compressed": 741043
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/oh0322_sheet_00002.jpg",
+    "bytes": 419238,
+    "compressed": 419238
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ok0020_sheet_00007.jpg",
+    "bytes": 831200,
+    "compressed": 831200
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ok0071_sheet_00002.jpg",
+    "bytes": 517287,
+    "compressed": 517287
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ok0082_sheet_00003.jpg",
+    "bytes": 520976,
+    "compressed": 520976
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ok0098_sheet_00004.jpg",
+    "bytes": 692663,
+    "compressed": 692663
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ok0109_sheet_00002.jpg",
+    "bytes": 1397851,
+    "compressed": 1397851
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ok0136_sheet_00001.jpg",
+    "bytes": 740677,
+    "compressed": 740677
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ok0136_sheet_00002.jpg",
+    "bytes": 918824,
+    "compressed": 918824
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/pa1770_sheet_00007.jpg",
+    "bytes": 815177,
+    "compressed": 815177
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/sc0143_sheet_00001.jpg",
+    "bytes": 848967,
+    "compressed": 848967
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/sd0400_sheet_00002.jpg",
+    "bytes": 1675017,
+    "compressed": 1675017
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/sd0401_sheet_00002.jpg",
+    "bytes": 826723,
+    "compressed": 826723
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/sd0412_sheet_00002.jpg",
+    "bytes": 726296,
+    "compressed": 726296
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/tx1051_sheet_00006.jpg",
+    "bytes": 606762,
+    "compressed": 606762
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/tx1057_sheet_00004.jpg",
+    "bytes": 862069,
+    "compressed": 862069
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/tx1059_sheet_00004.jpg",
+    "bytes": 410131,
+    "compressed": 410131
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/ut0704_sheet_00007.jpg",
+    "bytes": 477635,
+    "compressed": 477635
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/va1619_sheet_00002.jpg",
+    "bytes": 709631,
+    "compressed": 709631
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/va2044_sheet_00003.jpg",
+    "bytes": 335805,
+    "compressed": 335805
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/va2215_sheet_00001.jpg",
+    "bytes": 692708,
+    "compressed": 692708
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/va2221_sheet_00001.jpg",
+    "bytes": 714918,
+    "compressed": 714918
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/vi0026_sheet_00003.jpg",
+    "bytes": 566964,
+    "compressed": 566964
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/vi0026_sheet_00008.jpg",
+    "bytes": 478972,
+    "compressed": 478972
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/vi0063_sheet_00004.jpg",
+    "bytes": 584452,
+    "compressed": 584452
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/vi0081_sheet_00003.jpg",
+    "bytes": 460434,
+    "compressed": 460434
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/vt0013_sheet_00009.jpg",
+    "bytes": 1122538,
+    "compressed": 1122538
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/vt0123_sheet_00007.jpg",
+    "bytes": 610616,
+    "compressed": 610616
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/vt0129_sheet_00006.jpg",
+    "bytes": 681230,
+    "compressed": 681230
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/vt0134_sheet_00006.jpg",
+    "bytes": 359373,
+    "compressed": 359373
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/vt0165_sheet_00003.jpg",
+    "bytes": 410694,
+    "compressed": 410694
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/wa0441_sheet_00001.jpg",
+    "bytes": 931172,
+    "compressed": 931172
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/wi0183_sheet_00001.jpg",
+    "bytes": 949356,
+    "compressed": 949356
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/wv0368_sheet_00001.jpg",
+    "bytes": 1115803,
+    "compressed": 1115803
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/wy0044_sheet_00001.jpg",
+    "bytes": 548710,
+    "compressed": 548710
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/wy0082_sheet_00001.jpg",
+    "bytes": 846367,
+    "compressed": 846367
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/wy0091_sheet_00002.jpg",
+    "bytes": 492820,
+    "compressed": 492820
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/wy0574_sheet_00001.jpg",
+    "bytes": 528733,
+    "compressed": 528733
+  },
+  {
+    "name": "junction-dataset-preview/data/habs/wy0575_sheet_00002.jpg",
+    "bytes": 493124,
+    "compressed": 493124
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_bench/LICENSE.md",
+    "bytes": 38641,
+    "compressed": 13612
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_bench/ac20_arc.ifc",
+    "bytes": 10934237,
+    "compressed": 1748385
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_bench/digital_hub_arc.ifc",
+    "bytes": 9022255,
+    "compressed": 1702556
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_bench/duplex_arc.ifc",
+    "bytes": 1656153,
+    "compressed": 352611
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_bench/fantasy_office_building_3_arc.ifc",
+    "bytes": 9655829,
+    "compressed": 2080092
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_bench/hitos_arc.ifc",
+    "bytes": 64095402,
+    "compressed": 11448966
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/LICENSE.md",
+    "bytes": 6631,
+    "compressed": 2011
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/bsc-clinic_clinic-plumbing.ifc",
+    "bytes": 55834520,
+    "compressed": 11919356
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/bsc-esplanades_1807-ep-ar-v18.ifc",
+    "bytes": 12109172,
+    "compressed": 2613994
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/bsc-esplanades_1807-ep-ar-v18_plan-04-4-korrus.pdf",
+    "bytes": 142850,
+    "compressed": 142850
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/bsc-esplanades_1807-ep-ar-v18_plan-04-4-korrus.svg",
+    "bytes": 316844,
+    "compressed": 113195
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/bsc-molio_molio-with-uris.ifc",
+    "bytes": 73945142,
+    "compressed": 12714535
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/bsc-molio_molio-with-uris_plan-02-klder.pdf",
+    "bytes": 89412,
+    "compressed": 89412
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/bsc-molio_molio-with-uris_plan-02-klder.svg",
+    "bytes": 155904,
+    "compressed": 30063
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/kit-fzk-haus_ac20-fzk-haus_plan-02-dachgeschoss.pdf",
+    "bytes": 69074,
+    "compressed": 69074
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/kit-fzk-haus_ac20-fzk-haus_plan-02-dachgeschoss.svg",
+    "bytes": 29299,
+    "compressed": 5291
+  },
+  {
+    "name": "junction-dataset-preview/data/ifc_models/resbim-388_model.ifc",
+    "bytes": 2501,
+    "compressed": 1148
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/3_Offices/Transfer/20160912 - prepermit markup/layout 02-markups.pdf",
+    "bytes": 3187477,
+    "compressed": 3187477
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Aalseth_Residence/Models & CAD/BIM/stairs.blend.ifc",
+    "bytes": 347731,
+    "compressed": 73810
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Aalseth_Residence/Transfer/20180905 - from civil - markups/Restoration Text.pdf",
+    "bytes": 7110,
+    "compressed": 7110
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Aalseth_Residence/Transfer/20181003 - to LWRD - followup documenation/Neighbor re-grading Permssion.pdf",
+    "bytes": 239436,
+    "compressed": 239436
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Aalseth_Residence/Transfer/20190321 - to lumber yard - latest plans with door and window schedule/Sheet A600 - 3196 Aalseth Lane - Schedules.pdf",
+    "bytes": 86540,
+    "compressed": 86540
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Aalseth_Residence/Transfer/20190527 - to interior designer - backgrounds/20190527 - 3196 Aalseth Lane-Sheet - A202 - BULDING ELEVATION - WEST.dwg",
+    "bytes": 256320,
+    "compressed": 256320
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Aalseth_Residence/Transfer/20190918 - to lighting designer - backgrounds/3196 Aalseth Lane-Sheet - A301 - BUILDING SECTION.dwg",
+    "bytes": 381867,
+    "compressed": 381867
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Aalseth_Residence/Transfer/20191013 - from STRUCT - stair details/2019-022- Aalseth Residence  - Revised Framing.pdf",
+    "bytes": 62242,
+    "compressed": 62242
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Asbuilts_for_Small_Apartment/Transfer/20170906 - Land Use Application/30 day waiver - Sara Eskrich - 13th District.pdf",
+    "bytes": 167726,
+    "compressed": 167726
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Asbuilts_for_Small_Apartment/Transfer/20180326 - DWGs/335 W Lakeside St-Sheet - A202 - Elevation - East.dwg",
+    "bytes": 341919,
+    "compressed": 341919
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Models & CAD/Current Spreadsheets/Code Information.pdf",
+    "bytes": 34942,
+    "compressed": 34942
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Most Current Set/Full size sheets/A477 - 2ND FLOOR 1BD UNITS.pdf",
+    "bytes": 1145622,
+    "compressed": 1145622
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Most Current Set/Full size sheets/A700 - SCHEDULES.pdf",
+    "bytes": 642795,
+    "compressed": 642795
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Most Current Set/Full size sheets/S101 - ENLARGED PLANS.pdf",
+    "bytes": 2136629,
+    "compressed": 2136629
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Transfer/20181009 - to owner - meeting with city/20181009 - Cannery Residences.pdf",
+    "bytes": 24714165,
+    "compressed": 24714165
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Transfer/20190204 - to civil - backgrounds/Perspectives.pdf",
+    "bytes": 7632376,
+    "compressed": 7632376
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Transfer/20190219 - to civil - updated backgrounds/20190219 - 1750 Ox - 1st & 2nd Phase-Sheet - A80 - SITE PLAN.dwg",
+    "bytes": 1212581,
+    "compressed": 1212581
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Transfer/20190923 - to precast team - backgrounds/CAD backgrounds/CTR - 1st Phase - Shell-Reflected Ceiling Plan - BACKGROUND - RCP - 3RD FLOOR.dwg",
+    "bytes": 1217537,
+    "compressed": 1217537
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Transfer/20200108 - to STRUCT - review of elevator elevations/CTR - elevator elevations.pdf",
+    "bytes": 1175459,
+    "compressed": 1175459
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Transfer/20200116 - from Plumbing eng - markedup plans/20190116 - CTR - Wall Thickness - OD comments.pdf",
+    "bytes": 5912264,
+    "compressed": 5912264
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/CTR/Transfer/20200206 - from STRUCT - bearing wall schedule/bearing_wall_schedule_rev01.pdf",
+    "bytes": 28022,
+    "compressed": 28022
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Crema_Cafe/Models/pdfs/A-101 - Elevations v2.pdf",
+    "bytes": 794881,
+    "compressed": 794881
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Crema_Cafe/Models/pdfs/Print crema cafe HL 03.pdf",
+    "bytes": 63234,
+    "compressed": 63234
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Crema_Cafe/Transfer/20170427 - PDF markups to Maira/A-101 - Elevations (1).pdf",
+    "bytes": 620241,
+    "compressed": 620241
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Crema_Cafe/Transfer/20170509 - Markup to Maira/A-101 - Elevations v2.pdf",
+    "bytes": 865688,
+    "compressed": 865688
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Facilities_Building/Transfer/20181108 - to structure & MBM - for pricing/1810 S Park.ifc",
+    "bytes": 21520804,
+    "compressed": 4849978
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Facilities_Building/Transfer/20181108 - to structure & MBM - for pricing/20181108 - 1810 S Park St - drawings for pricing exercise.pdf",
+    "bytes": 10889745,
+    "compressed": 10889745
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Facilities_Building/Transfer/20190911 - to MBM - backgrounds/1810 S Park-Sheet - A003 - EXISTING SITE PLAN.dwg",
+    "bytes": 229513,
+    "compressed": 229513
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Facilities_Building/Transfer/20191011 - to Team - latest plans/1810 S Park-Sheet - A001 - SITE PLAN.dwg",
+    "bytes": 314429,
+    "compressed": 314429
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Facilities_Building/Transfer/20191011 - to Team - latest plans/1810 S Park-Sheet - A103 - ROOF PLAN.dwg",
+    "bytes": 111514,
+    "compressed": 111514
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Facilities_Building/Transfer/20191011 - to Team - latest plans/20191011 - 1810 S Park.pdf",
+    "bytes": 12538892,
+    "compressed": 12538892
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Facilities_Building/Transfer/20191029 - to Team - updated backgrounds/1810 S Park-Sheet - A301 - BUILDING SECTION.dwg",
+    "bytes": 297338,
+    "compressed": 297338
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/LICENSE.md",
+    "bytes": 38394,
+    "compressed": 6270
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Lake_Kegonsa_Home/Transfer/20150910 - DWGs to decorator/Lake_Kegonsa-Sheet - A-502 - Perspectives.dwg",
+    "bytes": 1509505,
+    "compressed": 1509505
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Lake_Kegonsa_Home/Transfer/Archive/20141014 - Stree Elevation/20141014 - 3232 Aalseth Lane - Street Elevation.pdf",
+    "bytes": 605139,
+    "compressed": 605139
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Lake_Kegonsa_Home/Transfer/Dream Kitchens_20141110_Schultz Kitchen Options.pdf",
+    "bytes": 2202834,
+    "compressed": 2202834
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Lake_Mills_Basement_Renovation/Transfer/20180816 - to owner - for review/20180816 - 705 Cherokee Path.pdf",
+    "bytes": 608395,
+    "compressed": 608395
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/LaundryMat/Transfer/20180828 - DWGs to subs/Laundry Mat-Sheet - A650 - EXISTING EQUIPMENT.dwg",
+    "bytes": 75066,
+    "compressed": 75066
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/LaundryMat/Transfer/20180919 - to owner - for review before permit/20180919 - Springhaven Laundry Mat - review before permit.pdf",
+    "bytes": 9580136,
+    "compressed": 9580136
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Oakfire_2.0/Transfer/20190612 - to civil - backgrounds/20190612 - Oakfire2-Sheet - A201 - BUILDING ELEVATIONS.dwg",
+    "bytes": 10835424,
+    "compressed": 10835424
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Open_Source_Metal_Building/Transfer/20150827 - DWGs to HVAC engineer/Open Source Metal Building_Interior-Sheet - A-101 - FLOOR PLAN - WAREHOUSE.dwg",
+    "bytes": 172567,
+    "compressed": 172567
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Schultz_Residence/Prints/stairs_head.pdf",
+    "bytes": 23828,
+    "compressed": 23828
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Screened_in_Porch/Models & CAD/BIM/Linked - CAD & Data/Site plan.dxf",
+    "bytes": 9666,
+    "compressed": 1323
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/IFC Roundtrip/FreeCAD Detail/colored_shapes.ifc",
+    "bytes": 26569,
+    "compressed": 6230
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/IFC Roundtrip/FreeCAD Detail/detail_Yorik_FreeCAD_materials.ifc",
+    "bytes": 1250123,
+    "compressed": 173992
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Models/2D/Sports Complex - 3D View - Fitness Room_1.pdf",
+    "bytes": 1278806,
+    "compressed": 1278806
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Sheets - Current Set/A-402 - Wall Sections.pdf",
+    "bytes": 682950,
+    "compressed": 682950
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Sheets - Current Set/A-602 - Section Details - Exterior Envelope.pdf",
+    "bytes": 764025,
+    "compressed": 764025
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Sheets - Current Set/A-603 - Section Details - Exterior Envelope.pdf",
+    "bytes": 838932,
+    "compressed": 838932
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Sheets - Current Set/A-701 - Restrooms.pdf",
+    "bytes": 554754,
+    "compressed": 554754
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Sheets - Current Set/A-801 - Door and Finish Schedules & Wall Types.pdf",
+    "bytes": 440698,
+    "compressed": 440698
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Sheets - Current Set/Sheet - S-300 - FOUNDATION DETAILS.pdf",
+    "bytes": 607322,
+    "compressed": 607322
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150113_Diagrammatic Site Plan/20150113_Diagrammatic Site Plan.pdf",
+    "bytes": 128765,
+    "compressed": 128765
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150218_site plan_2nd Phase_ to owner to clarification/20150218_site plan_2nd Phase.pdf",
+    "bytes": 362935,
+    "compressed": 362935
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150323 - added wrestling area/20150323 - Xcel_Floor & Site Plan.pdf",
+    "bytes": 321758,
+    "compressed": 321758
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150324 - preliminary footings/F__Documents_Dropbox_ASCONProjects_IPythonAnalyst_Drawing1 Model (1).pdf",
+    "bytes": 9773,
+    "compressed": 9773
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150401 - set for energy and daylighting analysis/Sports Complex-Sheet - A-402 - Wall Sections.dwg",
+    "bytes": 142224,
+    "compressed": 142224
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150521 - foundation questions & comments/20150521 - XSC - foundation questions & comments.pdf",
+    "bytes": 540436,
+    "compressed": 540436
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150521 - plans to Clinic architect/Xcel_Sports Complex-Sheet - A-302 - Building Sections.dwg",
+    "bytes": 1395481,
+    "compressed": 1395481
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150625 - glazing types/20150625 - XSC - glazing.pdf",
+    "bytes": 1159803,
+    "compressed": 1159803
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150720 - Door Schedule to Door Consultant/20150720 - XSC - floor plan and door schedule.pdf",
+    "bytes": 1115022,
+    "compressed": 1115022
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150803 - progress set/XCEL-Sheet - A-301 - Building Sections.dwg",
+    "bytes": 2890993,
+    "compressed": 2890993
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150814 - Issued for Permit/Wall Detail.pdf",
+    "bytes": 1600886,
+    "compressed": 1600886
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150814 - Issued for Permit/XSC - A-801 - Door and Finish Schedules & Wall Types.pdf",
+    "bytes": 456535,
+    "compressed": 456535
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150818 - updates to foundation plan/Sheet - S-101 - SCHEDULES, BASE PLATE AND PIER DETAILS.pdf",
+    "bytes": 344382,
+    "compressed": 344382
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150909 - Documents to Address Permit Comments/Xcel_Sports Complex-Sheet - A-403 - Wall Sections.dwg",
+    "bytes": 151948,
+    "compressed": 151948
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20150922 - site dimensions/20150922 - XSC - A-100.A - SITE PLAN.pdf",
+    "bytes": 673521,
+    "compressed": 673521
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20151217 - rework clinic and wrestling areas - DWGS/Xcel_Sports Complex-Sheet - A-100-A - Site Plan.dwg",
+    "bytes": 519027,
+    "compressed": 519027
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20160120 - rework clinic and wresting areas - DWGs and PDFs/XSC-Sheet - A-101-B - Enlarged First Floor Plan (East).dwg",
+    "bytes": 509168,
+    "compressed": 509168
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Sports_Complex/Transfer/_Archive/20160210 -Addendum 1/Xcel_Sports Complex-Sheet - A-100-A - Site Plan.dwg",
+    "bytes": 485047,
+    "compressed": 485047
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/ULI-44_E_Mifflin-Suite_802/Models/bad IFC models - for autopsy only/base model with wrong placements and extrusions - FreeCAD export.ifc",
+    "bytes": 1042884,
+    "compressed": 157555
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20170410 - submitted to state for early start and footing and foundation/The Downtowner - Sheet - S100 - STRUCTURE ONLY.pdf",
+    "bytes": 1951599,
+    "compressed": 1951599
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20170430 - Structural Sketches/Detail 1 - Revised.pdf",
+    "bytes": 163366,
+    "compressed": 163366
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20170503 ----- ISSUE FOR PERMIT ------/A402 - EXTERIOR DETAILS.pdf",
+    "bytes": 1408977,
+    "compressed": 1408977
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20170503 ----- ISSUE FOR PERMIT ------/P1-04 - DETAILS.pdf",
+    "bytes": 634624,
+    "compressed": 634624
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20170516 - structural review for Ryan/The Downtowner_ARCH_Exterior Details 2.pdf",
+    "bytes": 1726711,
+    "compressed": 1726711
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20170519 ----- ISSUE FOR BID & PERMIT -------/The Downtowner_ARCH - Sheet - A501 - SCHEDULES.pdf",
+    "bytes": 205884,
+    "compressed": 205884
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20170519 ----- ISSUE FOR BID & PERMIT -------/The Downtowner_ARCH - Sheet - S500 - FRAMING SCHEDULE.pdf",
+    "bytes": 216711,
+    "compressed": 216711
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20170519 ----- ISSUE FOR BID & PERMIT -------/The Downtowner_ARCH_2D and Schedules - Sheet - A500 - ADA RESTROOM & SCHEDULES.pdf",
+    "bytes": 741578,
+    "compressed": 741578
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20170519 ----- ISSUE FOR BID & PERMIT -------/The_Downtowner_PLMB_ZS - Sheet - P0-00 - PLUMBING SYMBOLS & ABBREVIATIONS.pdf",
+    "bytes": 636310,
+    "compressed": 636310
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20170827 - Details for Sheet Metal Meeting/13.pdf",
+    "bytes": 139582,
+    "compressed": 139582
+  },
+  {
+    "name": "junction-dataset-preview/data/opening_design/Vacation_Rental/Transfer/20171222 - fence design - owner review/20171222 - The Downtowner - Fence Details.pdf",
+    "bytes": 834635,
+    "compressed": 834635
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/LICENSE.md",
+    "bytes": 1148,
+    "compressed": 556
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1000_bldg2082_floor9385.dxf",
+    "bytes": 276833,
+    "compressed": 63651
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1000_bldg2082_floor9385.pdf",
+    "bytes": 73246,
+    "compressed": 73246
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1000_bldg2082_floor9385.png",
+    "bytes": 275521,
+    "compressed": 275521
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1015_bldg2113_floor9557.dxf",
+    "bytes": 680190,
+    "compressed": 118988
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1015_bldg2113_floor9557.pdf",
+    "bytes": 119775,
+    "compressed": 119775
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1015_bldg2113_floor9557.png",
+    "bytes": 428427,
+    "compressed": 428427
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1040_bldg2136_floor9659.dxf",
+    "bytes": 200797,
+    "compressed": 44120
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1040_bldg2136_floor9659.pdf",
+    "bytes": 56865,
+    "compressed": 56865
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1040_bldg2136_floor9659.png",
+    "bytes": 263834,
+    "compressed": 263834
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1047_bldg2154_floor9740.dxf",
+    "bytes": 168193,
+    "compressed": 34707
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1047_bldg2154_floor9740.pdf",
+    "bytes": 48705,
+    "compressed": 48705
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1047_bldg2154_floor9740.png",
+    "bytes": 419213,
+    "compressed": 419213
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1088_bldg2216_floor10132.dxf",
+    "bytes": 281868,
+    "compressed": 65691
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1088_bldg2216_floor10132.pdf",
+    "bytes": 69910,
+    "compressed": 69910
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1088_bldg2216_floor10132.png",
+    "bytes": 745871,
+    "compressed": 745871
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1098_bldg2234_floor10334.dxf",
+    "bytes": 354602,
+    "compressed": 57960
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1098_bldg2234_floor10334.pdf",
+    "bytes": 70375,
+    "compressed": 70375
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1098_bldg2234_floor10334.png",
+    "bytes": 242532,
+    "compressed": 242532
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1101_bldg2241_floor10275.dxf",
+    "bytes": 127983,
+    "compressed": 27005
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1101_bldg2241_floor10275.pdf",
+    "bytes": 45970,
+    "compressed": 45970
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1101_bldg2241_floor10275.png",
+    "bytes": 187258,
+    "compressed": 187258
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1102_bldg2242_floor10281.dxf",
+    "bytes": 168987,
+    "compressed": 25896
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1102_bldg2242_floor10281.pdf",
+    "bytes": 47826,
+    "compressed": 47826
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1102_bldg2242_floor10281.png",
+    "bytes": 216418,
+    "compressed": 216418
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1110_bldg2250_floor10322.dxf",
+    "bytes": 143098,
+    "compressed": 29820
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1110_bldg2250_floor10322.pdf",
+    "bytes": 44768,
+    "compressed": 44768
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1110_bldg2250_floor10322.png",
+    "bytes": 254109,
+    "compressed": 254109
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11265_bldg17059_floor45087.dxf",
+    "bytes": 174956,
+    "compressed": 28291
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11265_bldg17059_floor45087.pdf",
+    "bytes": 45709,
+    "compressed": 45709
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11265_bldg17059_floor45087.png",
+    "bytes": 202510,
+    "compressed": 202510
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1138_bldg2292_floor10584.dxf",
+    "bytes": 706561,
+    "compressed": 171340
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1138_bldg2292_floor10584.pdf",
+    "bytes": 141366,
+    "compressed": 141366
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1138_bldg2292_floor10584.png",
+    "bytes": 741909,
+    "compressed": 741909
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11692_bldg18240_floor48820.dxf",
+    "bytes": 197764,
+    "compressed": 39227
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11692_bldg18240_floor48820.pdf",
+    "bytes": 52784,
+    "compressed": 52784
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11692_bldg18240_floor48820.png",
+    "bytes": 243466,
+    "compressed": 243466
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11704_bldg18258_floor48967.dxf",
+    "bytes": 161636,
+    "compressed": 28042
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11704_bldg18258_floor48967.pdf",
+    "bytes": 44367,
+    "compressed": 44367
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11704_bldg18258_floor48967.png",
+    "bytes": 184291,
+    "compressed": 184291
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11711_bldg18268_floor48991.dxf",
+    "bytes": 169130,
+    "compressed": 33929
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11711_bldg18268_floor48991.pdf",
+    "bytes": 50782,
+    "compressed": 50782
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11711_bldg18268_floor48991.png",
+    "bytes": 213683,
+    "compressed": 213683
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11861_bldg18508_floor50415.dxf",
+    "bytes": 265199,
+    "compressed": 54134
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11861_bldg18508_floor50415.pdf",
+    "bytes": 63540,
+    "compressed": 63540
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site11861_bldg18508_floor50415.png",
+    "bytes": 384533,
+    "compressed": 384533
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site120_bldg55_floor209.dxf",
+    "bytes": 119216,
+    "compressed": 21610
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site120_bldg55_floor209.pdf",
+    "bytes": 38248,
+    "compressed": 38248
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site120_bldg55_floor209.png",
+    "bytes": 255317,
+    "compressed": 255317
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1213_bldg2383_floor48290.dxf",
+    "bytes": 386625,
+    "compressed": 70924
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1213_bldg2383_floor48290.pdf",
+    "bytes": 75018,
+    "compressed": 75018
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1213_bldg2383_floor48290.png",
+    "bytes": 485383,
+    "compressed": 485383
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site157_bldg323_floor1313.dxf",
+    "bytes": 449416,
+    "compressed": 99165
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site157_bldg323_floor1313.pdf",
+    "bytes": 94612,
+    "compressed": 94612
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site157_bldg323_floor1313.png",
+    "bytes": 430866,
+    "compressed": 430866
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1689_bldg2841_floor13117.dxf",
+    "bytes": 161867,
+    "compressed": 24832
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1689_bldg2841_floor13117.pdf",
+    "bytes": 47245,
+    "compressed": 47245
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1689_bldg2841_floor13117.png",
+    "bytes": 213075,
+    "compressed": 213075
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1869_bldg2903_floor13293.dxf",
+    "bytes": 331480,
+    "compressed": 81119
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1869_bldg2903_floor13293.pdf",
+    "bytes": 79942,
+    "compressed": 79942
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site1869_bldg2903_floor13293.png",
+    "bytes": 546707,
+    "compressed": 546707
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site208_bldg397_floor1579.dxf",
+    "bytes": 176377,
+    "compressed": 39728
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site208_bldg397_floor1579.pdf",
+    "bytes": 51833,
+    "compressed": 51833
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site208_bldg397_floor1579.png",
+    "bytes": 252522,
+    "compressed": 252522
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2146_bldg2990_floor13636.dxf",
+    "bytes": 135087,
+    "compressed": 26680
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2146_bldg2990_floor13636.pdf",
+    "bytes": 44001,
+    "compressed": 44001
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2146_bldg2990_floor13636.png",
+    "bytes": 351524,
+    "compressed": 351524
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2150_bldg3001_floor13690.dxf",
+    "bytes": 197897,
+    "compressed": 44346
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2150_bldg3001_floor13690.pdf",
+    "bytes": 54486,
+    "compressed": 54486
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2150_bldg3001_floor13690.png",
+    "bytes": 262103,
+    "compressed": 262103
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2152_bldg3002_floor13692.dxf",
+    "bytes": 103844,
+    "compressed": 15227
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2152_bldg3002_floor13692.pdf",
+    "bytes": 35790,
+    "compressed": 35790
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2152_bldg3002_floor13692.png",
+    "bytes": 126099,
+    "compressed": 126099
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2292_bldg3379_floor15050.dxf",
+    "bytes": 121377,
+    "compressed": 16327
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2292_bldg3379_floor15050.pdf",
+    "bytes": 39158,
+    "compressed": 39158
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2292_bldg3379_floor15050.png",
+    "bytes": 167309,
+    "compressed": 167309
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2293_bldg3380_floor15055.dxf",
+    "bytes": 220661,
+    "compressed": 36164
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2293_bldg3380_floor15055.pdf",
+    "bytes": 53937,
+    "compressed": 53937
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2293_bldg3380_floor15055.png",
+    "bytes": 289471,
+    "compressed": 289471
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2294_bldg3383_floor15064.dxf",
+    "bytes": 177144,
+    "compressed": 37902
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2294_bldg3383_floor15064.pdf",
+    "bytes": 51722,
+    "compressed": 51722
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site2294_bldg3383_floor15064.png",
+    "bytes": 268681,
+    "compressed": 268681
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site248_bldg456_floor1800.dxf",
+    "bytes": 240427,
+    "compressed": 38489
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site248_bldg456_floor1800.pdf",
+    "bytes": 52753,
+    "compressed": 52753
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site248_bldg456_floor1800.png",
+    "bytes": 262726,
+    "compressed": 262726
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site261_bldg473_floor1873.dxf",
+    "bytes": 345287,
+    "compressed": 80731
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site261_bldg473_floor1873.pdf",
+    "bytes": 81979,
+    "compressed": 81979
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site261_bldg473_floor1873.png",
+    "bytes": 303739,
+    "compressed": 303739
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site274_bldg500_floor1980.dxf",
+    "bytes": 177861,
+    "compressed": 27785
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site274_bldg500_floor1980.pdf",
+    "bytes": 46650,
+    "compressed": 46650
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site274_bldg500_floor1980.png",
+    "bytes": 203788,
+    "compressed": 203788
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site279_bldg514_floor2041.dxf",
+    "bytes": 168653,
+    "compressed": 25079
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site279_bldg514_floor2041.pdf",
+    "bytes": 45482,
+    "compressed": 45482
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site279_bldg514_floor2041.png",
+    "bytes": 225839,
+    "compressed": 225839
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site285_bldg527_floor51568.dxf",
+    "bytes": 236732,
+    "compressed": 49722
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site285_bldg527_floor51568.pdf",
+    "bytes": 58235,
+    "compressed": 58235
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site285_bldg527_floor51568.png",
+    "bytes": 303731,
+    "compressed": 303731
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site289_bldg536_floor2149.dxf",
+    "bytes": 318106,
+    "compressed": 68324
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site289_bldg536_floor2149.pdf",
+    "bytes": 72841,
+    "compressed": 72841
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site289_bldg536_floor2149.png",
+    "bytes": 413405,
+    "compressed": 413405
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site294_bldg554_floor2233.dxf",
+    "bytes": 246959,
+    "compressed": 53758
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site294_bldg554_floor2233.pdf",
+    "bytes": 62296,
+    "compressed": 62296
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site294_bldg554_floor2233.png",
+    "bytes": 324095,
+    "compressed": 324095
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site303_bldg598_floor2434.dxf",
+    "bytes": 173679,
+    "compressed": 37177
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site303_bldg598_floor2434.pdf",
+    "bytes": 53273,
+    "compressed": 53273
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site303_bldg598_floor2434.png",
+    "bytes": 253749,
+    "compressed": 253749
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3238_bldg4922_floor22515.dxf",
+    "bytes": 138270,
+    "compressed": 30176
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3238_bldg4922_floor22515.pdf",
+    "bytes": 48020,
+    "compressed": 48020
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3238_bldg4922_floor22515.png",
+    "bytes": 276471,
+    "compressed": 276471
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3259_bldg4943_floor22529.dxf",
+    "bytes": 110068,
+    "compressed": 21246
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3259_bldg4943_floor22529.pdf",
+    "bytes": 38932,
+    "compressed": 38932
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3259_bldg4943_floor22529.png",
+    "bytes": 185081,
+    "compressed": 185081
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3377_bldg5220_floor23409.dxf",
+    "bytes": 180390,
+    "compressed": 27854
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3377_bldg5220_floor23409.pdf",
+    "bytes": 49162,
+    "compressed": 49162
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3377_bldg5220_floor23409.png",
+    "bytes": 214916,
+    "compressed": 214916
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site339_bldg710_floor3024.dxf",
+    "bytes": 240846,
+    "compressed": 43790
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site339_bldg710_floor3024.pdf",
+    "bytes": 56112,
+    "compressed": 56112
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site339_bldg710_floor3024.png",
+    "bytes": 249730,
+    "compressed": 249730
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3421_bldg5295_floor23605.dxf",
+    "bytes": 145529,
+    "compressed": 22788
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3421_bldg5295_floor23605.pdf",
+    "bytes": 41553,
+    "compressed": 41553
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3421_bldg5295_floor23605.png",
+    "bytes": 176081,
+    "compressed": 176081
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3434_bldg5310_floor23630.dxf",
+    "bytes": 103770,
+    "compressed": 15009
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3434_bldg5310_floor23630.pdf",
+    "bytes": 36729,
+    "compressed": 36729
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3434_bldg5310_floor23630.png",
+    "bytes": 140295,
+    "compressed": 140295
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site357_bldg769_floor4266.dxf",
+    "bytes": 269373,
+    "compressed": 46114
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site357_bldg769_floor4266.pdf",
+    "bytes": 59570,
+    "compressed": 59570
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site357_bldg769_floor4266.png",
+    "bytes": 314191,
+    "compressed": 314191
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3764_bldg5789_floor24598.dxf",
+    "bytes": 221877,
+    "compressed": 37634
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3764_bldg5789_floor24598.pdf",
+    "bytes": 54909,
+    "compressed": 54909
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3764_bldg5789_floor24598.png",
+    "bytes": 304613,
+    "compressed": 304613
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site383_bldg846_floor3730.dxf",
+    "bytes": 255990,
+    "compressed": 59204
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site383_bldg846_floor3730.pdf",
+    "bytes": 65536,
+    "compressed": 65536
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site383_bldg846_floor3730.png",
+    "bytes": 342775,
+    "compressed": 342775
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3863_bldg6018_floor25218.dxf",
+    "bytes": 176617,
+    "compressed": 26973
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3863_bldg6018_floor25218.pdf",
+    "bytes": 44492,
+    "compressed": 44492
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site3863_bldg6018_floor25218.png",
+    "bytes": 188173,
+    "compressed": 188173
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4038_bldg6362_floor26166.dxf",
+    "bytes": 224624,
+    "compressed": 35991
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4038_bldg6362_floor26166.pdf",
+    "bytes": 56070,
+    "compressed": 56070
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4038_bldg6362_floor26166.png",
+    "bytes": 268084,
+    "compressed": 268084
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4085_bldg6548_floor26706.dxf",
+    "bytes": 103951,
+    "compressed": 20353
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4085_bldg6548_floor26706.pdf",
+    "bytes": 38324,
+    "compressed": 38324
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4085_bldg6548_floor26706.png",
+    "bytes": 183458,
+    "compressed": 183458
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site418_bldg1080_floor4724.dxf",
+    "bytes": 246608,
+    "compressed": 40674
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site418_bldg1080_floor4724.pdf",
+    "bytes": 55249,
+    "compressed": 55249
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site418_bldg1080_floor4724.png",
+    "bytes": 271857,
+    "compressed": 271857
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site421_bldg1097_floor4796.dxf",
+    "bytes": 231963,
+    "compressed": 38859
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site421_bldg1097_floor4796.pdf",
+    "bytes": 55941,
+    "compressed": 55941
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site421_bldg1097_floor4796.png",
+    "bytes": 277890,
+    "compressed": 277890
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4237_bldg7396_floor29509.dxf",
+    "bytes": 177363,
+    "compressed": 28040
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4237_bldg7396_floor29509.pdf",
+    "bytes": 46589,
+    "compressed": 46589
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4237_bldg7396_floor29509.png",
+    "bytes": 219375,
+    "compressed": 219375
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site424_bldg1074_floor4711.dxf",
+    "bytes": 172671,
+    "compressed": 28287
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site424_bldg1074_floor4711.pdf",
+    "bytes": 44463,
+    "compressed": 44463
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site424_bldg1074_floor4711.png",
+    "bytes": 174170,
+    "compressed": 174170
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4267_bldg7556_floor30516.dxf",
+    "bytes": 143840,
+    "compressed": 28497
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4267_bldg7556_floor30516.pdf",
+    "bytes": 48178,
+    "compressed": 48178
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site4267_bldg7556_floor30516.png",
+    "bytes": 200651,
+    "compressed": 200651
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site52_bldg298_floor1183.dxf",
+    "bytes": 204104,
+    "compressed": 45546
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site52_bldg298_floor1183.pdf",
+    "bytes": 52829,
+    "compressed": 52829
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site52_bldg298_floor1183.png",
+    "bytes": 316451,
+    "compressed": 316451
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site604_bldg1319_floor5779.dxf",
+    "bytes": 96061,
+    "compressed": 18240
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site604_bldg1319_floor5779.pdf",
+    "bytes": 35688,
+    "compressed": 35688
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site604_bldg1319_floor5779.png",
+    "bytes": 150034,
+    "compressed": 150034
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site610_bldg1324_floor50793.dxf",
+    "bytes": 180631,
+    "compressed": 35978
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site610_bldg1324_floor50793.pdf",
+    "bytes": 46184,
+    "compressed": 46184
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site610_bldg1324_floor50793.png",
+    "bytes": 258675,
+    "compressed": 258675
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site629_bldg1355_floor5906.dxf",
+    "bytes": 149985,
+    "compressed": 29815
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site629_bldg1355_floor5906.pdf",
+    "bytes": 47580,
+    "compressed": 47580
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site629_bldg1355_floor5906.png",
+    "bytes": 186482,
+    "compressed": 186482
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site644_bldg1390_floor6077.dxf",
+    "bytes": 283972,
+    "compressed": 45704
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site644_bldg1390_floor6077.pdf",
+    "bytes": 61249,
+    "compressed": 61249
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site644_bldg1390_floor6077.png",
+    "bytes": 256731,
+    "compressed": 256731
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site65_bldg3_floor5.dxf",
+    "bytes": 220636,
+    "compressed": 37134
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site65_bldg3_floor5.pdf",
+    "bytes": 50333,
+    "compressed": 50333
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site65_bldg3_floor5.png",
+    "bytes": 259768,
+    "compressed": 259768
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site719_bldg1540_floor6678.dxf",
+    "bytes": 145915,
+    "compressed": 22002
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site719_bldg1540_floor6678.pdf",
+    "bytes": 44568,
+    "compressed": 44568
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site719_bldg1540_floor6678.png",
+    "bytes": 189079,
+    "compressed": 189079
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site799_bldg1747_floor18743.dxf",
+    "bytes": 231951,
+    "compressed": 38104
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site799_bldg1747_floor18743.pdf",
+    "bytes": 52942,
+    "compressed": 52942
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site799_bldg1747_floor18743.png",
+    "bytes": 172023,
+    "compressed": 172023
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site892_bldg1902_floor8415.dxf",
+    "bytes": 107015,
+    "compressed": 14045
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site892_bldg1902_floor8415.pdf",
+    "bytes": 33787,
+    "compressed": 33787
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site892_bldg1902_floor8415.png",
+    "bytes": 140090,
+    "compressed": 140090
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site897_bldg1970_floor8690.dxf",
+    "bytes": 208457,
+    "compressed": 33821
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site897_bldg1970_floor8690.pdf",
+    "bytes": 49180,
+    "compressed": 49180
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site897_bldg1970_floor8690.png",
+    "bytes": 250698,
+    "compressed": 250698
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site926_bldg1958_floor8576.dxf",
+    "bytes": 167177,
+    "compressed": 28255
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site926_bldg1958_floor8576.pdf",
+    "bytes": 47767,
+    "compressed": 47767
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site926_bldg1958_floor8576.png",
+    "bytes": 203028,
+    "compressed": 203028
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site936_bldg1976_floor8706.dxf",
+    "bytes": 147341,
+    "compressed": 21811
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site936_bldg1976_floor8706.pdf",
+    "bytes": 42463,
+    "compressed": 42463
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site936_bldg1976_floor8706.png",
+    "bytes": 174119,
+    "compressed": 174119
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site980_bldg2055_floor9178.dxf",
+    "bytes": 121822,
+    "compressed": 18865
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site980_bldg2055_floor9178.pdf",
+    "bytes": 41381,
+    "compressed": 41381
+  },
+  {
+    "name": "junction-dataset-preview/data/swiss_dwellings/site980_bldg2055_floor9178.png",
+    "bytes": 141873,
+    "compressed": 141873
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/100075564.jpg",
+    "bytes": 282859,
+    "compressed": 282859
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/100075564.svg",
+    "bytes": 19754,
+    "compressed": 3348
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/101227816.jpg",
+    "bytes": 167804,
+    "compressed": 167804
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/101780.jpg",
+    "bytes": 105508,
+    "compressed": 105508
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/10473105.jpg",
+    "bytes": 7169,
+    "compressed": 7169
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/105408647.jpg",
+    "bytes": 255043,
+    "compressed": 255043
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/105683267.jpg",
+    "bytes": 1140605,
+    "compressed": 1140605
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/106435727.jpg",
+    "bytes": 650932,
+    "compressed": 650932
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/1074948.jpg",
+    "bytes": 182806,
+    "compressed": 182806
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/107628293.jpg",
+    "bytes": 595251,
+    "compressed": 595251
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/10874861.jpg",
+    "bytes": 57909,
+    "compressed": 57909
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/11048852.jpg",
+    "bytes": 346293,
+    "compressed": 346293
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/112837971.jpg",
+    "bytes": 1015568,
+    "compressed": 1015568
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/113086835.jpg",
+    "bytes": 221122,
+    "compressed": 221122
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/11650485.jpg",
+    "bytes": 149099,
+    "compressed": 149099
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/11716085.jpg",
+    "bytes": 36347,
+    "compressed": 36347
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/119219585.jpg",
+    "bytes": 63829,
+    "compressed": 63829
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/121498005.jpg",
+    "bytes": 448159,
+    "compressed": 448159
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/122122143.jpg",
+    "bytes": 450409,
+    "compressed": 450409
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/123134363.jpg",
+    "bytes": 1024514,
+    "compressed": 1024514
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/123738063.jpg",
+    "bytes": 924809,
+    "compressed": 924809
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/12776917.jpg",
+    "bytes": 538744,
+    "compressed": 538744
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/131049732.jpg",
+    "bytes": 76765,
+    "compressed": 76765
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/132133262.jpg",
+    "bytes": 232517,
+    "compressed": 232517
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/132133275.jpg",
+    "bytes": 261709,
+    "compressed": 261709
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/133277448.jpg",
+    "bytes": 503325,
+    "compressed": 503325
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/134695497.jpg",
+    "bytes": 599760,
+    "compressed": 599760
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/136547791.jpg",
+    "bytes": 417742,
+    "compressed": 417742
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/14524524.jpg",
+    "bytes": 62004,
+    "compressed": 62004
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/14891677.jpg",
+    "bytes": 916373,
+    "compressed": 916373
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/15625628.jpg",
+    "bytes": 66132,
+    "compressed": 66132
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/15868275.jpg",
+    "bytes": 183414,
+    "compressed": 183414
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/16235038.jpg",
+    "bytes": 39050,
+    "compressed": 39050
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/17862240.jpg",
+    "bytes": 109908,
+    "compressed": 109908
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/20918383.jpg",
+    "bytes": 606291,
+    "compressed": 606291
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/21491512.jpg",
+    "bytes": 22071,
+    "compressed": 22071
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/21872708.jpg",
+    "bytes": 896971,
+    "compressed": 896971
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/2246632.jpg",
+    "bytes": 141778,
+    "compressed": 141778
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/22921830.jpg",
+    "bytes": 213415,
+    "compressed": 213415
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/22959557.jpg",
+    "bytes": 1712,
+    "compressed": 1712
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/23385547.jpg",
+    "bytes": 180197,
+    "compressed": 180197
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/23535993.jpg",
+    "bytes": 480144,
+    "compressed": 480144
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/23640656.jpg",
+    "bytes": 94254,
+    "compressed": 94254
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/23679077.jpg",
+    "bytes": 286088,
+    "compressed": 286088
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/23820334.jpg",
+    "bytes": 600684,
+    "compressed": 600684
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/23884666.jpg",
+    "bytes": 337659,
+    "compressed": 337659
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/24224284.jpg",
+    "bytes": 197416,
+    "compressed": 197416
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/24274934.jpg",
+    "bytes": 142951,
+    "compressed": 142951
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/24274934.svg",
+    "bytes": 10287,
+    "compressed": 1803
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/24982957.jpg",
+    "bytes": 24884,
+    "compressed": 24884
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/25027362.jpg",
+    "bytes": 220378,
+    "compressed": 220378
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/25516427.jpg",
+    "bytes": 485285,
+    "compressed": 485285
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/25813369.jpg",
+    "bytes": 1130993,
+    "compressed": 1130993
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/27194348.jpg",
+    "bytes": 62280,
+    "compressed": 62280
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/2749775.jpg",
+    "bytes": 67461,
+    "compressed": 67461
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/29297468.jpg",
+    "bytes": 95245,
+    "compressed": 95245
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/29590786.jpg",
+    "bytes": 109841,
+    "compressed": 109841
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/30216750.jpg",
+    "bytes": 67804,
+    "compressed": 67804
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/30836166.jpg",
+    "bytes": 105457,
+    "compressed": 105457
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/30924008.jpg",
+    "bytes": 841806,
+    "compressed": 841806
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/3177877.jpg",
+    "bytes": 49969,
+    "compressed": 49969
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/3561257.jpg",
+    "bytes": 3191,
+    "compressed": 3191
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/36497398.jpg",
+    "bytes": 39369,
+    "compressed": 39369
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/36497398.svg",
+    "bytes": 13098,
+    "compressed": 2024
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/36531277.jpg",
+    "bytes": 1011517,
+    "compressed": 1011517
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/36599714.jpg",
+    "bytes": 47696,
+    "compressed": 47696
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/36599719.jpg",
+    "bytes": 53517,
+    "compressed": 53517
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/36895490.jpg",
+    "bytes": 404115,
+    "compressed": 404115
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/37049340.jpg",
+    "bytes": 554926,
+    "compressed": 554926
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/37052570.jpg",
+    "bytes": 73995,
+    "compressed": 73995
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/37526373.jpg",
+    "bytes": 601167,
+    "compressed": 601167
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/37529264.jpg",
+    "bytes": 446445,
+    "compressed": 446445
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/37941248.jpg",
+    "bytes": 280914,
+    "compressed": 280914
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/38636359.jpg",
+    "bytes": 571934,
+    "compressed": 571934
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/39265456.jpg",
+    "bytes": 60361,
+    "compressed": 60361
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/402171.jpg",
+    "bytes": 38132,
+    "compressed": 38132
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/4133258.jpg",
+    "bytes": 128531,
+    "compressed": 128531
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/43197995.jpg",
+    "bytes": 72682,
+    "compressed": 72682
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/44082150.jpg",
+    "bytes": 191679,
+    "compressed": 191679
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/46423714.jpg",
+    "bytes": 789968,
+    "compressed": 789968
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/4727475.jpg",
+    "bytes": 88527,
+    "compressed": 88527
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/47489452.jpg",
+    "bytes": 183624,
+    "compressed": 183624
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/48277716.jpg",
+    "bytes": 57941,
+    "compressed": 57941
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/49321150.jpg",
+    "bytes": 177888,
+    "compressed": 177888
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/49321150.svg",
+    "bytes": 130617,
+    "compressed": 16804
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/49631603.jpg",
+    "bytes": 16145,
+    "compressed": 16145
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/50454746.jpg",
+    "bytes": 59070,
+    "compressed": 59070
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/50817767.jpg",
+    "bytes": 111994,
+    "compressed": 111994
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/52072425.jpg",
+    "bytes": 154654,
+    "compressed": 154654
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/52403599.jpg",
+    "bytes": 77788,
+    "compressed": 77788
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/53253274.jpg",
+    "bytes": 256701,
+    "compressed": 256701
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/53685047.jpg",
+    "bytes": 777295,
+    "compressed": 777295
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/54047827.jpg",
+    "bytes": 133113,
+    "compressed": 133113
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/54047827.svg",
+    "bytes": 99453,
+    "compressed": 29942
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/55037145.jpg",
+    "bytes": 125662,
+    "compressed": 125662
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/55044731.jpg",
+    "bytes": 543524,
+    "compressed": 543524
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/55924048.jpg",
+    "bytes": 570016,
+    "compressed": 570016
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/58143799.jpg",
+    "bytes": 392658,
+    "compressed": 392658
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/58635678.jpg",
+    "bytes": 54635,
+    "compressed": 54635
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/59139215.jpg",
+    "bytes": 269292,
+    "compressed": 269292
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/61292129.jpg",
+    "bytes": 114746,
+    "compressed": 114746
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/61931619.jpg",
+    "bytes": 366327,
+    "compressed": 366327
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/63183749.jpg",
+    "bytes": 54356,
+    "compressed": 54356
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/6481220.jpg",
+    "bytes": 182170,
+    "compressed": 182170
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/6481231.jpg",
+    "bytes": 178087,
+    "compressed": 178087
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/6482623.jpg",
+    "bytes": 176351,
+    "compressed": 176351
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/66084118.jpg",
+    "bytes": 8665,
+    "compressed": 8665
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/66108332.jpg",
+    "bytes": 412849,
+    "compressed": 412849
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/67128939.jpg",
+    "bytes": 35633,
+    "compressed": 35633
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/67713768.jpg",
+    "bytes": 476767,
+    "compressed": 476767
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/67713768.svg",
+    "bytes": 355655,
+    "compressed": 106740
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/69827227.jpg",
+    "bytes": 682130,
+    "compressed": 682130
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/70630004.jpg",
+    "bytes": 15810,
+    "compressed": 15810
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/70630005.jpg",
+    "bytes": 20804,
+    "compressed": 20804
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/7156155.jpg",
+    "bytes": 70275,
+    "compressed": 70275
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/7156155.svg",
+    "bytes": 7867,
+    "compressed": 1337
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/7289732.jpg",
+    "bytes": 400492,
+    "compressed": 400492
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/73857029.jpg",
+    "bytes": 339546,
+    "compressed": 339546
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/8522853.jpg",
+    "bytes": 14185,
+    "compressed": 14185
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/86081952.jpg",
+    "bytes": 2453285,
+    "compressed": 2453285
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/87074491.jpg",
+    "bytes": 191476,
+    "compressed": 191476
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/8804531.jpg",
+    "bytes": 46104,
+    "compressed": 46104
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/89211056.jpg",
+    "bytes": 1131297,
+    "compressed": 1131297
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/90121860.jpg",
+    "bytes": 263481,
+    "compressed": 263481
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/903018.jpg",
+    "bytes": 77837,
+    "compressed": 77837
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/90945321.jpg",
+    "bytes": 17413,
+    "compressed": 17413
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/92457137.jpg",
+    "bytes": 252190,
+    "compressed": 252190
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/957475.jpg",
+    "bytes": 5227,
+    "compressed": 5227
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/966426.jpg",
+    "bytes": 278492,
+    "compressed": 278492
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/98203236.jpg",
+    "bytes": 248645,
+    "compressed": 248645
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/98288130.jpg",
+    "bytes": 681691,
+    "compressed": 681691
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/99238848.jpg",
+    "bytes": 59125,
+    "compressed": 59125
+  },
+  {
+    "name": "junction-dataset-preview/data/wikimedia/LICENSE.md",
+    "bytes": 41084,
+    "compressed": 13670
+  },
+  {
+    "name": "junction-dataset-preview/questions.jsonl",
+    "bytes": 1729860,
+    "compressed": 88094
+  }
+]

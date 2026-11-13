@@ -1,0 +1,68 @@
+{
+  "scope": "Preview archive inspected; full 10 GB archive and model performance not evaluated.",
+  "preview_url": "https://fwjydgxpttajiqpfmqtj.supabase.co/storage/v1/object/public/stoa-junction-2026/junction-dataset-preview.zip",
+  "files": 924,
+  "extensions": {
+    ".md": 10,
+    ".png": 306,
+    ".jpg": 374,
+    ".ifc": 14,
+    ".pdf": 123,
+    ".svg": 10,
+    ".dwg": 20,
+    ".dxf": 66,
+    ".jsonl": 1
+  },
+  "questions": 7990,
+  "question_paths": 320,
+  "question_types": {
+    "count": 6076,
+    "text": 265,
+    "area": 1599,
+    "volume": 34,
+    "length": 16
+  },
+  "question_sources": {
+    "cubicasa5k": 4270,
+    "ifc_bench": 249,
+    "ifc_models": 1049,
+    "opening_design": 64,
+    "swiss_dwellings": 2358
+  },
+  "archive_crc_check": "passed",
+  "sample_probe": {
+    "drawing": "data/swiss_dwellings/site1102_bldg2242_floor10281",
+    "dxf_units": "metres (DXF INSUNITS=6)",
+    "dxf_layers": [
+      "ROOM_OUTLINE",
+      "WALL",
+      "WINDOW",
+      "FIXTURE",
+      "UNIT_OUTLINE",
+      "DOOR",
+      "ROOM_TEXT",
+      "ANNOTATION"
+    ],
+    "pdf_words": 150,
+    "pdf_vector_paths": 268,
+    "numbered_room_polygon_matches": 21,
+    "room_5_11_area_m2": {
+      "computed": 13.62,
+      "reference": 13.62
+    },
+    "numbered_indoor_area_m2": {
+      "computed": 193.49,
+      "reference": 193.49,
+      "method": "Point-in-polygon joins of room IDs to DXF outlines; excluded the two balconies identified from PDF labels (5.01, 5.16)."
+    },
+    "pdf_printed_indoor_area_sum_m2": 190.14,
+    "limitations": "One paired sheet only; excluded balcony IDs were selected explicitly after inspecting labels. Not a general parser, not a held-out evaluation."
+  },
+  "real_sheet_probe": {
+    "drawing": "OpeningDesign Sports Complex A-701 Restrooms",
+    "pdf_words": 645,
+    "pdf_vector_paths": 23669,
+    "visual_finding": "Multiple plan, elevation and typical-detail views repeat fixtures. Visible symbol instances do not necessarily equal distinct installed objects."
+  },
+  "training_status": "No neural model trained or benchmarked; training times in the response are planning estimates."
+}
