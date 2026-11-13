@@ -18,6 +18,8 @@ Keep `.local`, `-local`, environment files, credentials and private datasets out
 
 TanStack Start/Router, React, Tailwind, shadcn/ui, TanStack Form, tRPC and Effector. Follow downward feature-slice dependencies: `routes/pages` → `features` → `entities` → `shared/components/ui`. Models belong in `model.ts`; expose read-only stores with `patronum` and intentional events/effects through `$$domain` APIs.
 
+Use [Fluid Functionalism](https://www.fluidfunctionalism.com/docs) components first; fall back to basic shadcn/ui when Fluid has no suitable component. Follow the [design and shadcn pattern](.agents/patterns/design-system.md), use the Radix flavor and preserve the application's theme and accessible behavior.
+
 Declare model events, stores, effects, derived/restored stores, then `sample` wiring and exports. Use `sample` rather than `.on`, `.watch` or `.subscribe`; use `null` for absent entities. Consume models through `useUnit`. Keep presentation components focused and props `Readonly`. Use Zod schemas and infer types instead of duplicating contracts.
 
 Renwio's typed tRPC client and Better Auth client own transport. Effector owns auth orchestration and session state. Do not import LEAF's REST/Farfetched request factory into this tRPC application. TanStack Query may cache server resources; never mirror its lifecycle into a second store without a distinct requirement.

@@ -2,7 +2,7 @@
 
 ## Rules
 
-Use function components, Readonly props and shadcn/Tailwind primitives. Keep business state in Effector. Effects synchronize external systems such as the router; do not use them for derived values. Preserve labels, keyboard operation, loading, empty and error states.
+Use function components, Readonly props and Tailwind primitives. Prefer Fluid Functionalism components, with basic shadcn/ui as the fallback; follow the [design and shadcn pattern](design-system.md). Keep business state in Effector. Effects synchronize external systems such as the router; do not use them for derived values. Preserve labels, keyboard operation, loading, empty and error states.
 
 ## Example
 

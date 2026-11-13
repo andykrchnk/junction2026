@@ -6,6 +6,7 @@ Read only the patterns relevant to the affected decisions, then inspect their ex
 - [Effector models](effector-models.md)
 - [Request ownership](request-ownership.md)
 - [React](react.md)
+- [Design and shadcn components](design-system.md)
 - [Type ownership](type-ownership.md)
 - [Zod schemas](zod-schemas.md)
 - [Hono and tRPC routes](hono-routes.md)
