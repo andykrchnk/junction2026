@@ -29,6 +29,9 @@ importers:
 
   apps/app:
     dependencies:
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@tanstack/react-form':
         specifier: ^1.28.3
         version: 1.33.5(@tanstack/react-start@1.169.5(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.19)(supports-color@7.2.0)(vite@8.3.8(@types/node@24.19.2)(jiti@2.7.0)))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -84,6 +87,9 @@ importers:
         specifier: ^4.3.6
         version: 4.6.7
     devDependencies:
+      '@repo/server':
+        specifier: workspace:*
+        version: link:../server
       '@tailwindcss/vite':
         specifier: ^4.1.0
         version: 4.3.5(vite@8.3.8(@types/node@24.19.2)(jiti@2.7.0))

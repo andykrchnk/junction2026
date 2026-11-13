@@ -1,6 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
+import { trpc } from '@/shared/trpc';
 import { FileStack, Layers3, ArrowUpRight, ScanLine } from 'lucide-react';
 
 export function DashboardPage() {
+    const { data, isPending } = useQuery(trpc.system.status.queryOptions());
     return (
         <main className="min-h-svh p-6 md:p-12">
             <header className="flex items-center gap-3 border-b pb-6">
@@ -8,7 +11,7 @@ export function DashboardPage() {
                 <span className="text-xl font-semibold tracking-tight">
                     junction<span className="text-primary">.</span>
                 </span>
-                <span className="text-muted-foreground ml-auto text-sm">Drawing workspace</span>
+                <span className="text-muted-foreground ml-auto text-sm">{data ? 'API connected' : isPending ? 'Connecting to API…' : 'API unavailable'}</span>
             </header>
             <section className="mx-auto max-w-5xl py-20">
                 <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">From drawings to decisions</p>
