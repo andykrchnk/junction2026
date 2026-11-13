@@ -36,3 +36,11 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# TanStack and local recordings
+.tanstack/
+.output/
+.env.*
+!.env.example
+artifacts/
+.railway/.state/
