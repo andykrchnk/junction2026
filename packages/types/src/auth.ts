@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { MongoIdZod } from './mongo-id';
 
 const EmailZod = z.string().trim().toLowerCase().pipe(z.email());
 export const SignInInputZod = z.object({ email: EmailZod, password: z.string().min(8, 'Use at least 8 characters.').max(128) });
 export const SignUpInputZod = SignInInputZod;
 export const UserZod = z.object({
-    id: z.string().min(1),
-    betterAuthUserId: z.string().min(1),
+    id: MongoIdZod,
+    betterAuthUserId: MongoIdZod,
     email: z.email(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
