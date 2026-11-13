@@ -7,10 +7,13 @@
     },
     "scripts": {
         "check-types": "tsc --noEmit",
-        "lint": "eslint src"
+        "lint": "eslint src",
+        "test": "bun test"
     },
     "dependencies": {
         "zod": "^4.3.6"
     },
-    "devDependencies": {}
+    "devDependencies": {
+        "@types/bun": "latest"
+    }
 }
