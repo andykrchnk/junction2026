@@ -16,10 +16,9 @@ import { DrawingProgress } from './drawing-progress';
 const questionLimit = 4000;
 
 export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previewDrawing?: Drawing }>) {
-    const { draft, error, uploading, activity, asking } = useUnit({
+    const { draft, error, activity, asking } = useUnit({
         draft: $$drawings.$draft,
         error: $$drawings.$error,
-        uploading: $$drawings.$uploading,
         activity: $$drawings.$activity,
         asking: $$drawings.$asking,
     });
