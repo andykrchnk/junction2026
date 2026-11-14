@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useState, type KeyboardEvent } from 'react';
+import { createContext, useContext, useEffect, useId, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { createShapeId, useEditor, useValue } from 'tldraw';
@@ -66,31 +66,28 @@ function DetectionSheet({ page, drawingId, model }: Readonly<{ page: PredictionP
                             const label = `${property.label}, sheet ${page.page}, model score ${Math.round(property.confidence * 100)}%`;
                             const select = () => model.selected({ page: page.page, index });
                             const common = {
-                                className: 'hover:opacity-75 focus:outline-none focus:stroke-[3]',
+                                'data-detected-object': true,
                                 role: 'button',
                                 tabIndex: 0,
                                 'aria-label': label,
                                 'aria-pressed': isSelected,
-                                onPointerDown: select,
+                                onPointerDown: (event: PointerEvent<SVGElement>) => {
+                                    if (event.button !== 0) return;
+                                    select();
+                                },
                                 onKeyDown: (event: KeyboardEvent<SVGElement>) => {
                                     if (event.key === 'Enter' || event.key === ' ') {
                                         event.preventDefault();
                                         select();
                                     }
                                 },
-                                style: { pointerEvents: 'all' as const, cursor: 'pointer' },
-                                stroke: isSelected ? '#e11d48' : colors[property.type],
-                                strokeWidth: isSelected ? 3 : 1.5,
+                                style: { pointerEvents: 'all' as const, cursor: 'pointer', color: colors[property.type] },
+                                stroke: colors[property.type],
+                                strokeWidth: 1.5,
                                 vectorEffect: 'non-scaling-stroke',
                             };
                             return property.geometry.type !== 'Point' ? (
-                                <path
-                                    key={index}
-                                    {...common}
-                                    d={polygonPath(property.geometry)}
-                                    fill={isSelected ? '#e11d4833' : `${colors[property.type]}18`}
-                                    fillRule="evenodd"
-                                >
+                                <path key={index} {...common} d={polygonPath(property.geometry)} fillRule="evenodd">
                                     <title>{label}</title>
                                 </path>
                             ) : (
@@ -100,7 +97,6 @@ function DetectionSheet({ page, drawingId, model }: Readonly<{ page: PredictionP
                                     cx={property.geometry.coordinates[0]}
                                     cy={property.geometry.coordinates[1]}
                                     r={3 / (zoom * Math.max(scaleX, scaleY))}
-                                    fill={colors.junction}
                                 >
                                     <title>{label}</title>
                                 </circle>

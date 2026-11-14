@@ -150,7 +150,12 @@ function CanvasEditor({
 }>) {
     const { resolvedTheme } = useTheme();
     const [commentsModel] = useState(() => createCommentsModel(drawing.id));
-    const { status, commentMode, openCommentId } = useUnit({ status: model.$status, commentMode: commentsModel.$mode, openCommentId: commentsModel.$openId });
+    const { status, commentMode, openCommentId, selectedObject } = useUnit({
+        status: model.$status,
+        commentMode: commentsModel.$mode,
+        openCommentId: commentsModel.$openId,
+        selectedObject: model.$selected,
+    });
     const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
     const [error, setError] = useState<string | null>(null);
     useHotkeys(
@@ -168,20 +173,25 @@ function CanvasEditor({
     useHotkeys(
         'esc',
         (event) => {
+            if (event.repeat || event.defaultPrevented) return;
+            const target = event.target instanceof Element ? event.target : null;
+            const commentUi = target?.closest('[data-comment-ui]');
+            // Portaled menus/dialogs and text editors own Escape before canvas selection.
+            if (!commentUi && target?.closest('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')) return;
+            if (openCommentId === null && target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+            event.preventDefault();
             event.stopPropagation();
-            if (event.repeat) return;
             if (openCommentId !== null) commentsModel.openChanged(null);
-            else commentsModel.modeChanged('default');
-            activeEditor?.setCurrentTool('hand');
+            else if (commentMode === 'comment') commentsModel.modeChanged('default');
+            else model.selected(null);
         },
         {
-            enabled: activeEditor !== null && (commentMode === 'comment' || openCommentId !== null),
-            preventDefault: true,
+            enabled: activeEditor !== null && (commentMode === 'comment' || openCommentId !== null || selectedObject !== null),
             enableOnFormTags: true,
             enableOnContentEditable: true,
             eventListenerOptions: { capture: true },
         },
-        [activeEditor, commentsModel, openCommentId],
+        [activeEditor, commentsModel, openCommentId, commentMode, model],
     );
     const [recoveryConflict, setRecoveryConflict] = useState(!!recovery?.document && recovery.revision !== saved.revision);
     const [assets] = useState<TLAssetStore>(() => ({
@@ -351,6 +361,7 @@ function CanvasEditor({
                     if (!(event.target instanceof Element) || event.target.closest('[data-comment-ui], input, textarea, select, [contenteditable="true"]'))
                         return;
                     if (event.button !== 0 || !activeEditor || !event.target.closest('.tl-canvas')) return;
+                    if (commentMode === 'default' && !event.target.closest('[data-detected-object]')) model.selected(null);
                     activeEditor.setCurrentTool('hand');
                     activeEditor.focus();
                     if (commentMode !== 'comment') return;
