@@ -67,7 +67,7 @@ const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
         onAnimationComplete={() => setEntered(true)}
         style={{ transformOrigin: isUser ? "bottom right" : "bottom left" }}
         className={cn(
-          "group flex max-w-[80%] flex-col gap-1.5",
+          "group flex min-w-0 max-w-[80%] flex-col gap-1.5",
           isUser ? "items-end self-end" : "items-start self-start",
           className
         )}
@@ -92,7 +92,7 @@ const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
         {children != null && children !== "" && (
           <div
             className={cn(
-              "whitespace-pre-wrap break-words",
+              "min-w-0 max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere]",
               compact ? "py-1.5" : "py-2",
               typeClass("subtitle", compact ? "compact" : "default"),
               // User keeps the bubble chrome (rounded fill + horizontal padding);

@@ -82,6 +82,7 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
                                       ? property.geometry.coordinates
                                       : null);
                             const common = {
+                                className: 'detection-target hover:opacity-75 focus:outline-none focus:stroke-[3]',
                                 'data-detected-object': true,
                                 'data-detected-type': property.type,
                                 'data-detected-page': page.page,

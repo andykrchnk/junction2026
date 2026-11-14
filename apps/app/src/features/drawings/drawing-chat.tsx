@@ -1,5 +1,11 @@
 import { layoutPages } from './layout';
-import { useEffect, useRef } from 'react';
+import { AnnotateButton, AnnotationChatNavigation } from './drawing-annotation';
+import { MessageSquare } from '@repo/design-system/lib/icons-remix';
+import { DrawingComments } from './drawing-comments';
+import type { CommentsModel } from './canvas/comments-model';
+import { useEffect, useRef, useState } from 'react';
+import { Tabs, TabsItem } from '@repo/design-system/components/ui/tabs';
+import { remixIcons } from '@repo/design-system/lib/icons-remix';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { AnimatePresence, MotionConfig } from 'motion/react';
@@ -7,6 +13,8 @@ import type { Drawing } from '@repo/types';
 import { AskUserQuestions } from '@repo/design-system/components/ui/ask-user-questions';
 import { Button } from '@repo/design-system/components/ui/button';
 import { InputMessage } from '@repo/design-system/components/ui/input-message';
+import { Badge } from '@repo/design-system/components/ui/badge';
+import { z } from 'zod';
 import { ChatMessage } from '@repo/design-system/components/ui/chat-message';
 import { trpc } from '@/shared/trpc';
 import { $$drawings } from './model';
@@ -14,8 +22,42 @@ import { DrawingActivity } from './drawing-activity';
 import { DrawingProgress } from './drawing-progress';
 
 const questionLimit = 4000;
+const annotationMarker = '\n\nSelected blueprint element (user-selected context, not verified measurements):\n';
+const annotationContextSchema = z.object({
+    blueprintId: z.string().min(1).optional(),
+    entityId: z.string().min(1).optional(),
+    sheet: z.number().int().positive(),
+    label: z.string().min(1).max(200),
+    element: z.number().int().positive(),
+    type: z.string(),
+    boundsPx: z.array(z.number()).length(4),
+    rasterWidth: z.number().positive(),
+    rasterHeight: z.number().positive(),
+});
 
-export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previewDrawing?: Drawing }>) {
+function UserQuestion({ question }: Readonly<{ question: string }>) {
+    const markerIndex = question.lastIndexOf(annotationMarker);
+    if (markerIndex < 0) return <>{question}</>;
+    let context;
+    try {
+        context = annotationContextSchema.safeParse(JSON.parse(question.slice(markerIndex + annotationMarker.length)));
+    } catch {
+        return <>{question}</>;
+    }
+    if (!context.success) return <>{question}</>;
+    return (
+        <div className="flex min-w-0 flex-col items-start gap-2 whitespace-normal">
+            <Badge color="gray" className="max-w-full">
+                <span className="truncate">
+                    Selected area · {context.data.label} · Sheet {context.data.sheet}
+                </span>
+            </Badge>
+            <div className="max-w-full whitespace-pre-wrap [overflow-wrap:anywhere]">{question.slice(0, markerIndex)}</div>
+        </div>
+    );
+}
+
+export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id: string; previewDrawing?: Drawing; commentsModel?: CommentsModel }>) {
     const { draft, error, activity, asking, outgoing, stages } = useUnit({
         outgoing: $$drawings.$outgoing,
         stages: $$drawings.$stages,
@@ -37,6 +79,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                 ? 2000
                 : false,
     });
+    const [tab, setTab] = useState<number>(0);
     const endRef = useRef<HTMLDivElement>(null);
     const submissionsRef = useRef(new Set<string>());
     useEffect(() => {
@@ -81,7 +124,23 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
     return (
         <MotionConfig reducedMotion="user">
             <section aria-label="Drawing chat" className="flex h-full min-h-0 flex-col">
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <Tabs selectedIndex={tab} onSelect={setTab} className="z-10 m-0 max-w-full shrink-0 border-b bg-card p-0">
+                    <TabsItem
+                        index={0}
+                        label="Chat"
+                        icon={remixIcons['message-circle']}
+                        className="h-10 min-w-0 flex-1 basis-0 items-center justify-center px-3 py-2"
+                    />
+                    <TabsItem index={1} label="Comments" icon={MessageSquare} className="h-10 min-w-0 flex-1 basis-0 items-center justify-center px-3 py-2" />
+                </Tabs>
+                <div hidden={tab !== 1} className="min-h-0 flex-1 overflow-y-auto">
+                    {commentsModel && !previewDrawing ? (
+                        <DrawingComments drawing={drawing} model={commentsModel} />
+                    ) : (
+                        <p className="p-4 text-sm text-muted-foreground">Sign in to add comments to a blueprint.</p>
+                    )}
+                </div>
+                <div hidden={tab !== 0} className="min-h-0 flex-1 flex-col overflow-hidden" style={{ display: tab === 0 ? 'flex' : 'none' }}>
                     <div role="log" aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto p-4">
                         <div className="flex min-h-full flex-col justify-end gap-5">
                             <DrawingProgress
@@ -107,7 +166,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                             <AnimatePresence initial={false}>
                                 {messages.flatMap((message) => [
                                     <ChatMessage key={`${message.id}-user`} from="user">
-                                        {message.question}
+                                        <UserQuestion question={message.question} />
                                     </ChatMessage>,
                                     message.answer ? (
                                         <ChatMessage key={`${message.id}-assistant`} from="assistant" className="w-full max-w-full">
@@ -177,6 +236,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                                     Retry
                                 </Button>
                             )}
+                            {commentsModel && <AnnotationChatNavigation model={commentsModel} onSelectChat={setTab} />}
                             <div ref={endRef} />
                         </div>
                     </div>
@@ -216,6 +276,14 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                                 showQueue={false}
                                 placeholder="Message…"
                                 sendLabel="Send message"
+                                rightSlot={
+                                    commentsModel && (
+                                        <AnnotateButton
+                                            model={commentsModel}
+                                            disabled={!layoutPages(drawing.blueprints).some((page) => page.detectedProperties.length)}
+                                        />
+                                    )
+                                }
                                 minRows={1}
                                 maxRows={6}
                                 disabled={!drawing.blueprints.length || busy || !!pending || asking}

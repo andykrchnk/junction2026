@@ -17,6 +17,8 @@ const CommentBaseZod = z.object({
     source: z.enum(['user', 'ppm']),
     type: z.enum(['annotation', 'comment']),
     createdAt: z.string(),
+    number: z.number().int().positive().optional(),
+    author: z.object({ id: z.string(), name: z.string() }).optional(),
     deletedAt: z.string().nullable().optional(),
 });
 

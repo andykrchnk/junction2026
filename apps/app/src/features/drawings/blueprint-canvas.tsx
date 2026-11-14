@@ -1,4 +1,5 @@
 import { layoutPages } from './layout';
+import { AnnotationPicker } from './drawing-annotation';
 import { useEffect, useState, useId, useRef, useMemo } from 'react';
 import { useUnit } from 'effector-react';
 import { useReducedMotion } from 'motion/react';
@@ -27,7 +28,7 @@ import { type CanvasModel, type LoadedCanvas } from './canvas/model';
 import { readLocal, ViewZod, writeLocal } from './canvas-storage';
 import { DetectionCanvasLayer, DetectionContext } from './detection-layer';
 import { CommentsContext, CommentCanvasLayer } from './comment-layer';
-import { createCommentsModel } from './canvas/comments-model';
+import { type CommentsModel } from './canvas/comments-model';
 import 'tldraw/tldraw.css';
 import './blueprint-canvas.css';
 
@@ -170,6 +171,7 @@ function CanvasEditor({
     recovery,
     storageKey,
     model,
+    commentsModel,
 }: Readonly<{
     drawing: Drawing;
     pages: BlueprintPage[];
@@ -177,9 +179,9 @@ function CanvasEditor({
     recovery: LoadedCanvas | null;
     storageKey: string;
     model: CanvasModel;
+    commentsModel: CommentsModel;
 }>) {
     const { resolvedTheme } = useTheme();
-    const [commentsModel] = useState(() => createCommentsModel(drawing.id));
     const { status, commentMode, openCommentId, selectedObject } = useUnit({
         status: model.$status,
         commentMode: commentsModel.$mode,
@@ -238,17 +240,17 @@ function CanvasEditor({
             const commentUi = target?.closest('[data-comment-ui]');
             // Portaled menus/dialogs and text editors own Escape before canvas selection.
             if (!commentUi && target?.closest('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')) return;
-            if (openCommentId === null && target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+            if (!commentUi && openCommentId === null && target?.closest('input, textarea, select, [contenteditable="true"]')) return;
             if (openCommentId === null && commentMode === 'default' && document.querySelector('[data-detected-object][data-popup-open]')) return;
             event.preventDefault();
             event.stopPropagation();
             selectionGesture.current = null;
             if (openCommentId !== null) commentsModel.openChanged(null);
-            else if (commentMode === 'comment') commentsModel.modeChanged('default');
+            else if (commentMode !== 'default') commentsModel.modeChanged('default');
             else model.selected(null);
         },
         {
-            enabled: activeEditor !== null && (commentMode === 'comment' || openCommentId !== null || selectedObject !== null),
+            enabled: activeEditor !== null && (commentMode !== 'default' || openCommentId !== null || selectedObject !== null),
             enableOnFormTags: true,
             enableOnContentEditable: true,
             eventListenerOptions: { capture: true },
@@ -471,7 +473,7 @@ function CanvasEditor({
                         gesture?.pointerId === event.pointerId &&
                         !gesture.moved &&
                         Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) <= 5 &&
-                        commentMode === 'default'
+                        commentMode !== 'comment'
                     )
                         if (event.shiftKey && gesture.object) model.selectionToggled(gesture.object);
                         else model.selected(gesture.object);
@@ -512,12 +514,18 @@ function CanvasEditor({
                         />
                     </DetectionContext.Provider>
                 </CommentsContext.Provider>
+                {activeEditor && <AnnotationPicker drawing={drawing} canvas={model} model={commentsModel} editor={activeEditor} />}
             </div>
         </div>
     );
 }
 
-function SavedBlueprintCanvas({ drawing, userId, model }: Readonly<{ drawing: Drawing; userId: string; model: CanvasModel }>) {
+function SavedBlueprintCanvas({
+    drawing,
+    userId,
+    model,
+    commentsModel,
+}: Readonly<{ drawing: Drawing; userId: string; model: CanvasModel; commentsModel: CommentsModel }>) {
     const storageKey = `junction:canvas:${userId}:${drawing.id}`;
     const [preparation, setPreparation] = useState<Preparation>({ type: 'loading' });
     useEffect(() => {
@@ -555,7 +563,7 @@ function SavedBlueprintCanvas({ drawing, userId, model }: Readonly<{ drawing: Dr
                 {preparation.message} Reopen the drawing to retry.
             </p>
         );
-    return <CanvasEditor key={drawing.id} drawing={drawing} model={model} storageKey={storageKey} {...preparation} />;
+    return <CanvasEditor commentsModel={commentsModel} key={drawing.id} drawing={drawing} model={model} storageKey={storageKey} {...preparation} />;
 }
 
 function EmptyBlueprintCanvas({ locked }: Readonly<{ locked: boolean }>) {
@@ -586,7 +594,7 @@ function EmptyBlueprintCanvas({ locked }: Readonly<{ locked: boolean }>) {
     );
 }
 
-export default function BlueprintCanvas(props: Readonly<{ drawing: Drawing; userId: string; model: CanvasModel }>) {
+export default function BlueprintCanvas(props: Readonly<{ drawing: Drawing; userId: string; model: CanvasModel; commentsModel: CommentsModel }>) {
     return props.drawing.blueprints.some((blueprint) => !blueprint.attachment.hiddenFromCanvas) ? (
         <SavedBlueprintCanvas key={props.drawing.blueprints.map((item) => item.id).join(',')} {...props} />
     ) : (

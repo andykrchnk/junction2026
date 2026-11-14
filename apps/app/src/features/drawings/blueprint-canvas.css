@@ -83,3 +83,16 @@
 [data-comment-mode='comment'] .tl-canvas [data-comment-ui] textarea {
     cursor: text !important;
 }
+
+[data-comment-mode='annotate'] .tl-canvas,
+[data-comment-mode='annotate'] .tl-canvas * {
+    cursor: crosshair !important;
+}
+
+/* Preview the selectable geometry without changing the committed selection. */
+[data-comment-mode='annotate'] .detection-target:is(:hover, :focus-visible) {
+    stroke: var(--primary);
+    stroke-width: 3px;
+    fill: color-mix(in srgb, var(--primary) 20%, transparent);
+    opacity: 1;
+}
