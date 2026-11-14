@@ -1,21 +1,14 @@
 import sharp from 'sharp';
 import { ObjectId } from 'mongodb';
-import type { DrawingCovers, PredictionPage } from '@repo/types';
+import { getDetectedObjectColor, type DrawingCovers, type PredictionPage } from '@repo/types';
 
 const WIDTH = 1200;
 const HEIGHT = 800;
 const PADDING = 28;
 const GAP = 24;
-// Mid-tone strokes remain visible against both pure white and pure black.
-const PALETTE = ['#d1495b', '#238879', '#8260bc', '#b07b20', '#387ac2', '#b14d90'];
 type StoreDrawingCoversParams = Readonly<{ drawingId: string; ownerId: string; pages: PredictionPage[] }>;
 type DeleteDrawingCoversParams = Readonly<{ drawingId: string; ownerId: string; covers: DrawingCovers }>;
 type UploadCoverParams = Readonly<{ drawingId: string; ownerId: string; theme: 'light' | 'dark'; bytes: Buffer }>;
-
-function color(label: string) {
-    const hash = Array.from(label).reduce((value, character) => (Math.imul(value, 31) + character.charCodeAt(0)) >>> 0, 0);
-    return PALETTE[hash % PALETTE.length];
-}
 
 export async function renderDrawingCovers(pages: PredictionPage[]): Promise<{ light: Buffer; dark: Buffer }> {
     if (pages.length === 0) throw new Error('Cannot render drawing covers without detected pages.');
@@ -73,7 +66,7 @@ export async function renderDrawingCovers(pages: PredictionPage[]): Promise<{ li
                             ),
                         )
                         .join(' ');
-                    return [`<path d="${path}" fill="none" stroke="${color(room.label)}" stroke-width="4" stroke-linejoin="round"/>`];
+                    return [`<path d="${path}" fill="none" stroke="${getDetectedObjectColor(room)}" stroke-width="4" stroke-linejoin="round"/>`];
                 })
                 .join('');
         })
