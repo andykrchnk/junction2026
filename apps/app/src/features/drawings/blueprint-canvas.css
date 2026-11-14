@@ -1,3 +1,23 @@
+[data-detected-object] {
+    fill: none;
+    stroke-dasharray: 6 4;
+}
+
+[data-detected-object]:hover,
+[data-detected-object]:focus-visible {
+    fill: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+[data-detected-object][aria-pressed='true'] {
+    fill: color-mix(in srgb, currentColor 30%, transparent);
+    stroke-dasharray: none;
+}
+
+[data-detected-object]:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+}
+
 [data-comment-mode='comment'] .tl-canvas,
 [data-comment-mode='comment'] .tl-canvas * {
     cursor:
