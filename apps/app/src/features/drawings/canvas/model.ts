@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { CanvasStateZod, type CanvasState, type SaveCanvas, type DetectedProperty } from '@repo/types';
 import { trpcClient } from '@/shared/trpc';
 import { readLocal, writeLocal } from '../canvas-storage';
+import { $$drawings } from '../model';
 
 type SaveStatus = { type: 'saved' | 'dirty' | 'saving' } | { type: 'error'; message: string; conflict: boolean };
 const VisibilityZod = z.object({ room: z.boolean(), icon: z.boolean(), junction: z.boolean() });
@@ -28,6 +29,12 @@ export function createCanvasModel(id: string, storageKey: string) {
 
     sample({ clock: loadFx.doneData, fn: (state) => state.document, target: $document });
     sample({ clock: selected, target: $selected });
+    sample({
+        clock: $$drawings.canvasSelectionRequested,
+        filter: (selection) => selection.id === id,
+        fn: ({ page, index }) => ({ page, index }),
+        target: selected,
+    });
     sample({
         clock: visibilityChanged,
         source: $visibility,

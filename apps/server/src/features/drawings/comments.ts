@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
-    AttachmentZod,
+    BlueprintZod,
     CommentCreateZod,
     CommentDeleteZod,
     CommentDeleteResultZod,
@@ -12,17 +12,14 @@ import {
     type ScanComment,
 } from '@repo/types';
 import { db } from '../../db';
-import { StoredScanCommentsZod } from '../../db/drawing.schema';
 import { protectedProcedure, t } from '../../shared/trpc';
-import { ensurePpmComments } from './ppm-comments';
 
 const MAX_COMMENTS = 500;
-const CommentSnapshotZod = z.object({ attachment: AttachmentZod.nullable(), comments: StoredScanCommentsZod });
-
 async function getSnapshot(params: Readonly<{ drawingId: string; ownerId: string }>) {
-    const doc = await db.drawing.DrawingModel.findOne({ _id: params.drawingId, ownerId: params.ownerId }).select('attachment comments').lean();
+    const doc = await db.drawing.DrawingModel.findOne({ _id: params.drawingId, ownerId: params.ownerId }).select('blueprints').lean();
     if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Drawing not found.' });
-    return CommentSnapshotZod.parse(doc);
+    const { blueprints } = z.object({ blueprints: z.array(BlueprintZod) }).parse(doc);
+    return { blueprints, comments: blueprints.flatMap((blueprint) => blueprint.comments) };
 }
 
 function existingComment(params: Readonly<{ comments: ScanComment[]; input: CommentCreate }>) {
@@ -49,38 +46,24 @@ export const scanCommentsRouter = t.router({
         .output(ScanCommentsZod)
         .query(async ({ input, ctx }) => {
             const params = { drawingId: input.drawingId, ownerId: ctx.user.id };
-            await ensurePpmComments(params);
             return (await getSnapshot(params)).comments.filter((comment) => comment.deletedAt == null);
         }),
     delete: protectedProcedure
         .input(CommentDeleteZod)
         .output(CommentDeleteResultZod)
         .mutation(async ({ input, ctx }) => {
-            const saved = await db.drawing.DrawingModel.updateOne(
+            const snapshot = await getSnapshot({ drawingId: input.drawingId, ownerId: ctx.user.id });
+            const existing = snapshot.comments.find((comment) => comment.id === input.id);
+            if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'Comment not found.' });
+            if (existing.type !== 'comment' || existing.source !== 'user')
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Annotations cannot be deleted.' });
+            await db.drawing.DrawingModel.updateOne(
+                { _id: input.drawingId, ownerId: ctx.user.id },
                 {
-                    _id: input.drawingId,
-                    ownerId: ctx.user.id,
-                    comments: {
-                        $elemMatch: {
-                            id: input.id,
-                            deletedAt: null,
-                            source: 'user',
-                            $or: [{ type: 'comment' }, { type: { $exists: false } }, { type: { $in: ['point', 'area', 'entity'] } }],
-                        },
-                    },
+                    $set: { 'blueprints.$[].comments.$[comment].deletedAt': existing.deletedAt ?? new Date().toISOString() },
                 },
-                { $set: { 'comments.$.deletedAt': new Date().toISOString() } },
+                { arrayFilters: [{ 'comment.id': input.id, 'comment.source': 'user', 'comment.type': 'comment' }] },
             );
-            if (!saved.matchedCount) {
-                const snapshot = await getSnapshot({ drawingId: input.drawingId, ownerId: ctx.user.id });
-                const existing = snapshot.comments.find((comment) => comment.id === input.id);
-                if (!existing) {
-                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Comment not found.' });
-                }
-                if (existing.type !== 'comment' || existing.source !== 'user') {
-                    throw new TRPCError({ code: 'FORBIDDEN', message: 'Annotations cannot be deleted.' });
-                }
-            }
             return { id: input.id };
         }),
     create: protectedProcedure
@@ -91,9 +74,8 @@ export const scanCommentsRouter = t.router({
             const snapshot = await getSnapshot(params);
             const existing = existingComment({ comments: snapshot.comments, input });
             if (existing) return existing;
-            if (!snapshot.attachment || input.page > snapshot.attachment.pages) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Choose a page in the uploaded blueprint.' });
-            }
+            const blueprint = snapshot.blueprints.find((item) => item.pageNumber === input.page);
+            if (!blueprint) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Choose a page in the uploaded blueprint.' });
             const comment = ScanCommentZod.parse({
                 id: input.id,
                 page: input.page,
@@ -109,20 +91,17 @@ export const scanCommentsRouter = t.router({
                 {
                     _id: input.drawingId,
                     ownerId: ctx.user.id,
-                    'attachment.pages': { $gte: input.page },
-                    'comments.id': { $ne: input.id },
-                    $expr: { $lt: [{ $size: { $ifNull: ['$comments', []] } }, MAX_COMMENTS] },
+                    'blueprints.id': blueprint.id,
+                    'blueprints.comments.id': { $ne: input.id },
+                    $expr: { $lt: [{ $sum: { $map: { input: '$blueprints', as: 'blueprint', in: { $size: '$$blueprint.comments' } } } }, MAX_COMMENTS] },
                 },
-                { $push: { comments: comment } },
+                { $push: { 'blueprints.$.comments': comment } },
             );
             if (saved.matchedCount) return comment;
-
             const latest = await getSnapshot(params);
             const duplicate = existingComment({ comments: latest.comments, input });
             if (duplicate) return duplicate;
-            if (latest.comments.length >= MAX_COMMENTS) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'This drawing supports up to 500 comments.' });
-            }
+            if (latest.comments.length >= MAX_COMMENTS) throw new TRPCError({ code: 'BAD_REQUEST', message: 'This drawing supports up to 500 comments.' });
             throw new TRPCError({ code: 'CONFLICT', message: 'The blueprint changed. Reopen the drawing and retry.' });
         }),
 });

@@ -22,7 +22,7 @@ drawingFiles.post('/:id/file', async (c) => {
     if (!id.success) return c.json({ message: 'Drawing not found.' }, 404);
     const doc = await db.drawing.DrawingModel.findOne({ _id: id.data, ownerId }).lean();
     if (!doc) return c.json({ message: 'Drawing not found.' }, 404);
-    if (doc.attachment) return c.json({ message: 'Create a new session for another blueprint.' }, 409);
+    if (db.drawing.DrawingDto(doc).blueprints.length) return c.json({ message: 'Create a new session for another blueprint.' }, 409);
     const body = await c.req.parseBody();
     const file = body.file;
     if (!(file instanceof File) || file.size === 0 || file.size > MAX_FILE_BYTES) return c.json({ message: 'Choose a file between 1 byte and 20 MB.' }, 400);
@@ -48,11 +48,11 @@ drawingFiles.post('/:id/file', async (c) => {
             upload.end(bytes);
         });
         const result = await db.drawing.DrawingModel.updateOne(
-            { _id: id.data, ownerId, attachment: null },
+            { _id: id.data, ownerId, 'blueprints.0': { $exists: false } },
             {
                 $set: {
                     title: name,
-                    attachment: { id: upload.id.toHexString(), name, mediaType: mediaType.data, pages },
+                    blueprints: db.drawing.createBlueprints({ id: upload.id.toHexString(), name, mediaType: mediaType.data, pages }),
                 },
             },
         );
@@ -71,7 +71,7 @@ drawingFiles.get('/:id/file', async (c) => {
     if (!id.success) return c.json({ message: 'Drawing not found.' }, 404);
     const doc = await db.drawing.DrawingModel.findOne({ _id: id.data, ownerId: c.get('user')?.id }).lean();
     if (!doc) return c.json({ message: 'Drawing not found.' }, 404);
-    const { attachment } = db.drawing.DrawingDto(doc);
+    const attachment = db.drawing.DrawingDto(doc).blueprints[0]?.attachment;
     if (!attachment) return c.json({ message: 'Upload a blueprint first.' }, 404);
     const chunks: Buffer[] = [];
     for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(attachment.id))) chunks.push(Buffer.from(chunk));
@@ -88,10 +88,10 @@ drawingFiles.get('/:id/predictions/:page/image', async (c) => {
     if (!id.success || !page.success) return c.json({ message: 'Prediction page not found.' }, 404);
     const doc = await db.drawing.DrawingModel.findOne({ _id: id.data, ownerId: c.get('user')?.id }).lean();
     if (!doc) return c.json({ message: 'Prediction page not found.' }, 404);
-    const raster = db.drawing.DrawingDto(doc).detection?.pages.find((item) => item.page === page.data);
+    const raster = db.drawing.DrawingDto(doc).blueprints.find((item) => item.pageNumber === page.data)?.raster;
     if (!raster) return c.json({ message: 'Prediction page not found.' }, 404);
     const chunks: Buffer[] = [];
-    for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(raster.rasterFileId))) chunks.push(Buffer.from(chunk));
+    for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(raster.fileId))) chunks.push(Buffer.from(chunk));
     c.header('Content-Type', 'image/png');
     c.header('Cache-Control', 'private, no-store');
     return c.body(Buffer.concat(chunks));

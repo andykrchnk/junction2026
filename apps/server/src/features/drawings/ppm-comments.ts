@@ -1,7 +1,4 @@
-import { ScanCommentZod, PpmCandidatesZod, type PpmCandidates } from '@repo/types';
-import { z } from 'zod';
-import { db } from '../../db';
-import { StoredScanCommentsZod } from '../../db/drawing.schema';
+import { ScanCommentZod, type PpmCandidates } from '@repo/types';
 
 export function createPpmComments(params: Readonly<{ candidates: PpmCandidates; createdAt: string }>) {
     return params.candidates.map((candidate, index) =>
@@ -24,26 +21,5 @@ export function createPpmComments(params: Readonly<{ candidates: PpmCandidates; 
                 .join('\n\n')
                 .slice(0, 6000),
         }),
-    );
-}
-
-// Materialize findings saved before comments existed, without replacing user comments.
-export async function ensurePpmComments(params: Readonly<{ drawingId: string; ownerId: string }>) {
-    const doc = await db.drawing.DrawingModel.findOne({ _id: params.drawingId, ownerId: params.ownerId }).select('ppmCandidates comments').lean();
-    if (!doc) return;
-    const snapshot = z.object({ ppmCandidates: PpmCandidatesZod.nullable().default(null), comments: StoredScanCommentsZod }).parse(doc);
-    if (!snapshot.ppmCandidates?.length) return;
-    const existing = new Set(snapshot.comments.map((comment) => comment.id));
-    const missing = createPpmComments({ candidates: snapshot.ppmCandidates, createdAt: new Date().toISOString() }).filter(
-        (comment) => !existing.has(comment.id),
-    );
-    if (!missing.length) return;
-    await db.drawing.DrawingModel.bulkWrite(
-        missing.map((comment) => ({
-            updateOne: {
-                filter: { _id: params.drawingId, ownerId: params.ownerId, 'comments.id': { $ne: comment.id } },
-                update: { $push: { comments: comment } },
-            },
-        })),
     );
 }

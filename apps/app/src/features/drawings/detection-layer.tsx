@@ -1,3 +1,4 @@
+import { layoutPages } from './layout';
 import { createContext, useContext, useEffect, useId, useState, type KeyboardEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
@@ -149,15 +150,15 @@ export function DetectionCanvasLayer() {
                 aria-label="Detected geometry"
                 style={{ position: 'absolute', top: 0, left: 0, width: 1, height: 1, overflow: 'visible', pointerEvents: 'none', zIndex: 100000 }}
             >
-                {Array.from({ length: context.drawing.attachment?.pages ?? 0 }, (_, index) => (
+                {context.drawing.blueprints.map((blueprint) => (
                     <SheetName
-                        key={index}
-                        page={index + 1}
-                        name={context.drawing.attachment?.name ?? 'Blueprint'}
-                        multiple={(context.drawing.attachment?.pages ?? 0) > 1}
+                        key={blueprint.id}
+                        page={blueprint.pageNumber}
+                        name={blueprint.attachment.name}
+                        multiple={context.drawing.blueprints.length > 1}
                     />
                 ))}
-                {context.drawing.detection?.pages.map((page) => (
+                {layoutPages(context.drawing.blueprints).map((page) => (
                     <DetectionSheet key={page.rasterFileId} page={page} drawing={context.drawing} model={context.model} />
                 ))}
             </svg>
@@ -167,9 +168,11 @@ export function DetectionCanvasLayer() {
 
 export function DetectionControls({ drawing, model }: Readonly<{ drawing: Drawing; model: CanvasModel }>) {
     const { selected, visibility } = useUnit({ selected: model.$selected, visibility: model.$visibility });
-    const detectedPage = drawing.detection?.pages.find((page) => page.page === selected?.page);
+    const detectedPage = layoutPages(drawing.blueprints).find((page) => page.page === selected?.page);
     const property = selected ? detectedPage?.detectedProperties[selected.index] : null;
-    if (!drawing.detection?.pages.some((page) => page.detectedProperties.length)) return null;
+    const blueprint = drawing.blueprints.find((item) => item.pageNumber === selected?.page);
+    const entity = [...(blueprint?.layout?.rooms ?? []), ...(blueprint?.layout?.fixtures ?? [])].find((item) => item.id === property?.id);
+    if (!layoutPages(drawing.blueprints).some((page) => page.detectedProperties.length)) return null;
     return (
         <>
             <div aria-label="Geometry layers" className="absolute top-3 left-3 z-[300] flex flex-wrap gap-3 rounded border bg-card px-3 py-2 text-xs shadow-sm">
@@ -189,6 +192,7 @@ export function DetectionControls({ drawing, model }: Readonly<{ drawing: Drawin
                 <div className="absolute top-3 right-3 z-[300] max-w-[calc(100%-1.5rem)]">
                     <DetectedElementCard
                         label={property.label}
+                        enrichment={entity?.enrichment}
                         area={formatDetectedObjectArea({ drawing, page: detectedPage, property, index: selected.index })}
                         onClose={() => model.selected(null)}
                     />

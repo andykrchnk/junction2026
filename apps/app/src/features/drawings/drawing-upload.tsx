@@ -80,7 +80,7 @@ export function DrawingUpload({ disabled, uploading, onUpload }: DrawingUploadPa
 }
 
 export function DrawingAttachmentThumbnail({ drawing }: Readonly<{ drawing: Drawing }>) {
-    const attachment = drawing.attachment;
+    const attachment = drawing.blueprints[0]?.attachment;
     const name = attachment?.name;
     const mediaType = attachment?.mediaType;
     const { data, isError } = useQuery({

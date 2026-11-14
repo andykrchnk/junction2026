@@ -1,3 +1,4 @@
+import { layoutPages } from './layout';
 import { createContext, useContext, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
@@ -29,11 +30,9 @@ function commentPoint(params: { comment: ScanComment; drawing: Drawing }) {
     if (comment.application === 'area') {
         return { x: (comment.boundaries.left + comment.boundaries.right) / 2, y: (comment.boundaries.top + comment.boundaries.bottom) / 2 };
     }
-    const page = drawing.detection?.pages.find((candidate) => candidate.page === comment.page);
-    const property = page?.detectedProperties.find((candidate, index) =>
-        candidate.type === 'room'
-            ? comment.roomId === `${comment.page}:room:${index}`
-            : candidate.type === 'icon' && comment.fixtureId === `${comment.page}:fixture:${index}`,
+    const page = layoutPages(drawing.blueprints).find((candidate) => candidate.page === comment.page);
+    const property = page?.detectedProperties.find((candidate) =>
+        candidate.type === 'room' ? comment.roomId === candidate.id : candidate.type === 'icon' && comment.fixtureId === candidate.id,
     );
     if (!page || !property) return null;
     // Without a supplied centroid/bounds, anchor to a real exterior vertex.
@@ -61,15 +60,16 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
     });
     const { data: comments = [], error: loadError } = useQuery({
         ...trpc.drawings.comments.list.queryOptions({ drawingId: drawing.id }),
-        initialData: drawing.comments,
+        initialData: drawing.blueprints.flatMap((blueprint) => blueprint.comments),
     });
     const persistedCommentIds = JSON.stringify(
-        drawing.comments
-            ?.filter((comment) => !comment.deletedAt)
+        drawing.blueprints
+            .flatMap((blueprint) => blueprint.comments)
+            .filter((comment) => !comment.deletedAt)
             .map((comment) => comment.id)
             .sort() ?? [],
     );
-    const ppmComplete = drawing.ppmCandidates !== null && drawing.ppmCandidates !== undefined;
+    const ppmComplete = drawing.blueprints.every((blueprint) => blueprint.ppmCandidates !== null);
     useEffect(() => {
         void queryClient.invalidateQueries(trpc.drawings.comments.list.queryFilter({ drawingId: drawing.id }));
     }, [drawing.id, persistedCommentIds, ppmComplete]);
