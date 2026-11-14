@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react';
 import type { IconComponent, IconName } from '@repo/design-system/lib/icon-context';
 import {
     RiAddLine,
+    RiCrosshair2Line,
     RiArrowDownLine,
     RiArrowDownSLine,
     RiArrowLeftLine,
@@ -183,3 +184,5 @@ export const XIcon = X;
 export const CheckIcon = Check;
 export const ChevronRightIcon = remix(RiArrowRightSLine);
 export const CircleIcon = remix(RiCircleLine);
+
+export const Crosshair = remix(RiCrosshair2Line);

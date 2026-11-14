@@ -17,7 +17,3 @@ export function formatDetectedObjectArea({ drawing, page, property }: ObjectTool
         ? `${hasPrintedArea ? '' : '≈'}${area.toLocaleString('en-US', { maximumSignificantDigits: 4 })} m²`
         : 'Area unavailable';
 }
-
-export function formatDetectedObjectTooltip(params: ObjectTooltipParams): string {
-    return `${params.property.label}, ${formatDetectedObjectArea(params)}, ${params.property.confidence.toFixed(2)}`;
-}
