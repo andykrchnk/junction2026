@@ -13,7 +13,8 @@ export function AuthHero() {
             preset: mesh,
             clear: copyRef.current,
             charset: ' .:-=+YCIFSA#@',
-            ink: 'var(--primary)',
+            ink: '#FF3C00',
+            accent: '#FF3C00',
             opacity: 0.9,
             cellSize: 12,
         });
