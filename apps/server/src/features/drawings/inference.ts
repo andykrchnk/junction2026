@@ -64,6 +64,10 @@ export async function predictRaster(
                     throw new InferenceError('This page is not a readable technical drawing.', undefined, rejection);
                 if (response.status === 422 && rejection === 'unsupported_piping_electrical')
                     throw new InferenceError('Piping and electrical pages are not supported yet.', undefined, rejection);
+                if (rejection === 'slab_boundaries_unresolved') throw new Error('The inference service could not resolve usable slab boundaries.');
+                if (rejection === 'classification_unavailable') throw new Error('The inference drawing classifier is unavailable. Retry later.');
+                if (rejection === 'slab_verification_unavailable') throw new Error('The inference slab verifier is unavailable. Retry later.');
+                if (rejection === 'slab_extraction_failed') throw new Error('The inference slab extraction failed. Retry later.');
                 if (response.status === 401) throw new Error('Inference authentication failed. Check the server configuration.');
                 if (response.status === 503) throw new InferenceError('The inference service is busy. Retry detection shortly.', undefined, null, true);
                 if ([413, 415, 422].includes(response.status)) throw new Error('The inference service cannot process this image or its size.');
@@ -76,7 +80,7 @@ export async function predictRaster(
             const degraded = (response.headers.get('X-Processing-Degraded') ?? '')
                 .split(',')
                 .map((stage) => stage.trim())
-                .filter((stage) => ['ocr', 'gemini', 'verification_limit'].includes(stage));
+                .filter((stage) => ['ocr', 'gemini', 'verification_limit', 'slab_review_required'].includes(stage));
             return { raw, detectedProperties: layoutProperties(raw), degraded };
         }
         throw new InferenceError('The inference service is busy. Retry detection shortly.', undefined, null, true);

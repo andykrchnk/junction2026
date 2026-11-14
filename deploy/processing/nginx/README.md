@@ -31,8 +31,8 @@ Optionally set `CERTBOT_EMAIL` when running setup; otherwise registration omits
 email. Certificates and account keys stay in `/etc/letsencrypt`, outside Git.
 
 After issuance, HTTP redirects to HTTPS. Uploads allow 26 MiB including multipart
-overhead; application limits still apply. Proxy timeouts allow the pipeline's
-180-second deadline. Nginx does not retry inference POST requests. Access logs
+overhead; application limits still apply. Proxy timeouts allow up to 600 seconds for classification, slab selection/review
+and annotation checks. Room verification retains its 180-second scheduling window. Nginx does not retry inference POST requests. Access logs
 exclude query strings, body data and authentication headers.
 
 This is host provisioning, separate from application releases. Docker deployment

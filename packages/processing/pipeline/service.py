@@ -17,6 +17,7 @@ from config import Settings
 from pipeline import process
 from schemas import ProcessingResponse
 from clients.workers import WorkerFailure
+from stages.classify import ProcessingRejection
 
 MAX_BYTES = 25 * 1024 * 1024
 MAX_PIXELS = 40_000_000
@@ -151,6 +152,8 @@ async def processing(
                 result, degraded = await run_in_threadpool(
                     process, raster, encoded, request.app.state.settings
                 )
+            except ProcessingRejection as exc:
+                raise HTTPException(exc.status, {"code": exc.code, "message": exc.message}, headers={"X-Processing-Error": exc.code})
             except WorkerFailure:
                 raise HTTPException(
                     502, "Geometry worker unavailable or returned invalid data"

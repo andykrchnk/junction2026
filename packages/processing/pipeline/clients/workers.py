@@ -6,10 +6,10 @@ class WorkerFailure(Exception):
     pass
 
 
-def predict(url, key, image, model):
+def predict(url, key, image, model, timeout=180):
     try:
         with httpx.Client(
-            timeout=httpx.Timeout(180, connect=10), follow_redirects=False
+            timeout=httpx.Timeout(timeout, connect=10), follow_redirects=False
         ) as client:
             response = client.post(
                 url.rstrip("/") + "/v1/predictions",

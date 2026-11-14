@@ -25,9 +25,27 @@ const FixtureMeasurementsZod = z
         height: LengthMeasurementZod.nullable().default(null),
     })
     .strict();
+export const ProcessingSlabZod = z
+    .object({
+        id: z.string().min(1),
+        class: z.literal('Slab'),
+        geometry: ProcessingGeometryZod,
+        measurements: z
+            .object({
+                thickness: z
+                    .object({ value: z.number().finite().positive(), unit: z.enum(['mm', 'cm', 'm', 'ft', 'in']).nullable() })
+                    .strict()
+                    .nullable(),
+            })
+            .strict(),
+        thickness_annotation: z.string().nullable(),
+        needs_review: z.literal(true),
+    })
+    .strict();
 export const ProcessingPredictionZod = z
     .object({
         coordinate_system: z.literal('image_pixels'),
+        slabs: z.array(ProcessingSlabZod).default([]),
         image: z.object({ width: z.number().int().positive(), height: z.number().int().positive() }).strict(),
         rooms: z.array(
             z
@@ -84,7 +102,7 @@ export const ProcessingPredictionZod = z
     })
     .strict()
     .superRefine((prediction, ctx) => {
-        const objects = [...prediction.rooms, ...prediction.fixtures];
+        const objects = [...prediction.rooms, ...prediction.fixtures, ...prediction.slabs];
         if (new Set(objects.map((object) => object.id)).size !== objects.length) {
             ctx.addIssue({ code: 'custom', message: 'Duplicate processing object IDs.' });
         }

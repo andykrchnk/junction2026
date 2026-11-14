@@ -172,6 +172,7 @@ export function layoutFromPrediction(page: PredictionPage, degraded: string[] = 
     return {
         revision: page.rasterFileId,
         summary: '',
+        slabs: page.raw.slabs,
         rooms: page.raw.rooms.map((room) => LayoutRoomZod.parse({ ...room, enrichment: { type: 'pending' } })),
         fixtures: page.raw.fixtures.map(({ room_ids, ...fixture }) =>
             LayoutFixtureZod.parse({ ...fixture, roomIds: room_ids, enrichment: { type: 'pending' } }),

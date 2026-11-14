@@ -13,6 +13,7 @@ class Settings:
     legacy_url: str
     artifact_dir: Path
     model: str = "gemini-decision-1"
+    slab_model: str = "gemini-3.1-pro-preview"
     max_targets: int = 500
     concurrency: int = 15
     gemini_workers: int = 8

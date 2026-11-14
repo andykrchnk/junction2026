@@ -9,6 +9,7 @@ from stages.prepare import targets, context, image_part, room_fixture_context
 from stages.verify import verify
 from stages.resolve import apply
 from stages.normalize import normalize
+from stages.classify import classify
 
 
 def process(image, image_bytes, settings):
@@ -31,6 +32,12 @@ def process(image, image_bytes, settings):
                 })
             )
 
+    with timed("classification"):
+        drawing_type = classify(image, settings, directory)
+    if drawing_type == "foundation_slab":
+        from stages.slabs import process_slabs
+        with timed("slabs"):
+            return process_slabs(image, settings, directory)
     degraded = set()
     with timed("geometry"):
         geometry = predict(

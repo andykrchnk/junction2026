@@ -246,3 +246,47 @@ remain printed OCR labels or null; a relabelled room uses its Decisions class sc
 Balcony requires supporting label or architectural context; other or unspecified
 outdoor regions remain Outdoor. Relabelling does not recover missing balcony
 boundaries or expand room geometry.
+
+## Drawing routing and experimental slabs
+
+Before geometry/OCR inference, the Gemini Decisions model ranks architectural,
+foundation_slab, piping_electrical, generic and trash categories using an overview
+and four source tiles. The full ranking stays private. Architectural and generic
+readable drawings use the existing room/fixture pipeline. Dedicated piping and
+electrical sheets return 422 with `unsupported_piping_electrical`; unusable inputs
+return 422 with `unusable_drawing`. Classification failures return 502 and do not
+fall through to inference. Structured errors contain `detail.code`, `detail.message`
+and an `X-Processing-Error` header. Existing authentication and image limits apply.
+The legacy `/v1/predictions` endpoint remains a direct worker proxy.
+
+Foundation/slab sheets bypass CubiCasa. Long horizontal/vertical lines produce at
+most 120 closed candidates on a raster capped at 2048 pixels per side, mapped back
+to original-image coordinates. Gemini 3.1 Pro Preview chooses candidate IDs and
+bounded unions; a second call reviews the assembled outlines. A final Decisions
+pass rejects non-slab surfaces (such as dimension boxes) and independently checks
+note association. Surface and note selections require at least 0.8 model support;
+these experimental abstention thresholds are not calibrated correctness probabilities.
+Lower-support surfaces are withheld and uncertain thickness stays null. Verifier failure returns 502 rather than unverified output. No model vertices or
+manually supplied regions are used. Invalid, disconnected, out-of-bounds and
+substantially overlapping selections are discarded. No usable result returns 422.
+Each VLM call has a 120-second I/O timeout; four overlapping source tiles use
+20-second OCR timeouts to discover thickness notes before selection. Up to eight
+final Decisions checks use the existing bounded concurrency and 30-second timeout. Consumer and Nginx defaults allow 600 seconds (existing environment and
+server configuration overrides must be updated when deploying).
+
+Responses include `slabs` (empty for room/fixture results). Slab results have empty
+`rooms`/`fixtures`. Each slab has id, class Slab, original-image geometry,
+measurements.thickness, thickness_annotation and needs_review=true. Thickness is
+returned only from an OCR thickness-before-SLAB note explicitly selected by Gemini
+from a bounded note catalog; unknown units remain null. Unverified thickness/annotations remain null.
+No confidence score is invented. These are experimental gross outlines: trenches
+and holes are not subtracted; internal-line artifacts and missing coverage remain
+possible. `X-Processing-Degraded: slab_review_required` makes this explicit.
+The consumer validates and preserves slabs in its layout and raw source; existing
+room/fixture visualization and entity enrichment do not yet render/enrich slabs.
+Private artifacts retain rankings, candidates, selection/review responses, OCR,
+final predictions and a slab overlay. Upload contents are never instructions.
+
+Routing preserves the shared `PIPELINE_GEMINI_WORKERS` budget for classification,
+slab selection/review and Decisions verification. The backend queue lock covers
+the configured inference timeout plus two minutes for stage and lease cleanup.

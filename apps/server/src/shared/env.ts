@@ -18,7 +18,7 @@ const EnvZod = z
                 .regex(/^[\x20-\x7e]+$/)
                 .optional(),
         ),
-        INFERENCE_TIMEOUT_MS: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().int().min(5000).max(240000).default(240000)),
+        INFERENCE_TIMEOUT_MS: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().int().min(5000).max(600000).default(600000)),
         DRAWING_PROCESSING_CONCURRENCY: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().int().min(1).max(32).default(15)),
         DRAWING_OPENAI_CONCURRENCY: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().int().min(1).max(64).default(18)),
         DRAWING_ENTITY_CONCURRENCY: z.preprocess((value) => (value === '' ? undefined : value), z.coerce.number().int().min(1).max(12).default(6)),
