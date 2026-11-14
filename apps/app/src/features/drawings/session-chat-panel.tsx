@@ -23,9 +23,11 @@ export function SessionChatPanel({ drawing, previewDrawing }: Readonly<{ drawing
     const [collapsed, setCollapsed] = useState(false);
     const [width, setWidth] = useState(360);
     const [editing, setEditing] = useState(false);
-    const [title, setTitle] = useState(drawing.title);
+    const [localSaved, setLocalSaved] = useState<Pick<Drawing, 'title' | 'updatedAt'> | null>(null);
+    const saved = previewDrawing && localSaved ? localSaved : drawing;
+    const title = saved.title;
+    const savedAt = saved.updatedAt;
     const [draft, setDraft] = useState(drawing.title);
-    const [savedAt, setSavedAt] = useState(drawing.updatedAt);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     async function save() {
@@ -43,8 +45,7 @@ export function SessionChatPanel({ drawing, previewDrawing }: Readonly<{ drawing
         setError('');
         try {
             const result = previewDrawing ? { title: next, updatedAt: new Date().toISOString() } : await $$drawings.renameFx({ id: drawing.id, title: next });
-            setTitle(result.title);
-            setSavedAt(result.updatedAt);
+            if (previewDrawing) setLocalSaved({ title: result.title, updatedAt: result.updatedAt });
             setEditing(false);
         } catch (cause) {
             setError(cause instanceof Error ? cause.message : 'Could not save. Please retry.');

@@ -266,7 +266,7 @@ export function SessionWorkshop({
     if (official && screen === 'session' && active?.status === 'New') {
         return (
             <div className="flex h-svh flex-col overflow-hidden">
-                <AppHeader onSignOut={onSignOut} />
+                <AppHeader onSignOut={onSignOut} onHome={() => setScreen('home')} />
                 <div className="flex min-h-0 flex-1">
                     <WorkspacePanels
                         id={String(active.id).padStart(24, '0')}
