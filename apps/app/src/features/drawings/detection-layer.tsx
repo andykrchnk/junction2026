@@ -151,7 +151,7 @@ export function DetectionControls({ drawing, model }: Readonly<{ drawing: Drawin
             {property && (
                 <section
                     aria-label="Detected element properties"
-                    className="absolute bottom-3 left-3 z-[300] max-w-[calc(100%-1.5rem)] rounded border bg-card p-3 text-xs shadow-sm"
+                    className="absolute top-3 right-3 z-[300] max-w-[calc(100%-1.5rem)] rounded border bg-card p-3 text-xs shadow-sm"
                 >
                     <div className="flex items-center justify-between gap-5">
                         <span className="font-medium">

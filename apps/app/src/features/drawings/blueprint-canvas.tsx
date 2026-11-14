@@ -35,6 +35,10 @@ function CanvasLayers() {
     );
 }
 
+function CanvasBackground() {
+    return <div className="tl-background" style={{ backgroundColor: 'var(--background)' }} />;
+}
+
 function SquareGrid({ x, y, z, size }: TLGridProps) {
     const id = useId();
     const spacing = size * z * Math.pow(2, Math.ceil(Math.log2(16 / (size * z))));
@@ -386,7 +390,7 @@ function CanvasEditor({
                             initialState="hand"
                             licenseKey={config.TLDRAW_LICENSE_KEY}
                             options={{ maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
-                            components={{ OnTheCanvas: CanvasLayers, Grid: SquareGrid }}
+                            components={{ OnTheCanvas: CanvasLayers, Grid: SquareGrid, Background: CanvasBackground }}
                         />
                     </DetectionContext.Provider>
                 </CommentsContext.Provider>
@@ -447,7 +451,7 @@ function EmptyBlueprintCanvas() {
     return (
         <Tldraw
             hideUi
-            components={{ Grid: SquareGrid }}
+            components={{ Grid: SquareGrid, Background: CanvasBackground }}
             initialState="hand"
             licenseKey={config.TLDRAW_LICENSE_KEY}
             options={{ maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}

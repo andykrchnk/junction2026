@@ -77,7 +77,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
     return (
         <MotionConfig reducedMotion="user">
             <section aria-label="Drawing chat" className="flex h-full min-h-0 flex-col">
-                <Tabs selectedIndex={tab} onSelect={setTab} className="shrink-0 border-b px-0 py-2">
+                <Tabs selectedIndex={tab} onSelect={setTab} className="shrink-0 border-b p-0">
                     <TabsItem index={0} label="Chat" icon={remixIcons['message-circle']} />
                     <TabsItem index={1} label="Uploads" icon={FileStack} />
                 </Tabs>
