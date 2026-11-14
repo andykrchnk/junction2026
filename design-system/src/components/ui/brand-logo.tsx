@@ -6,9 +6,9 @@ export function BrandLogo({ className = "" }: Readonly<{ className?: string }>) 
     <span
       role="img"
       aria-label="Pirtoa"
-      className={`inline-block h-8 w-[113.6px] shrink-0 bg-current ${className}`}
+      className={`inline-block h-8 aspect-[872/260] shrink-0 bg-current ${className}`}
       style={{
-        maskImage: `url(${logoUrl})`,
+        maskImage: `url(${JSON.stringify(logoUrl)})`,
         maskSize: "contain",
         maskRepeat: "no-repeat",
         maskPosition: "center",
