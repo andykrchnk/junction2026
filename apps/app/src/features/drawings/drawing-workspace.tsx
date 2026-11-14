@@ -1,6 +1,7 @@
 import { SessionChatPanel } from './session-chat-panel';
-import type { Drawing } from '@repo/types';
-import { lazy, Suspense, useEffect, useState, useRef } from 'react';
+import { MAX_FILE_BYTES, type Drawing } from '@repo/types';
+import { useDropzone } from 'react-dropzone';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { FileText, Upload } from '@repo/design-system/lib/icons-remix';
@@ -21,7 +22,6 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         initialData: previewDrawing,
         refetchInterval: (query) => (query.state.data?.detection?.status === 'processing' ? 2000 : false),
     });
-    const picker = useRef<HTMLInputElement>(null);
     const [localFile, setLocalFile] = useState<File | null>(null);
     const [localUrl, setLocalUrl] = useState('');
     const [uploadError, setUploadError] = useState('');
@@ -33,10 +33,6 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         return () => URL.revokeObjectURL(url);
     }, [localFile]);
     function upload(file: File) {
-        if (!['application/pdf', 'image/png', 'image/jpeg'].includes(file.type) || !file.size || file.size > 20 * 1024 * 1024) {
-            setUploadError('Choose a PDF, PNG or JPG up to 20 MB.');
-            return;
-        }
         setUploadError('');
         if (previewDrawing) setLocalFile(file);
         else
@@ -44,6 +40,19 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                 .uploadFx({ id, file })
                 .catch((error: unknown) => setUploadError(error instanceof Error ? error.message : 'Upload failed. Please retry.'));
     }
+    const { getRootProps, getInputProps, open } = useDropzone({
+        accept: { 'application/pdf': ['.pdf'], 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'] },
+        multiple: false,
+        minSize: 1,
+        maxSize: MAX_FILE_BYTES,
+        disabled: uploading || Boolean(drawing?.attachment),
+        noClick: true,
+        noKeyboard: true,
+        onDropAccepted: (files) => {
+            if (files[0]) upload(files[0]);
+        },
+        onDropRejected: () => setUploadError('Choose one PDF, PNG or JPG between 1 byte and 20 MB.'),
+    });
     if (isPending)
         return (
             <p role="status" className="p-6 text-sm">
@@ -67,14 +76,7 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
             <BlueprintCanvas drawing={drawing} userId={userId} />
         </Suspense>
     ) : (
-        <div
-            className="flex h-full items-center justify-center p-8 text-center"
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => {
-                event.preventDefault();
-                if (!uploading && event.dataTransfer.files[0]) upload(event.dataTransfer.files[0]);
-            }}
-        >
+        <div className="flex h-full items-center justify-center p-8 text-center" {...getRootProps()}>
             {localUrl ? (
                 <div className="flex h-full w-full flex-col gap-3">
                     <p className="text-xs text-muted-foreground">{localFile?.name} · Local preview, not analyzed</p>
@@ -89,25 +91,13 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                     <FileText size={48} className="mx-auto mb-6 text-muted-foreground" aria-hidden />
                     <h2 className="text-xl font-medium">Upload your first blueprint</h2>
                     <p className="mt-3 text-sm text-muted-foreground">Drop a floor plan here, or choose a file to get started.</p>
-                    <Button className="mt-6" leadingIcon={Upload} loading={uploading} onClick={() => picker.current?.click()}>
+                    <Button className="mt-6" leadingIcon={Upload} loading={uploading} onClick={open}>
                         Upload floor plan
                     </Button>
                     <p className="mt-4 text-xs text-muted-foreground">PDF, PNG or JPG · Up to 20 MB</p>
                 </div>
             )}
-            <input
-                ref={picker}
-                type="file"
-                className="sr-only"
-                tabIndex={-1}
-                aria-label="Upload floor plan"
-                accept="application/pdf,image/png,image/jpeg"
-                disabled={uploading}
-                onChange={(event) => {
-                    if (event.currentTarget.files?.[0]) upload(event.currentTarget.files[0]);
-                    event.currentTarget.value = '';
-                }}
-            />
+            <input {...getInputProps({ 'aria-label': 'Upload floor plan' })} />
             {uploadError && (
                 <p role="alert" className="mt-4 text-sm text-destructive">
                     {uploadError}
