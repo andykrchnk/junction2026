@@ -1,3 +1,4 @@
+import { WorkspacePanels } from '@/features/drawings/drawing-workspace';
 import { SessionLayouts, layoutDirections, OFFICIAL_TABLE_VARIANT } from '@/components/session-dashboard/session-layouts';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Plus, Upload, FileText, Check, X, ScanLine } from '@repo/design-system/lib/icons-remix';
@@ -191,6 +192,20 @@ export function SessionWorkshop({
         setScreen('upload');
     }
     function start() {
+        if (official) {
+            const session: Session = {
+                id: Date.now(),
+                name: 'Untitled session',
+                file: '',
+                status: 'New',
+                rooms: 0,
+                documentCount: 0,
+                createdAt: new Date().toISOString(),
+            };
+            setSessions((current) => [session, ...current]);
+            open(session);
+            return;
+        }
         setFile(null);
         setName('');
         setError('');
@@ -247,6 +262,33 @@ export function SessionWorkshop({
             </Button>
         </div>
     );
+    if (official && screen === 'session' && active?.status === 'New') {
+        return (
+            <div className="flex min-h-svh">
+                <aside className="bg-card w-64 shrink-0 border-r p-5">
+                    <Button variant="ghost" leadingIcon={ArrowLeft} onClick={() => setScreen('home')}>
+                        Your sessions
+                    </Button>
+                </aside>
+                <WorkspacePanels
+                    id={String(active.id).padStart(24, '0')}
+                    userId="local-preview"
+                    previewDrawing={{
+                        id: String(active.id).padStart(24, '0'),
+                        title: active.name,
+                        updatedAt: active.createdAt ?? '',
+                        status: 'empty',
+                        attachment: null,
+                        analysis: null,
+                        detection: null,
+                        messages: [],
+                        busy: false,
+                        error: null,
+                    }}
+                />
+            </div>
+        );
+    }
     return (
         <div className={`pw-root ${official ? 'pw-official' : ''}`}>
             {(!official || tableExperiment) && (

@@ -1,3 +1,4 @@
+import type { Drawing } from '@repo/types';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
@@ -15,13 +16,15 @@ const LayoutZod = z
     .object({ canvas: z.number().min(40).max(80), chat: z.number().min(20).max(60) })
     .refine((layout) => Math.abs(layout.canvas + layout.chat - 100) < 1);
 
-function WorkspacePanels({ id, userId }: Readonly<{ id: string; userId: string }>) {
+export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: string; userId: string; previewDrawing?: Drawing }>) {
     const {
         data: drawing,
         isPending,
         error,
     } = useQuery({
         ...trpc.drawings.get.queryOptions({ id }),
+        enabled: !previewDrawing,
+        initialData: previewDrawing,
         refetchInterval: (query) => (query.state.data?.detection?.status === 'processing' ? 2000 : false),
     });
     const layoutKey = `junction:workspace:${userId}:${id}:layout`;
@@ -115,7 +118,7 @@ function WorkspacePanels({ id, userId }: Readonly<{ id: string; userId: string }
                     className="workspace-divider w-1 shrink-0 bg-border transition-colors hover:bg-primary focus-visible:bg-primary focus-visible:outline-none"
                 />
                 <Panel id="chat" defaultSize="30%" minSize="20%" maxSize="60%" className="workspace-chat min-w-0 bg-background">
-                    <DrawingChat id={id} />
+                    <DrawingChat id={id} previewDrawing={previewDrawing} />
                 </Panel>
             </Group>
         </section>

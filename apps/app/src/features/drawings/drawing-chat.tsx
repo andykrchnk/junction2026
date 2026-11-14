@@ -1,3 +1,4 @@
+import type { Drawing } from '@repo/types';
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
@@ -15,7 +16,7 @@ import { DrawingProgress } from './drawing-progress';
 
 const questionLimit = 4000;
 
-export function DrawingChat({ id }: Readonly<{ id: string }>) {
+export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previewDrawing?: Drawing }>) {
     const { draft, error, uploading, activity, asking } = useUnit({
         draft: $$drawings.$draft,
         error: $$drawings.$error,
@@ -29,6 +30,8 @@ export function DrawingChat({ id }: Readonly<{ id: string }>) {
         error: loadError,
     } = useQuery({
         ...trpc.drawings.get.queryOptions({ id }),
+        enabled: !previewDrawing,
+        initialData: previewDrawing,
         refetchInterval: (query) => (query.state.data?.busy || query.state.data?.detection?.status === 'processing' || (activity[id] ?? 0) > 0 ? 2000 : false),
     });
     const endRef = useRef<HTMLDivElement>(null);
