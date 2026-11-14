@@ -28,6 +28,11 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
             },
         },
         onSubmit: async ({ value }) => {
+            if (import.meta.env.DEV && mode === 'sign-in' && value.email === 'demo@pirto.local' && value.password === 'Preview2026!') {
+                sessionStorage.setItem('pirto-design-preview', 'active');
+                await navigate({ to: '/ui-preview' });
+                return;
+            }
             try {
                 if (mode === 'register') await $$user.signUpFx(value);
                 else await $$user.signInFx(value);
@@ -47,11 +52,6 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
                     <Link to="/login" className="mb-10 flex w-fit items-center text-white">
                         <BrandLogo />
                     </Link>
-                    {import.meta.env.DEV && (
-                        <Link to="/ui-preview" className="mb-6 block text-sm text-primary underline underline-offset-4">
-                            Open dashboard design preview
-                        </Link>
-                    )}
                     <h1 className="text-3xl font-medium tracking-tight">{mode === 'register' ? 'Start with a clearer view.' : 'Welcome back.'}</h1>
                     <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
                         {mode === 'register' ? 'Create an account to access your workspace.' : 'Sign in to continue to your workspace.'}

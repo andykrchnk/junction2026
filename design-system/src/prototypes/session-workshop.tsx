@@ -1,4 +1,4 @@
-import { SessionLayouts, layoutDirections } from './session-layouts';
+import { SessionLayouts, layoutDirections } from '../components/session-dashboard/session-layouts';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Plus, Upload, FileText, Check, X, ScanLine } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -94,7 +94,11 @@ function Plan({ selected = -1, onSelect, small = false }: Readonly<{ selected?: 
     );
 }
 
-export function SessionWorkshop({ initialVariant = 0 }: Readonly<{ initialVariant?: number }>) {
+export function SessionWorkshop({
+    initialVariant = 0,
+    official = false,
+    onSignOut,
+}: Readonly<{ initialVariant?: number; official?: boolean; onSignOut?: () => void }>) {
     const [variant, setVariant] = useState(initialVariant);
     const [sessions, setSessions] = useState<Session[]>(examples);
     const [screen, setScreen] = useState<'home' | 'upload' | 'scan' | 'review' | 'session'>('home');
@@ -213,47 +217,51 @@ export function SessionWorkshop({ initialVariant = 0 }: Readonly<{ initialVarian
         </div>
     );
     return (
-        <div className="pw-root">
-            <header className="pw-workshop">
-                <div>
-                    <span className="pw-kicker">DESIGN EXPLORATION</span>
-                    <strong>Session dashboards</strong>
-                </div>
-                <nav aria-label="Dashboard iterations">
-                    {directions.map((d, i) => (
+        <div className={`pw-root ${official ? 'pw-official' : ''}`}>
+            {!official && (
+                <>
+                    <header className="pw-workshop">
+                        <div>
+                            <span className="pw-kicker">DESIGN EXPLORATION</span>
+                            <strong>Session dashboards</strong>
+                        </div>
+                        <nav aria-label="Dashboard iterations">
+                            {directions.map((d, i) => (
+                                <Button
+                                    key={d.name}
+                                    variant={variant === i ? 'secondary' : 'ghost'}
+                                    aria-pressed={variant === i}
+                                    onClick={() => {
+                                        setVariant(i);
+                                        setScreen('home');
+                                    }}
+                                >
+                                    {i + 1}
+                                    <span className="pw-tab-label" style={{ marginLeft: 8 }}>
+                                        {d.short}
+                                    </span>
+                                </Button>
+                            ))}
+                        </nav>
                         <Button
-                            key={d.name}
-                            variant={variant === i ? 'secondary' : 'ghost'}
-                            aria-pressed={variant === i}
+                            variant="tertiary"
                             onClick={() => {
-                                setVariant(i);
+                                setSessions(sessions.length ? [] : examples);
                                 setScreen('home');
                             }}
                         >
-                            {i + 1}
-                            <span className="pw-tab-label" style={{ marginLeft: 8 }}>
-                                {d.short}
-                            </span>
+                            {sessions.length ? 'Show empty state' : 'Load sample sessions'}
                         </Button>
-                    ))}
-                </nav>
-                <Button
-                    variant="tertiary"
-                    onClick={() => {
-                        setSessions(sessions.length ? [] : examples);
-                        setScreen('home');
-                    }}
-                >
-                    {sessions.length ? 'Show empty state' : 'Load sample sessions'}
-                </Button>
-            </header>
-            <div className="pw-notice">
-                <span>
-                    {String(variant + 1).padStart(2, '0')} / {directions[variant].name}
-                </span>
-                <span>{directions[variant].note}</span>
-                <span>Prototype · Simulated analysis · Files stay in this browser</span>
-            </div>
+                    </header>
+                    <div className="pw-notice">
+                        <span>
+                            {String(variant + 1).padStart(2, '0')} / {directions[variant].name}
+                        </span>
+                        <span>{directions[variant].note}</span>
+                        <span>Prototype · Simulated analysis · Files stay in this browser</span>
+                    </div>
+                </>
+            )}
             <input
                 ref={picker}
                 className="sr-only"
@@ -269,7 +277,8 @@ export function SessionWorkshop({ initialVariant = 0 }: Readonly<{ initialVarian
                 <div className="pw-content">
                     {screen === 'home' ? (
                         <SessionLayouts
-                            variant={variant}
+                            variant={official ? 0 : variant}
+                            onSignOut={onSignOut}
                             sessions={sessions}
                             onNew={start}
                             onOpen={(session) => {

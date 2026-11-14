@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Plus, ChevronDown, ArrowUpRight, FileText } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { BrandLogo } from '../components/ui/brand-logo';
-import { DropdownMenu, DropdownTrigger, DropdownContent } from '../components/ui/dropdown';
-import { MenuItem } from '../components/ui/menu-item';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table';
+import { Button } from '../ui/button';
+import { BrandLogo } from '../ui/brand-logo';
+import { DropdownMenu, DropdownTrigger, DropdownContent } from '../ui/dropdown';
+import { MenuItem } from '../ui/menu-item';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui/table';
 import { ViewSwitch } from './view-switch';
 import './session-layouts.css';
 
-type PreviewSession = { id: number; name: string; file: string; status: string; rooms: number };
+type PreviewSession = { id: number; name: string; file: string; status: string; rooms?: number };
 const sortLabels = ['Recently added', 'Name A–Z', 'Name Z–A', 'Room count'];
 export const layoutDirections = [
     { name: 'Balanced', short: 'Balanced', note: 'Three generous cards with an understated frame.' },
@@ -41,12 +41,29 @@ export function SessionLayouts({
     sessions,
     onNew,
     onOpen,
-}: Readonly<{ variant: number; sessions: PreviewSession[]; onNew: () => void; onOpen: (session: PreviewSession) => void }>) {
+    accountName = 'Oscar',
+    onSignOut,
+    pending = false,
+    loading = false,
+    sample = true,
+    error,
+}: Readonly<{
+    variant: number;
+    sessions: PreviewSession[];
+    onNew: () => void;
+    onOpen: (session: PreviewSession) => void;
+    accountName?: string;
+    onSignOut?: () => void;
+    pending?: boolean;
+    loading?: boolean;
+    sample?: boolean;
+    error?: string;
+}>) {
     const [list, setList] = useState(false);
     const [sort, setSort] = useState(0);
     const [accountOpen, setAccountOpen] = useState(false);
     const ordered = [...sessions].sort((a, b) =>
-        sort === 1 ? a.name.localeCompare(b.name) : sort === 2 ? b.name.localeCompare(a.name) : sort === 3 ? b.rooms - a.rooms : b.id - a.id,
+        sort === 1 ? a.name.localeCompare(b.name) : sort === 2 ? b.name.localeCompare(a.name) : sort === 3 ? (b.rooms ?? 0) - (a.rooms ?? 0) : b.id - a.id,
     );
     return (
         <div className={`sl-root sl-${variant}`}>
@@ -56,25 +73,30 @@ export function SessionLayouts({
                     <DropdownTrigger
                         render={
                             <Button variant="ghost" className="sl-account" trailingIcon={ChevronDown}>
-                                <span className="sl-avatar">O</span>
-                                <span>Oscar</span>
+                                <span className="sl-avatar">{accountName.slice(0, 1).toUpperCase()}</span>
+                                <span>{accountName}</span>
                             </Button>
                         }
                     />
                     <DropdownContent align="end">
-                        <MenuItem index={0} label="Oscar · Personal workspace" onSelect={() => setAccountOpen(false)} />
-                        <MenuItem index={1} label="Local design preview" onSelect={() => setAccountOpen(false)} />
+                        <MenuItem index={0} label={accountName} onSelect={() => setAccountOpen(false)} />
+                        {onSignOut && <MenuItem index={1} label="Sign out" onSelect={onSignOut} />}
                     </DropdownContent>
                 </DropdownMenu>
             </header>
             <main className="sl-main">
                 <div className="sl-heading">
                     <h1>Your sessions</h1>
-                    <Button leadingIcon={Plus} onClick={onNew}>
+                    <Button leadingIcon={Plus} onClick={onNew} loading={pending}>
                         New session
                     </Button>
                 </div>
                 <div className="sl-divider" />
+                {error && (
+                    <p role="alert" className="py-4 text-destructive">
+                        {error}
+                    </p>
+                )}
                 <div className="sl-toolbar">
                     <DropdownMenu>
                         <DropdownTrigger
@@ -92,7 +114,11 @@ export function SessionLayouts({
                     </DropdownMenu>
                     <ViewSwitch label="Table view" checked={list} onToggle={() => setList((v) => !v)} />
                 </div>
-                {!ordered.length ? (
+                {loading ? (
+                    <p role="status" className="text-muted-foreground">
+                        Loading sessions…
+                    </p>
+                ) : !ordered.length ? (
                     <div className="sl-empty">
                         <FileText size={24} />
                         <h2>No sessions yet</h2>
@@ -125,7 +151,7 @@ export function SessionLayouts({
                                         </TableCell>
                                         <TableCell>{s.file}</TableCell>
                                         <TableCell>{s.status}</TableCell>
-                                        <TableCell>{s.rooms}</TableCell>
+                                        <TableCell>{s.rooms ?? '—'}</TableCell>
                                         <TableCell>
                                             <Button variant="ghost" aria-label={`Open ${s.name}`} onClick={() => onOpen(s)}>
                                                 <ArrowUpRight size={16} />
@@ -141,7 +167,7 @@ export function SessionLayouts({
                         {ordered.map((s, i) => (
                             <button className="sl-card" key={s.id} onClick={() => onOpen(s)}>
                                 <div className="sl-image">
-                                    <Thumbnail index={i} />
+                                    {sample ? <Thumbnail index={i} /> : <FileText size={48} aria-label="Drawing document" />}
                                     {variant === 3 && <span className="sl-sheet-number">A / {String(i + 1).padStart(2, '0')}</span>}
                                 </div>
                                 <div className="sl-card-copy">
@@ -155,7 +181,7 @@ export function SessionLayouts({
                                             <i className={s.status === 'Ready' ? '' : 'sl-review-dot'} />
                                             {s.status}
                                         </span>
-                                        <span>{s.rooms} rooms</span>
+                                        {s.rooms !== undefined && <span>{s.rooms} rooms</span>}
                                     </div>
                                 </div>
                             </button>

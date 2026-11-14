@@ -36,7 +36,7 @@
     gap: 24px;
     padding-bottom: 40px;
 }
-.pw-root .sl-heading h1 {
+.sl-heading h1 {
     font-family: var(--font-sans);
     font-size: var(--type-heading);
     font-weight: var(--weight-medium);
@@ -91,7 +91,7 @@
     align-items: center;
     gap: 12px;
 }
-.pw-root .sl-card-title h2 {
+.sl-card-title h2 {
     font-size: var(--fs-subtitle);
     line-height: var(--lh-subtitle);
     font-weight: 500;
@@ -264,7 +264,7 @@
     .sl-heading {
         padding-bottom: 24px;
     }
-    .pw-root .sl-heading h1 {
+    .sl-heading h1 {
         font-size: var(--type-title);
     }
     .sl-grid,
@@ -300,4 +300,11 @@
     .sl-3 .sl-image {
         padding: 8px;
     }
+}
+
+.pw-official .sl-root {
+    min-height: 100svh;
+}
+.sl-account {
+    max-width: 240px;
 }
