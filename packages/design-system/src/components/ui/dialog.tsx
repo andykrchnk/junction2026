@@ -302,6 +302,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   {children}
                   {showCloseButton && (
                     <DialogPrimitive.Close
+                      aria-label="Close dialog"
                       render={
                         <Button
                           variant="ghost"
