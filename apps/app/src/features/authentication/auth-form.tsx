@@ -44,7 +44,7 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
             <AuthHero />
             <main className="flex flex-col justify-center px-6 py-12 sm:px-14">
                 <div className="mx-auto w-full max-w-sm">
-                    <Link to="/login" className="mb-14 flex items-center gap-2 text-lg font-semibold lg:hidden">
+                    <Link to="/login" className="mb-10 flex w-fit items-center text-white">
                         <BrandLogo />
                     </Link>
                     <h1 className="text-3xl font-medium tracking-tight">{mode === 'register' ? 'Start with a clearer view.' : 'Welcome back.'}</h1>

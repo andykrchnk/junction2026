@@ -1,17 +1,16 @@
 import { useEffect, useRef } from 'react';
-import { Link } from '@tanstack/react-router';
 import { background, constellation } from 'asciify-engine/kit';
 import { BrandLogo } from '@/components/ui/brand-logo';
 
 export function AuthHero() {
     const heroRef = useRef<HTMLElement>(null);
-    const copyRef = useRef<HTMLDivElement>(null);
+    const iconRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!heroRef.current || !copyRef.current) return;
+        if (!heroRef.current || !iconRef.current) return;
         const backdrop = background(heroRef.current, {
             preset: constellation,
-            clear: copyRef.current,
+            clear: iconRef.current,
             charset: ' .:-=+YCIFSA#@',
             palette: '#ff7a59',
             cursor: false,
@@ -20,20 +19,13 @@ export function AuthHero() {
     }, []);
 
     return (
-        <aside ref={heroRef} className="relative isolate hidden flex-col overflow-hidden p-12 text-primary lg:flex" style={{ backgroundColor: '#080808' }}>
-            <Link to="/login" className="relative z-10 flex w-fit items-center" aria-label="Pirtoa home">
-                <BrandLogo />
-            </Link>
-            <div ref={copyRef} className="relative z-10 mt-auto max-w-md">
-                <p className="mb-5 text-xs tracking-[0.18em] uppercase opacity-80">Built on evidence</p>
-                <h2 className="text-4xl leading-tight font-medium tracking-tight">
-                    Less searching.
-                    <br />
-                    More understanding.
-                </h2>
-                <p className="mt-5 text-sm leading-relaxed opacity-90">
-                    Bring your construction drawings into one workspace. Make every answer traceable to its source.
-                </p>
+        <aside
+            ref={heroRef}
+            className="relative isolate hidden items-center justify-center overflow-hidden p-12 lg:flex"
+            style={{ backgroundColor: '#080808' }}
+        >
+            <div ref={iconRef} className="relative z-10 flex items-center justify-center text-white">
+                <BrandLogo iconOnly />
             </div>
         </aside>
     );
