@@ -16,20 +16,16 @@ export function DetectedElementCard({
                 </div>
                 <Button size="icon-compact" variant="ghost" leadingIcon={X} aria-label="Close element properties" onClick={onClose} />
             </div>
-            <dl className="mt-4 grid grid-cols-2 gap-4 border-t pt-4">
-                <div>
-                    <dt className="text-xs text-muted-foreground">Model score</dt>
-                    <dd className="mt-1 text-xl font-semibold tabular-nums">{Math.round(property.confidence * 100)}%</dd>
-                </div>
-                {property.areaPixels !== null && (
+            {property.areaPixels !== null && (
+                <dl className="mt-4 border-t pt-4">
                     <div>
                         <dt className="text-xs text-muted-foreground">Pixel area</dt>
                         <dd className="mt-1 text-xl font-semibold tabular-nums">
                             {Math.round(property.areaPixels).toLocaleString()} <span className="text-xs font-normal">px²</span>
                         </dd>
                     </div>
-                )}
-            </dl>
+                </dl>
+            )}
             <p className="mt-4 border-t pt-3 text-xs leading-relaxed text-muted-foreground">
                 Uncalibrated prediction. Pixel area is not a verified real-world measurement.
             </p>

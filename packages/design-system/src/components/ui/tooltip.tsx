@@ -4,9 +4,11 @@ import {
   createContext,
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
@@ -111,6 +113,10 @@ interface TooltipProps {
   /** Extra classes for the portalled positioner element — pass a z utility
    *  here to lift the whole tooltip above other fixed layers (default: the --z-tooltip step, 70). */
   contentClassName?: string;
+  /** Inline surface and text styling for context-specific tooltip colors. */
+  bubbleStyle?: CSSProperties;
+  /** Keep non-interactive canvas tooltips from retaining hover outside their trigger. */
+  disableHoverablePopup?: boolean;
   /** When true, forces the tooltip open. When false, forces it closed. When undefined, uses default hover/focus behavior. */
   forceOpen?: boolean;
   /** Follow the cursor along one axis while hovering the trigger — for tall
@@ -249,6 +255,7 @@ function GroupBubble({
   content,
   side,
   className,
+  bubbleStyle,
   onExited,
 }: {
   store: GroupStore;
@@ -256,6 +263,7 @@ function GroupBubble({
   content: ReactNode;
   side: TooltipSide;
   className?: string;
+  bubbleStyle?: CSSProperties;
   onExited: () => void;
 }) {
   const shape = useShape();
@@ -447,6 +455,7 @@ function GroupBubble({
         ref={shapeRef}
         className={cn("absolute bg-foreground", shape.bg)}
         style={{
+          ...bubbleStyle,
           left: mv.left,
           right: mv.right,
           top: mv.top,
@@ -457,6 +466,7 @@ function GroupBubble({
         className={label}
         style={{
           fontVariationSettings: fontWeights.normal,
+          color: bubbleStyle?.color,
           x: mv.rideX,
           y: mv.rideY,
           opacity: mv.label,
@@ -473,6 +483,7 @@ function GroupBubble({
           )}
           style={{
             fontVariationSettings: fontWeights.normal,
+            color: bubbleStyle?.color,
             x: mv.rideX,
             y: mv.rideY,
             opacity: mv.previous,
@@ -566,16 +577,31 @@ function Tooltip({
   delayDuration,
   className,
   contentClassName,
+  bubbleStyle,
+  disableHoverablePopup,
   forceOpen,
   onOpenChange: onOpenChangeProp,
   followCursor,
 }: TooltipProps) {
+  const popupId = useId();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = forceOpen !== undefined ? forceOpen : internalOpen;
   const { actionsRef, rootOpen, onOpenChange } = usePopupExit(open, (v) => {
     setInternalOpen(v);
     onOpenChangeProp?.(v);
   });
+  const childProps = children.props;
+  const existingDescription =
+    childProps &&
+    typeof childProps === "object" &&
+    "aria-describedby" in childProps &&
+    typeof childProps["aria-describedby"] === "string"
+      ? childProps["aria-describedby"]
+      : undefined;
+  const describedBy =
+    [existingDescription, rootOpen ? popupId : undefined]
+      .filter(Boolean)
+      .join(" ") || undefined;
   // Fallback release for the held unmount: the popup's onAnimationComplete is
   // the primary signal, but rAF-driven animation callbacks can stall in
   // throttled/background tabs. Armed only by a close, so a page of tooltips
@@ -638,12 +664,13 @@ function Tooltip({
       actionsRef={actionsRef}
       // A hoverable bubble keeps the triggers in the pointer's path from
       // opening theirs, so in a group it closes with its trigger.
-      disableHoverablePopup={groupStore ? true : undefined}
+      disableHoverablePopup={groupStore ? true : disableHoverablePopup}
     >
       {/* An explicit delayDuration overrides the ambient provider's delay;
           left undefined, the trigger inherits it from the provider. */}
       <TooltipPrimitive.Trigger
         render={children}
+        aria-describedby={describedBy}
         delay={delayDuration}
         onPointerMove={followCursor ? handleFollowMove : undefined}
       />
@@ -658,6 +685,8 @@ function Tooltip({
           )}
         >
           <TooltipPrimitive.Popup
+            id={popupId}
+            role="tooltip"
             render={(props, state) => {
               const exiting = state.transitionStatus === "ending";
               const contentChildren = content;
@@ -695,6 +724,7 @@ function Tooltip({
                       content={contentChildren}
                       side={side}
                       className={className}
+                      bubbleStyle={bubbleStyle}
                       onExited={() => actionsRef.current?.unmount()}
                     />
                   ) : (
@@ -705,7 +735,7 @@ function Tooltip({
                         shape.bg,
                         className
                       )}
-                      style={{ fontVariationSettings: fontWeights.normal }}
+                      style={{ fontVariationSettings: fontWeights.normal, ...bubbleStyle }}
                       initial={{ opacity: 0, ...slideOffset }}
                       // Both targets name x and y: an exit target without one
                       // starts a separate, instant animation back to 0 whose
