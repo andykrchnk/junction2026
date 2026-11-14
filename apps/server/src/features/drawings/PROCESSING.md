@@ -48,3 +48,43 @@ completed results. Existing uploads without a run require an explicit retry.
 
 Provider credentials stay in server configuration. The browser receives neither
 Agenda records nor internal write tokens and retry bookkeeping.
+
+## Analysis latency
+
+Detection saves the canonical raster and layout before detailed context analysis.
+The existing canvas displays saved layouts while its drawing query polls active
+processing every second; enrichment does not gate access to detected geometry.
+Each completed entity is still saved individually, so progress remains visible
+and retries reuse completed checkpoints.
+
+`DRAWING_ENTITY_CONCURRENCY` controls independent entity requests within one stage
+(default 6, integer 1–12; restart after changing it). Previously each stage was
+fixed at three entities. A stage still finishes its room batch before starting
+fixtures; it retains the same prompts, output validation, failure handling and
+120-second deadline. The full-sheet entity overview is prepared once per batch
+and shared read-only; each entity retains its own original-resolution crop and
+canonical geometry. No entity or verification step is omitted for speed.
+
+The two concurrency limits multiply: the defaults permit up to 18 entity requests
+per backend instance across three drawings. Multiple replicas add their capacity.
+Tune this against provider quotas and memory; set entity concurrency back to 3
+when diagnosing throttling. A larger batch reduces scheduling/raster-download
+overhead but is not a guarantee of proportional provider latency improvement.
+
+Server logs emit `Blueprint detection stage` timings (leased detection work,
+raster preparation, inference including verification; excluding cover generation)
+and `Blueprint analysis stage` timings (misc,
+entities or ppm, outcome and attempted/completed entity counts). They contain no
+drawing text, images, credentials or raw provider errors. Worker requests also
+save private `timings.json` with geometry, OCR, fixture/room verification and
+normalization durations, including elapsed time for failed timed stages.
+`PIPELINE_GEMINI_WORKERS` independently controls the Python pipeline's concurrent
+single-target Decisions requests (default 8, integer 1–16; set on the pipeline
+service). It preserves fixture-before-room verification, original evidence,
+acceptance rules and target/deadline budgets; set it to 4 to restore the previous
+parallelism. It does not batch multiple targets into one model request.
+
+Compare the same page and completed object counts before/after changes. Separate
+image preparation measurements from provider and end-to-end latency. Contrast
+recovery should remain disabled for a consistent baseline. Shared overview bytes
+do not establish improved model accuracy, and concurrency does not weaken checks.

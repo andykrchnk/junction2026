@@ -82,10 +82,15 @@ export async function detectDrawing(params: DetectDrawingParams) {
     const blueprint = drawing.blueprints.find((item) => item.pageNumber === params.page);
     if (!blueprint) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid blueprint page.' });
     const ownedBlueprint = { ...ownedLease, 'blueprints.id': blueprint.id };
+    const startedAt = performance.now();
+    let outcome: 'completed' | 'failed' | 'not_configured' = 'failed';
+    let rasterMs = 0;
+    let inferenceMs = 0;
     try {
         // Another request may have completed this page between the initial read and lease acquisition.
         if (blueprint.layout && blueprint.raster) {
             await db.drawing.DrawingModel.updateOne(ownedLease, { $set: { inferenceLease: null, inferenceLeaseUntil: null } });
+            outcome = 'completed';
             return ensureDrawingCovers({ drawing: await readDrawing(params), ownerId: params.ownerId });
         }
         if (!Env.INFERENCE_BASE_URL || !Env.INFERENCE_API_KEY) {
@@ -96,6 +101,7 @@ export async function detectDrawing(params: DetectDrawingParams) {
                     inferenceLeaseUntil: null,
                 },
             });
+            outcome = 'not_configured';
             return readDrawing(params);
         }
         const started = await db.drawing.DrawingModel.updateOne(
@@ -109,8 +115,16 @@ export async function detectDrawing(params: DetectDrawingParams) {
             signal.throwIfAborted();
             chunks.push(Buffer.from(chunk));
         }
-        const raster = await prepareRaster({ bytes: Buffer.concat(chunks), mediaType: attachment.mediaType, page: attachment.pageNumber, signal });
-        const prediction = await predictRaster({ raster, signal });
+        const rasterStartedAt = performance.now();
+        const raster = await prepareRaster({ bytes: Buffer.concat(chunks), mediaType: attachment.mediaType, page: attachment.pageNumber, signal }).finally(
+            () => {
+                rasterMs = Math.round(performance.now() - rasterStartedAt);
+            },
+        );
+        const inferenceStartedAt = performance.now();
+        const prediction = await predictRaster({ raster, signal }).finally(() => {
+            inferenceMs = Math.round(performance.now() - inferenceStartedAt);
+        });
         signal.throwIfAborted();
         const upload = blueprintFiles.openUploadStream(`page-${params.page}.png`, {
             metadata: { ownerId: params.ownerId, drawingId: params.id, page: params.page, purpose: 'inference-raster' },
@@ -152,6 +166,7 @@ export async function detectDrawing(params: DetectDrawingParams) {
                 },
             );
             if (!saved.matchedCount) throw new TRPCError({ code: 'CONFLICT', message: 'Detection expired. Please retry.' });
+            outcome = 'completed';
         } catch (cause) {
             // A write acknowledgement can fail after MongoDB committed the page. Keep a referenced raster.
             const referenced = await db.drawing.DrawingModel.exists({
@@ -180,6 +195,13 @@ export async function detectDrawing(params: DetectDrawingParams) {
             },
         });
         throw new TRPCError({ code: cause instanceof TRPCError ? cause.code : 'INTERNAL_SERVER_ERROR', message, cause });
+    } finally {
+        console.info('Blueprint detection stage', {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            rasterMs,
+            inferenceMs,
+            outcome: signal.aborted ? 'aborted' : outcome,
+        });
     }
     return ensureDrawingCovers({ drawing: await readDrawing(params), ownerId: params.ownerId });
 }

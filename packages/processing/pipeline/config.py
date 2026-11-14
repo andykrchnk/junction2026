@@ -13,7 +13,7 @@ class Settings:
     artifact_dir: Path
     model: str = "gemini-decision-1"
     max_targets: int = 500
-    gemini_workers: int = 4
+    gemini_workers: int = 8
     gemini_timeout: float = 30
     deadline_seconds: float = 180
 
@@ -32,6 +32,14 @@ class Settings:
             raise RuntimeError(
                 "Gemini credential required; configure GEMINI_API_KEY_FILE"
             )
+        try:
+            workers = int(os.environ.get("PIPELINE_GEMINI_WORKERS", "8"))
+        except ValueError:
+            raise RuntimeError(
+                "PIPELINE_GEMINI_WORKERS must be an integer from 1 to 16"
+            ) from None
+        if not 1 <= workers <= 16:
+            raise RuntimeError("PIPELINE_GEMINI_WORKERS must be an integer from 1 to 16")
         return cls(
             key,
             gemini,
@@ -39,4 +47,5 @@ class Settings:
             os.environ.get("PADDLEOCR_URL", "http://paddleocr:8001"),
             os.environ.get("LEGACY_INFERENCE_URL", "http://inference:8001"),
             Path(os.environ.get("PIPELINE_ARTIFACT_DIR", "/artifacts")),
+            gemini_workers=workers,
         )
