@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useUnit } from 'effector-react';
 import { useTheme } from 'next-themes';
 import { CanvasStateZod, type Drawing } from '@repo/types';
-import { AssetRecordType, createTLStore, createShapeId, getSnapshot, parseTldrawJsonFile, Tldraw, useValue, type Editor, type TLAssetStore } from 'tldraw';
+import { AssetRecordType, createTLStore, createShapeId, getSnapshot, parseTldrawJsonFile, Tldraw, type Editor, type TLAssetStore } from 'tldraw';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&url';
 import { Button } from '@/components/ui/button';
 import { authenticatedFetch } from '@/shared/auth';
@@ -108,7 +108,6 @@ function CanvasEditor({
     const { resolvedTheme } = useTheme();
     const status = useUnit(model.$status);
     const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
-    const zoom = useValue('blueprint zoom', () => activeEditor?.getZoomLevel() ?? 1, [activeEditor]);
     const [error, setError] = useState<string | null>(null);
     const [recoveryConflict, setRecoveryConflict] = useState(!!recovery?.document && recovery.revision !== saved.revision);
     const [assets] = useState<TLAssetStore>(() => ({
@@ -259,35 +258,6 @@ function CanvasEditor({
 
     return (
         <div className="flex h-full min-h-0 flex-col">
-            <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 border-b px-3 py-1 text-xs">
-                <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Drag to pan</span>
-                    <span className="text-muted-foreground">
-                        {pages.length} {pages.length === 1 ? 'sheet' : 'sheets'}
-                    </span>
-                </div>
-                <div className="flex items-center gap-1">
-                    <span role="status">
-                        {status.type === 'saved'
-                            ? 'Saved'
-                            : status.type === 'saving'
-                              ? 'Saving…'
-                              : status.type === 'dirty'
-                                ? 'Unsaved changes'
-                                : 'Couldn’t save'}
-                    </span>
-                    <Button size="sm" variant="ghost" aria-label="Zoom out" onClick={() => activeEditor?.zoomOut()}>
-                        −
-                    </Button>
-                    <span className="min-w-10 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
-                    <Button size="sm" variant="ghost" aria-label="Zoom in" onClick={() => activeEditor?.zoomIn()}>
-                        +
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => activeEditor?.zoomToFit()}>
-                        Fit drawing
-                    </Button>
-                </div>
-            </div>
             {(error || status.type === 'error') && (
                 <div role="alert" className="border-b bg-card px-3 py-2 text-xs text-destructive">
                     {error ?? (status.type === 'error' ? status.message : '')}
