@@ -269,14 +269,35 @@ function CanvasEditor({
                     )}
                 </div>
             )}
-            <div className="relative min-h-0 flex-1" aria-label="Blueprint canvas">
+            <div
+                className="relative min-h-0 flex-1"
+                aria-label="Blueprint canvas"
+                onPointerDownCapture={(event) => {
+                    // Escape and editor shortcuts may leave the hand tool; every new canvas drag pans.
+                    if (event.button === 0 && event.target instanceof Element && event.target.closest('.tl-canvas')) {
+                        activeEditor?.setCurrentTool('hand');
+                        activeEditor?.focus();
+                    }
+                }}
+                onKeyDownCapture={(event) => {
+                    if (!(event.target instanceof Element) || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+                    if (!event.target.closest('.tl-container') || !activeEditor) return;
+                    if (event.key === '+' || event.key === '=') activeEditor.zoomIn();
+                    else if (event.key === '-') activeEditor.zoomOut();
+                    else if (event.key === '0') activeEditor.zoomToFit();
+                    else return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                }}
+            >
                 <DetectionContext.Provider value={{ drawing, model }}>
                     <Tldraw
                         store={store}
                         onMount={mount}
                         hideUi
+                        initialState="hand"
                         licenseKey={config.TLDRAW_LICENSE_KEY}
-                        options={{ maxPages: 1 }}
+                        options={{ maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
                         components={{ OnTheCanvas: DetectionCanvasLayer }}
                     />
                 </DetectionContext.Provider>

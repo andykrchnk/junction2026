@@ -61,6 +61,10 @@ starting at a 70/30 split. The divider supports pointer and keyboard resizing;
 small screens switch between Canvas and Chat. The viewer supports dragging to pan
 and gesture zoom, with an automatic initial fit and all PDF sheets side by side
 on one canvas. Drawing, media insertion and editing tools are disabled.
+Drag with the primary mouse button to pan, scroll/two-finger swipe to pan,
+and pinch or Ctrl/Cmd+wheel to zoom. With the canvas focused, `+`/`-` zoom
+and `0` fits all sheets. Canvas navigation stays available after Escape and
+does not move the locked blueprint or detection geometry.
 
 Completed detection pages display their exact normalized inference raster with
 room polygons, fixture boxes and optional junction points. Small floating layer
