@@ -21,17 +21,33 @@ async function getSnapshot(params: Readonly<{ drawingId: string; ownerId: string
     if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Drawing not found.' });
     const { blueprints } = z.object({ blueprints: z.array(BlueprintZod) }).parse(doc);
     const comments = blueprints.flatMap((blueprint) => blueprint.comments);
-    const firstMissingNumber = Math.max(0, ...comments.map((comment) => comment.number ?? 0)) + 1;
-    const missing = comments.filter((comment) => comment.number === undefined);
-    // Persist numbers once; soft deletion and calibration retries must not renumber user comments.
-    for (const [index, comment] of missing.entries()) {
+    const userComments = comments
+        .filter((comment) => comment.type === 'comment' && comment.source === 'user')
+        .toSorted(
+            (first, second) =>
+                (first.number ?? Number.MAX_SAFE_INTEGER) - (second.number ?? Number.MAX_SAFE_INTEGER) ||
+                first.createdAt.localeCompare(second.createdAt) ||
+                first.id.localeCompare(second.id),
+        );
+    const corrections = userComments.flatMap((comment, index) => (comment.number === index + 1 ? [] : [{ comment, number: index + 1 }]));
+    // Include deleted user comments to preserve their numbers; annotations never consume a number.
+    for (const { comment, number } of corrections) {
         await db.drawing.DrawingModel.updateOne(
             { _id: params.drawingId, ownerId: params.ownerId },
-            { $set: { 'blueprints.$[].comments.$[comment].number': firstMissingNumber + index } },
-            { arrayFilters: [{ 'comment.id': comment.id, 'comment.number': { $exists: false } }] },
+            { $set: { 'blueprints.$[].comments.$[comment].number': number } },
+            {
+                arrayFilters: [
+                    {
+                        'comment.id': comment.id,
+                        'comment.type': 'comment',
+                        'comment.source': 'user',
+                        'comment.number': comment.number === undefined ? { $exists: false } : comment.number,
+                    },
+                ],
+            },
         );
     }
-    if (missing.length) return getSnapshot(params);
+    if (corrections.length) return getSnapshot(params);
     return { blueprints, comments };
 }
 
@@ -107,7 +123,8 @@ export const scanCommentsRouter = t.router({
                 source: 'user',
                 type: 'comment',
                 createdAt: new Date().toISOString(),
-                number: Math.max(0, ...snapshot.comments.map((item) => item.number ?? 0)) + 1,
+                number:
+                    Math.max(0, ...snapshot.comments.filter((item) => item.type === 'comment' && item.source === 'user').map((item) => item.number ?? 0)) + 1,
                 author: { id: ctx.user.id, name: ctx.user.email },
                 application: 'point',
                 x: input.x,
@@ -124,8 +141,24 @@ export const scanCommentsRouter = t.router({
                             { $lt: [{ $sum: { $map: { input: '$blueprints', as: 'blueprint', in: { $size: '$$blueprint.comments' } } } }, MAX_COMMENTS] },
                             {
                                 $eq: [
-                                    { $sum: { $map: { input: '$blueprints', as: 'blueprint', in: { $size: '$$blueprint.comments' } } } },
-                                    snapshot.comments.length,
+                                    {
+                                        $sum: {
+                                            $map: {
+                                                input: '$blueprints',
+                                                as: 'blueprint',
+                                                in: {
+                                                    $size: {
+                                                        $filter: {
+                                                            input: '$$blueprint.comments',
+                                                            as: 'comment',
+                                                            cond: { $and: [{ $eq: ['$$comment.source', 'user'] }, { $eq: ['$$comment.type', 'comment'] }] },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                    snapshot.comments.filter((item) => item.source === 'user' && item.type === 'comment').length,
                                 ],
                             },
                         ],

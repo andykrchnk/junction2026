@@ -182,10 +182,11 @@ function CanvasEditor({
     commentsModel: CommentsModel;
 }>) {
     const { resolvedTheme } = useTheme();
-    const { status, commentMode, openCommentId, selectedObject } = useUnit({
+    const { status, commentMode, openCommentId, selectedObject, draftComment } = useUnit({
         status: model.$status,
         commentMode: commentsModel.$mode,
         openCommentId: commentsModel.$openId,
+        draftComment: commentsModel.$draft,
         selectedObject: model.$selected,
     });
     const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
@@ -245,7 +246,8 @@ function CanvasEditor({
             event.preventDefault();
             event.stopPropagation();
             selectionGesture.current = null;
-            if (openCommentId !== null) commentsModel.openChanged(null);
+            if (draftComment && (openCommentId === null || openCommentId === draftComment.id)) commentsModel.draftCancelled();
+            else if (openCommentId !== null) commentsModel.openChanged(null);
             else if (commentMode !== 'default') commentsModel.modeChanged('default');
             else model.selected(null);
         },
@@ -255,7 +257,7 @@ function CanvasEditor({
             enableOnContentEditable: true,
             eventListenerOptions: { capture: true },
         },
-        [activeEditor, commentsModel, openCommentId, commentMode, model],
+        [activeEditor, commentsModel, openCommentId, commentMode, model, draftComment],
     );
     const [recoveryConflict, setRecoveryConflict] = useState(!!recovery?.document && recovery.revision !== saved.revision);
     const [assets] = useState<TLAssetStore>(() => ({

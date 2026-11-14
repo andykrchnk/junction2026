@@ -29,6 +29,7 @@ export function createCommentsModel(drawingId: string) {
     const openChanged = createEvent<string | null>();
     const pointRequested = createEvent<CommentPoint>();
     const draftChanged = createEvent<string>();
+    const draftCancelled = createEvent();
     const saveRequested = createEvent();
     const deleteRequested = createEvent<string>();
     const deletionRouted = createEvent<{ id: string; kind: 'draft' | 'persisted' }>();
@@ -120,6 +121,7 @@ export function createCommentsModel(drawingId: string) {
     sample({ clock: modeChanged, target: $mode });
     sample({ clock: modeChanged, filter: (mode) => mode === 'default', fn: () => null, target: $openId });
     sample({ clock: openChanged, target: $openId });
+    sample({ clock: draftCancelled, fn: () => null, target: [$draft, $openId, $error] });
     sample({
         clock: openChanged,
         source: $draft,
@@ -185,6 +187,7 @@ export function createCommentsModel(drawingId: string) {
         openChanged,
         pointRequested,
         draftChanged,
+        draftCancelled,
         saveRequested,
         createFx,
         deleteRequested,

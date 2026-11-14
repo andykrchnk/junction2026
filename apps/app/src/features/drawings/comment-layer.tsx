@@ -163,6 +163,7 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
             {entries.map(({ comment, x, y, screen }) => {
                 const isOpen = openId === comment.id;
                 const isDraft = draft?.id === comment.id;
+                const isAnnotation = comment.type === 'annotation';
                 const width = Math.min(288, Math.max(180, viewport.w - 24));
                 const maxHeight = Math.min(360, Math.max(120, viewport.h - 24));
                 const flipLeft = screen.x + 28 + width > viewport.x + viewport.w;
@@ -183,12 +184,19 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                         <button
                             type="button"
                             aria-label={`${isDraft ? 'New comment' : comment.type === 'annotation' ? 'Annotation' : 'Comment'} ${comment.number ?? ''}, sheet ${comment.page}`}
-                            style={{ backgroundColor: comment.type === 'annotation' ? '#eab308' : '#22c55e', color: '#000000' }}
                             aria-expanded={isOpen}
                             onClick={() => model.openChanged(comment.id)}
-                            className={`absolute -left-5 -top-5 flex size-10 items-center justify-center border-2 shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${isOpen ? 'border-foreground bg-primary text-primary-foreground' : 'border-foreground bg-card text-foreground'}`}
+                            className={`absolute focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                                isAnnotation
+                                    ? '-left-1 -top-1 size-2 rounded-full bg-[#eab308] transition-transform hover:scale-200'
+                                    : `-left-5 -top-5 flex size-10 items-center justify-center border-2 bg-black text-white shadow-lg ${isOpen ? 'border-white' : 'border-white/30'}`
+                            }`}
                         >
-                            <span className="text-sm font-semibold tabular-nums">{isDraft ? '+' : (comment.number ?? '·')}</span>
+                            {isDraft ? (
+                                <X className="size-4" aria-hidden />
+                            ) : (
+                                !isAnnotation && <span className="text-sm font-semibold tabular-nums">{comment.number ?? '·'}</span>
+                            )}
                         </button>
                         {isOpen && (
                             <SurfaceProvider value={2}>
@@ -252,6 +260,20 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                                                     rows={4}
                                                     disabled={creating}
                                                     onChange={(event) => model.draftChanged(event.currentTarget.value)}
+                                                    onKeyDown={(event) => {
+                                                        if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+                                                        event.preventDefault();
+                                                        event.stopPropagation();
+                                                        if (event.repeat) return;
+                                                        if (event.metaKey) {
+                                                            const input = event.currentTarget;
+                                                            if (input.value.length - (input.selectionEnd - input.selectionStart) >= input.maxLength) return;
+                                                            input.setRangeText('\n', input.selectionStart, input.selectionEnd, 'end');
+                                                            model.draftChanged(input.value);
+                                                        } else {
+                                                            model.saveRequested();
+                                                        }
+                                                    }}
                                                 />
                                                 {error && (
                                                     <p role="alert" className="mt-2 text-xs text-destructive">
@@ -265,7 +287,7 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                                                     disabled={!draft.text.trim() || creating || deleting}
                                                     loading={creating}
                                                 >
-                                                    {error ? 'Retry' : 'Add comment'}
+                                                    {error ? 'Retry' : 'Post'}
                                                 </Button>
                                             </form>
                                         ) : (

@@ -116,7 +116,9 @@ export function DrawingComments({ drawing, model }: Readonly<{ drawing: Drawing;
                         onClick={() => model.focusRequested(comment.id)}
                     >
                         <div className="w-full min-w-0">
-                            <div className="mb-2 text-xs text-muted-foreground">#{comment.number ?? '·'}</div>
+                            {comment.type === 'comment' && comment.source === 'user' && (
+                                <div className="mb-2 text-xs text-muted-foreground">#{comment.number ?? '·'}</div>
+                            )}
                             <CommentAuthor comment={comment} />
                             <p className="mt-3 line-clamp-3 break-words text-sm font-normal">{comment.text}</p>
                         </div>
