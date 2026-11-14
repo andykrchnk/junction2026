@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { z } from 'zod';
-import { AnalysisZod, AttachmentZod, DrawingZod, MessageZod } from '@repo/types';
+import { StoredAnalysisZod, AttachmentZod, DrawingZod, MessageZod } from '@repo/types';
 import { connection } from './connection';
 
 const schema = new mongoose.Schema(
@@ -26,7 +26,7 @@ const StoredDrawingZod = z.object({
     title: z.string(),
     updatedAt: z.date(),
     attachment: AttachmentZod.nullable(),
-    analysis: AnalysisZod.nullable(),
+    analysis: StoredAnalysisZod.nullable(),
     messages: z.array(MessageZod),
     lease: z.string().nullable(),
     leaseUntil: z.date().nullable(),

@@ -12,8 +12,7 @@ import { trpc } from '@/shared/trpc';
 export function DashboardPage() {
     const { drawing: id } = useSearch({ from: '/' });
     const navigate = useNavigate();
-    const { user, authError, signingOut, creating, error } = useUnit({
-        user: $$user.$user,
+    const { authError, signingOut, creating, error } = useUnit({
         authError: $$user.$error,
         signingOut: $$user.$isPending,
         creating: $$drawings.$creating,
@@ -82,7 +81,6 @@ export function DashboardPage() {
                     {drawings?.length === 0 && <p className="text-muted-foreground p-2 text-xs">Your drawings will appear here.</p>}
                 </nav>
                 <div className="mt-5 border-t pt-4">
-                    <p className="text-muted-foreground mb-2 truncate text-xs">{user?.email}</p>
                     <Button
                         variant="ghost"
                         size="compact"
@@ -107,7 +105,6 @@ export function DashboardPage() {
                 ) : (
                     <section className="m-auto max-w-xl px-6 py-20 text-center">
                         <FileStack className="text-primary mx-auto mb-6 size-10 stroke-1" aria-hidden />
-                        <p className="text-primary text-xs font-medium tracking-widest uppercase">From drawings to decisions</p>
                         <h1 className="mt-4 text-3xl font-medium tracking-tight">A clearer view of your blueprint.</h1>
                         <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
                             Upload a drawing, review its analysis, and ask questions with source evidence. Your sessions stay here when you return.
