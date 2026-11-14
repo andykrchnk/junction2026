@@ -6,7 +6,7 @@ import { getDetectedObjectColor, type DetectedProperty, type Drawing, type Predi
 import { Checkbox } from '@repo/design-system/components/ui/checkbox';
 import { Tooltip, TooltipProvider } from '@repo/design-system/components/ui/tooltip';
 import { DetectedElementCard } from './detected-element-card';
-import { formatDetectedObjectTooltip } from './detected-object-tooltip';
+import { formatDetectedObjectArea, formatDetectedObjectTooltip } from './detected-object-tooltip';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import type { CanvasModel } from './canvas/model';
@@ -185,9 +185,13 @@ export function DetectionControls({ drawing, model }: Readonly<{ drawing: Drawin
                     </label>
                 ))}
             </div>
-            {property && (
+            {property && detectedPage && selected && (
                 <div className="absolute top-3 right-3 z-[300] max-w-[calc(100%-1.5rem)]">
-                    <DetectedElementCard property={property} page={selected?.page ?? 1} onClose={() => model.selected(null)} />
+                    <DetectedElementCard
+                        label={property.label}
+                        area={formatDetectedObjectArea({ drawing, page: detectedPage, property, index: selected.index })}
+                        onClose={() => model.selected(null)}
+                    />
                 </div>
             )}
         </>

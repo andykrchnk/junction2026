@@ -4,7 +4,7 @@ type ObjectTooltipParams = Readonly<{ drawing: Drawing; page: PredictionPage; pr
 
 const AREA_TO_SQUARE_METRES = { 'mm²': 0.000001, 'cm²': 0.0001, 'm²': 1, 'km²': 1000000, 'ft²': 0.09290304, 'in²': 0.00064516 };
 
-export function formatDetectedObjectTooltip({ drawing, page, property, index }: ObjectTooltipParams): string {
+export function formatDetectedObjectArea({ drawing, page, property, index }: ObjectTooltipParams): string {
     // Processing properties retain rooms first, in the same order as the raw response.
     const room = property.type === 'room' && 'rooms' in page.raw ? page.raw.rooms[index] : null;
     const measurement = room?.class === property.label ? room.measurements.area : null;
@@ -13,9 +13,11 @@ export function formatDetectedObjectTooltip({ drawing, page, property, index }: 
     const estimatedArea = ppm !== undefined && property.areaPixels !== null ? property.areaPixels / (ppm * ppm) : null;
     const hasPrintedArea = printedArea !== null && Number.isFinite(printedArea) && printedArea > 0;
     const area = hasPrintedArea ? printedArea : estimatedArea;
-    const areaLabel =
-        area !== null && Number.isFinite(area) && area > 0
-            ? `${hasPrintedArea ? '' : '≈'}${area.toLocaleString('en-US', { maximumSignificantDigits: 4 })} m²`
-            : 'Area unavailable';
-    return `${property.label}, ${areaLabel}, ${property.confidence.toFixed(2)}`;
+    return area !== null && Number.isFinite(area) && area > 0
+        ? `${hasPrintedArea ? '' : '≈'}${area.toLocaleString('en-US', { maximumSignificantDigits: 4 })} m²`
+        : 'Area unavailable';
+}
+
+export function formatDetectedObjectTooltip(params: ObjectTooltipParams): string {
+    return `${params.property.label}, ${formatDetectedObjectArea(params)}, ${params.property.confidence.toFixed(2)}`;
 }
