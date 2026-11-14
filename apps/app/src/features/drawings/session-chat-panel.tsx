@@ -105,7 +105,7 @@ export function SessionChatPanel({ drawing, previewDrawing }: Readonly<{ drawing
                                     }}
                                 />
                             </form>
-                            <p role="status" className="mt-1 px-1 text-xs text-muted-foreground">
+                            <p role="status" className="mt-1 px-1 pb-2 text-xs text-muted-foreground">
                                 {saving
                                     ? 'Saving…'
                                     : error
