@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { useUnit } from 'effector-react';
 import type { Drawing, UpdateDrawingUpload } from '@repo/types';
 import { Input } from '@repo/design-system/components/ui/input';
@@ -14,7 +15,6 @@ const MoreIcon = remixIcons['more-horizontal'];
 export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing; preview: boolean }>) {
     const [open, setOpen] = useState(false);
     const [renaming, setRenaming] = useState(false);
-    const [name, setName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const pending = useUnit($$drawings.updateUploadFx.pending);
     const attachment = drawing.attachment;
@@ -27,6 +27,13 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
             setError(cause instanceof Error ? cause.message : 'Could not update upload.');
         }
     };
+    const form = useForm({
+        defaultValues: { name: '' },
+        validators: { onSubmit: ({ value }) => (!value.name.trim() ? 'Enter an upload name.' : undefined) },
+        onSubmit: async ({ value }) => {
+            await update({ name: value.name.trim() });
+        },
+    });
     if (!attachment) return <p className="px-3 py-4 text-sm text-muted-foreground">Your uploaded blueprints will appear here.</p>;
     return (
         <div className="space-y-3 px-3 py-4">
@@ -37,7 +44,7 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
                 <DropdownMenu open={open} onOpenChange={setOpen}>
                     <DropdownTrigger
                         render={
-                            <Button variant="ghost" size="icon" className="-mr-2.5" aria-label="Upload actions" disabled={pending || preview}>
+                            <Button type="button" variant="ghost" size="icon" className="-mr-2.5" aria-label="Upload actions" disabled={pending || preview}>
                                 <MoreIcon />
                             </Button>
                         }
@@ -47,7 +54,7 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
                             index={0}
                             label="Rename"
                             onSelect={() => {
-                                setName(attachment.name);
+                                form.reset({ name: attachment.name });
                                 setRenaming(true);
                                 setOpen(false);
                             }}
@@ -68,22 +75,37 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
                     className="flex flex-col gap-2"
                     onSubmit={(event) => {
                         event.preventDefault();
-                        if (name.trim()) void update({ name });
+                        void form.handleSubmit();
                     }}
                 >
-                    <Input
-                        autoFocus
-                        aria-label="Upload name"
-                        value={name}
-                        maxLength={200}
-                        onChange={(event) => setName(event.target.value)}
-                        disabled={pending}
-                    />
+                    <form.Field name="name">
+                        {(field) => (
+                            <Input
+                                autoFocus
+                                aria-label="Upload name"
+                                value={field.state.value}
+                                maxLength={200}
+                                onBlur={field.handleBlur}
+                                onChange={(event) => field.handleChange(event.target.value)}
+                                disabled={pending}
+                                required
+                            />
+                        )}
+                    </form.Field>
+                    <form.Subscribe selector={(state) => state.errorMap.onSubmit}>
+                        {(message) =>
+                            message ? (
+                                <p role="alert" className="text-sm text-destructive">
+                                    {message}
+                                </p>
+                            ) : null
+                        }
+                    </form.Subscribe>
                     <div className="flex gap-2">
-                        <Button type="submit" disabled={pending || !name.trim()}>
+                        <Button type="submit" disabled={pending}>
                             Save
                         </Button>
-                        <Button variant="ghost" onClick={() => setRenaming(false)}>
+                        <Button type="button" variant="ghost" onClick={() => setRenaming(false)}>
                             Cancel
                         </Button>
                     </div>
