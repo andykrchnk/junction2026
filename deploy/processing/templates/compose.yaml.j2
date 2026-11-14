@@ -33,7 +33,6 @@ services:
             RASTER2SEQ_URL: http://raster2seq:8001
             GROUNDING_SAM_URL: http://grounding-sam:8001
         volumes:
-            - {{ release_dir }}/packages/processing/cubicasa:/app:ro
             - {{ assets_root }}/packages/processing/cubicasa/weights:/app/weights:ro
         networks: [inference, gateway]
         restart: unless-stopped
@@ -45,7 +44,6 @@ services:
             INFERENCE_DEVICE: cuda
             INFERENCE_LOCAL_MODEL: cubicasa-detail
         volumes:
-            - {{ release_dir }}/packages/processing/cubicasa:/app:ro
             - {{ assets_root }}/packages/processing/cubicasa/weights:/app/weights:ro
         networks: [inference]
         restart: unless-stopped
