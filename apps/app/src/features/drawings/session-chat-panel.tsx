@@ -68,7 +68,7 @@ export function SessionChatPanel({ drawing, previewDrawing }: Readonly<{ drawing
                 transition={reducedMotion ? { duration: 0 } : spring.slow}
             >
                 <div className="bg-card border border-border flex h-full min-h-0 flex-col overflow-hidden">
-                    <header className="flex min-h-20 shrink-0 items-center gap-2 px-3 py-3">
+                    <header className="flex min-h-20 shrink-0 items-center gap-2 px-3 py-[2px]">
                         <div className="min-w-0 flex-1">
                             <form
                                 onSubmit={(event) => {
@@ -82,7 +82,7 @@ export function SessionChatPanel({ drawing, previewDrawing }: Readonly<{ drawing
                                     value={editing ? draft : title}
                                     maxLength={200}
                                     disabled={saving}
-                                    className="block h-8 w-full min-w-0 truncate rounded-none border border-transparent bg-transparent px-1 py-1 text-left text-sm font-medium leading-5 hover:border-border focus:border-border focus:outline-none"
+                                    className="block h-8 w-full min-w-0 truncate rounded-none border border-transparent bg-transparent px-1 py-[2px] text-left text-sm font-medium leading-5 hover:border-border focus:border-border focus:outline-none"
                                     onDoubleClick={() => {
                                         setDraft(title);
                                         setEditing(true);
