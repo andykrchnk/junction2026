@@ -2,30 +2,6 @@
     --session-header: var(--muted);
     min-height: calc(100svh - 112px);
 }
-.sl-header {
-    height: 64px;
-    background: var(--session-header);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 32px;
-    border-bottom: 1px solid var(--border);
-}
-.sl-account {
-    padding-inline: 12px;
-    color: var(--foreground) !important;
-}
-.sl-avatar {
-    width: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: color-mix(in srgb, var(--primary) 50%, transparent);
-    font-size: 14px;
-    font-weight: var(--weight-medium);
-    margin-right: 8px;
-}
 .sl-main {
     max-width: 1280px;
     margin: auto;
@@ -256,10 +232,6 @@
     }
 }
 @media (max-width: 700px) {
-    .sl-header {
-        padding: 0 20px;
-        height: 64px;
-    }
     .sl-main {
         padding: 40px 20px;
     }
@@ -305,14 +277,6 @@
 .pw-official .sl-root {
     min-height: 100svh;
 }
-.sl-account {
-    max-width: 240px;
-}
-
-.sl-header .sl-logo {
-    height: 28px;
-}
-
 /* Neutral table studies: scoped to session tables, not the primary accent. */
 .sl-table {
     --accent: var(--border);

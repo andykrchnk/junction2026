@@ -1,50 +1,58 @@
+import { SessionChatPanel } from './session-chat-panel';
+import { MAX_FILE_BYTES, type Drawing } from '@repo/types';
+import { useDropzone } from 'react-dropzone';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
-import { Group, Panel, Separator, useGroupRef } from 'react-resizable-panels';
-import { z } from 'zod';
-import { Link } from '@tanstack/react-router';
+import { FileText, Upload } from '@repo/design-system/lib/icons-remix';
+import { $$drawings } from './model';
 import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { trpc } from '@/shared/trpc';
-import { DrawingChat } from './drawing-chat';
-import { readLocal, writeLocal } from './canvas-storage';
 
 const BlueprintCanvas = lazy(() => import('./blueprint-canvas'));
-const LayoutZod = z
-    .object({ canvas: z.number().min(40).max(80), chat: z.number().min(20).max(60) })
-    .refine((layout) => Math.abs(layout.canvas + layout.chat - 100) < 1);
-
-function WorkspacePanels({ id, userId }: Readonly<{ id: string; userId: string }>) {
+export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: string; userId: string; previewDrawing?: Drawing }>) {
     const {
         data: drawing,
         isPending,
         error,
     } = useQuery({
         ...trpc.drawings.get.queryOptions({ id }),
+        enabled: !previewDrawing,
+        initialData: previewDrawing,
         refetchInterval: (query) => (query.state.data?.detection?.status === 'processing' ? 2000 : false),
     });
-    const layoutKey = `junction:workspace:${userId}:${id}:layout`;
-    const [layout] = useState(() => {
-        const parsed = LayoutZod.safeParse(readLocal(layoutKey));
-        return parsed.success ? parsed.data : { canvas: 70, chat: 30 };
-    });
-    const [mobilePane, setMobilePane] = useState<'canvas' | 'chat'>('canvas');
-    const [isNarrow, setIsNarrow] = useState(false);
-    const groupRef = useGroupRef();
+    const [localFile, setLocalFile] = useState<File | null>(null);
+    const [localUrl, setLocalUrl] = useState('');
+    const [uploadError, setUploadError] = useState('');
+    const uploading = useUnit($$drawings.$uploading);
     useEffect(() => {
-        const media = window.matchMedia('(width < 48rem)');
-        const update = () => {
-            setIsNarrow(media.matches);
-            if (!media.matches) {
-                const saved = LayoutZod.safeParse(readLocal(layoutKey));
-                groupRef.current?.setLayout(saved.success ? saved.data : layout);
-            }
-        };
-        update();
-        media.addEventListener('change', update);
-        return () => media.removeEventListener('change', update);
-    }, [layoutKey, layout, groupRef]);
+        if (!localFile) return;
+        const url = URL.createObjectURL(localFile);
+        setLocalUrl(url);
+        return () => URL.revokeObjectURL(url);
+    }, [localFile]);
+    function upload(file: File) {
+        setUploadError('');
+        if (previewDrawing) setLocalFile(file);
+        else
+            void $$drawings
+                .uploadFx({ id, file })
+                .catch((error: unknown) => setUploadError(error instanceof Error ? error.message : 'Upload failed. Please retry.'));
+    }
+    const { getRootProps, getInputProps, open } = useDropzone({
+        accept: { 'application/pdf': ['.pdf'], 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'] },
+        multiple: false,
+        minSize: 1,
+        maxSize: MAX_FILE_BYTES,
+        disabled: uploading || Boolean(drawing?.attachment),
+        noClick: true,
+        noKeyboard: true,
+        onDropAccepted: (files) => {
+            if (files[0]) upload(files[0]);
+        },
+        onDropRejected: () => setUploadError('Choose one PDF, PNG or JPG between 1 byte and 20 MB.'),
+    });
     if (isPending)
         return (
             <p role="status" className="p-6 text-sm">
@@ -68,57 +76,42 @@ function WorkspacePanels({ id, userId }: Readonly<{ id: string; userId: string }
             <BlueprintCanvas drawing={drawing} userId={userId} />
         </Suspense>
     ) : (
-        <div className="flex h-full items-center justify-center p-8 text-center">
-            <div>
-                <p className="text-lg font-medium">Your blueprint starts here</p>
-                <p className="mt-2 text-sm text-muted-foreground">Upload a drawing in the chat panel to open it on the canvas.</p>
-                <Button className="mt-4 md:hidden" onClick={() => setMobilePane('chat')}>
-                    Upload blueprint
-                </Button>
-            </div>
+        <div className="flex h-full items-center justify-center p-8 text-center" {...getRootProps()}>
+            {localUrl ? (
+                <div className="flex h-full w-full flex-col gap-3">
+                    <p className="text-xs text-muted-foreground">{localFile?.name} · Local preview, not analyzed</p>
+                    {localFile?.type === 'application/pdf' ? (
+                        <iframe title="Blueprint preview" src={localUrl} className="min-h-0 flex-1 w-full" />
+                    ) : (
+                        <img alt="Uploaded blueprint" src={localUrl} className="min-h-0 flex-1 object-contain" />
+                    )}
+                </div>
+            ) : (
+                <div className="max-w-sm">
+                    <FileText size={48} className="mx-auto mb-6 text-muted-foreground" aria-hidden />
+                    <h2 className="text-xl font-medium">Upload your first blueprint</h2>
+                    <p className="mt-3 text-sm text-muted-foreground">Drop a floor plan here, or choose a file to get started.</p>
+                    <Button className="mt-6" leadingIcon={Upload} loading={uploading} onClick={open}>
+                        Upload floor plan
+                    </Button>
+                    <p className="mt-4 text-xs text-muted-foreground">PDF, PNG or JPG · Up to 20 MB</p>
+                </div>
+            )}
+            <input {...getInputProps({ 'aria-label': 'Upload floor plan' })} />
+            {uploadError && (
+                <p role="alert" className="mt-4 text-sm text-destructive">
+                    {uploadError}
+                </p>
+            )}
         </div>
     );
     return (
-        <section className="flex h-svh min-h-0 flex-1 flex-col overflow-hidden">
-            <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b px-5">
-                <div className="min-w-0">
-                    <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">Drawing workspace</p>
-                    <h1 className="truncate text-sm font-medium">{drawing.title}</h1>
-                </div>
-                <div className="flex gap-1 md:hidden">
-                    <Link to="/" search={{}} className="self-center px-2 text-xs text-muted-foreground underline">
-                        Sessions
-                    </Link>
-                    <Button size="sm" variant="ghost" aria-pressed={mobilePane === 'canvas'} onClick={() => setMobilePane('canvas')}>
-                        Canvas
-                    </Button>
-                    <Button size="sm" variant="ghost" aria-pressed={mobilePane === 'chat'} onClick={() => setMobilePane('chat')}>
-                        Chat
-                    </Button>
-                </div>
-            </header>
-            {/* react-resizable-panels supplies keyboard and pointer resizing; Fluid has no split-pane primitive. */}
-            <Group
-                groupRef={groupRef}
-                disabled={isNarrow}
-                className={`min-h-0 flex-1 ${mobilePane === 'canvas' ? 'workspace-show-canvas' : 'workspace-show-chat'}`}
-                defaultLayout={layout}
-                onLayoutChanged={(next, meta) => {
-                    if (meta.isUserInteraction) writeLocal(layoutKey, next);
-                }}
-            >
-                <Panel id="canvas" defaultSize="70%" minSize="40%" maxSize="80%" className="workspace-canvas min-w-0 bg-muted/30">
-                    {canvas}
-                </Panel>
-                <Separator
-                    aria-label="Resize canvas and chat"
-                    className="workspace-divider w-1 shrink-0 bg-border transition-colors hover:bg-primary focus-visible:bg-primary focus-visible:outline-none"
-                />
-                <Panel id="chat" defaultSize="30%" minSize="20%" maxSize="60%" className="workspace-chat min-w-0 bg-background">
-                    <DrawingChat id={id} />
-                </Panel>
-            </Group>
-        </section>
+        <div className="relative flex h-full min-h-0 flex-1 bg-muted/30">
+            <SessionChatPanel drawing={drawing} previewDrawing={previewDrawing} />
+            <section aria-label="Blueprint canvas" className="relative min-h-0 min-w-0 flex-1">
+                {canvas}
+            </section>
+        </div>
     );
 }
 

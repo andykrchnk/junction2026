@@ -10,16 +10,15 @@ import { ChatMessage } from '@repo/design-system/components/ui/chat-message';
 import { ThinkingIndicator } from '@repo/design-system/components/ui/thinking-indicator';
 import { trpc } from '@/shared/trpc';
 import { $$drawings } from './model';
-import { DrawingUpload, DrawingAttachmentThumbnail } from './drawing-upload';
+import { DrawingAttachmentThumbnail } from './drawing-upload';
 import { DrawingProgress } from './drawing-progress';
 
 const questionLimit = 4000;
 
-export function DrawingChat({ id }: Readonly<{ id: string }>) {
-    const { draft, error, uploading, activity, asking } = useUnit({
+export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previewDrawing?: Drawing }>) {
+    const { draft, error, activity, asking } = useUnit({
         draft: $$drawings.$draft,
         error: $$drawings.$error,
-        uploading: $$drawings.$uploading,
         activity: $$drawings.$activity,
         asking: $$drawings.$asking,
     });
@@ -29,6 +28,8 @@ export function DrawingChat({ id }: Readonly<{ id: string }>) {
         error: loadError,
     } = useQuery({
         ...trpc.drawings.get.queryOptions({ id }),
+        enabled: !previewDrawing,
+        initialData: previewDrawing,
         refetchInterval: (query) => (query.state.data?.busy || query.state.data?.detection?.status === 'processing' || (activity[id] ?? 0) > 0 ? 2000 : false),
     });
     const endRef = useRef<HTMLDivElement>(null);
@@ -124,16 +125,7 @@ export function DrawingChat({ id }: Readonly<{ id: string }>) {
                     <div ref={endRef} />
                 </div>
                 <div className="max-h-[50%] shrink-0 overflow-y-auto p-3">
-                    {!drawing.attachment && (
-                        <DrawingUpload
-                            key={id}
-                            disabled={busy}
-                            uploading={uploading && busy}
-                            onUpload={(file) => {
-                                void $$drawings.uploadFx({ id, file }).catch(() => {});
-                            }}
-                        />
-                    )}
+                    {previewDrawing && <p className="mb-3 text-xs text-muted-foreground">Local preview · Sign in to analyze and chat.</p>}
                     {clarification ? (
                         <fieldset disabled={busy || asking} className="min-w-0 border-0 p-0">
                             <legend className="text-primary mb-2 text-xs font-medium">More information needed</legend>
