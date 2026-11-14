@@ -1,8 +1,8 @@
+import { SessionLayouts, layoutDirections } from './session-layouts';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Plus, Upload, FileText, Search, Check, X, FolderOpen, ScanLine } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Upload, FileText, Check, X, ScanLine } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { BrandLogo } from '../components/ui/brand-logo';
 import { Progress } from '../components/ui/progress';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '../components/ui/select';
 import './session-workshop.css';
@@ -34,18 +34,15 @@ export const ICON_CLASSES = [
     'Bathtub',
     'Chimney',
 ];
-const directions = [
-    { name: 'Quiet list', note: 'A focused starting point. One action, a clear history.', short: 'Minimal' },
-    { name: 'Plan library', note: 'Recognize your sessions by the drawings inside them.', short: 'Visual' },
-    { name: 'Upload first', note: 'Start with a document. Your sessions follow below.', short: 'Guided' },
-    { name: 'Workspace', note: 'An overview on the left, room to begin on the right.', short: 'Split' },
-    { name: 'Session index', note: 'A compact view for a growing drawing collection.', short: 'Compact' },
-];
+const directions = layoutDirections;
+
 type Session = { id: number; name: string; file: string; status: string; rooms: number; notes?: string[]; source?: File };
 const examples: Session[] = [
     { id: 1, name: 'Courtyard house', file: 'Ground floor.pdf', status: 'Ready', rooms: 8 },
     { id: 2, name: 'Riverside apartment', file: 'Level 02.pdf', status: 'Needs review', rooms: 6 },
     { id: 3, name: 'Garden studio', file: 'Studio plan.png', status: 'Ready', rooms: 3 },
+    { id: 4, name: 'Northside residence', file: 'First floor.pdf', status: 'Ready', rooms: 7 },
+    { id: 5, name: 'Workshop extension', file: 'Proposed plan.pdf', status: 'Needs review', rooms: 4 },
 ];
 const roomSamples = [
     { name: 'Living Room', score: 96, x: 24, y: 24, w: 225, h: 158 },
@@ -99,8 +96,7 @@ function Plan({ selected = -1, onSelect, small = false }: Readonly<{ selected?: 
 
 export function SessionWorkshop({ initialVariant = 0 }: Readonly<{ initialVariant?: number }>) {
     const [variant, setVariant] = useState(initialVariant);
-    const [sessions, setSessions] = useState<Session[]>([]);
-    const [query, setQuery] = useState('');
+    const [sessions, setSessions] = useState<Session[]>(examples);
     const [screen, setScreen] = useState<'home' | 'upload' | 'scan' | 'review' | 'session'>('home');
     const [file, setFile] = useState<File | null>(null);
     const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -195,12 +191,6 @@ export function SessionWorkshop({ initialVariant = 0 }: Readonly<{ initialVarian
         setQuestion('');
         setScreen('session');
     }
-    const shown = sessions.filter((s) => `${s.name} ${s.file}`.toLowerCase().includes(query.toLowerCase()));
-    const newButton = (
-        <Button leadingIcon={Plus} onClick={start}>
-            New session
-        </Button>
-    );
     const uploadPanel = (
         <div
             className="pw-upload"
@@ -222,35 +212,6 @@ export function SessionWorkshop({ initialVariant = 0 }: Readonly<{ initialVarian
             </Button>
         </div>
     );
-    function empty() {
-        return (
-            <div className="pw-empty">
-                <div className="pw-empty-plan">
-                    <Plan small />
-                </div>
-                <h2>Your next project starts here.</h2>
-                <p>Upload a blueprint to identify rooms and explore your space.</p>
-                {newButton}
-            </div>
-        );
-    }
-    function row(s: Session, i: number) {
-        return (
-            <button className="pw-row" key={s.id} onClick={() => open(s)}>
-                <span className="pw-index">{String(i + 1).padStart(2, '0')}</span>
-                <span className="pw-row-title">
-                    {s.name}
-                    <small>{s.file}</small>
-                </span>
-                <span className="pw-status">
-                    <i className={s.status === 'Ready' ? 'ready' : ''} />
-                    {s.status}
-                </span>
-                <span className="pw-row-detail">{s.rooms} rooms</span>
-                <ArrowRight size={16} />
-            </button>
-        );
-    }
     return (
         <div className="pw-root">
             <header className="pw-workshop">
@@ -304,164 +265,18 @@ export function SessionWorkshop({ initialVariant = 0 }: Readonly<{ initialVarian
                     e.target.value = '';
                 }}
             />
-            <div className={`pw-shell pw-v${variant}`}>
-                {(variant === 0 || variant === 3 || variant === 4) && (
-                    <aside className="pw-sidebar">
-                        <BrandLogo />
-                        <div className="pw-account">
-                            <span>Personal workspace</span>
-                            <small>@oscaritoburito</small>
-                        </div>
-                        <Button variant="secondary" leadingIcon={FolderOpen} onClick={() => setScreen('home')}>
-                            Your sessions
-                        </Button>
-                        <div className="pw-sidebar-bottom">
-                            <span className="pw-avatar">O</span>
-                            <div>
-                                Oscar<small>Design preview</small>
-                            </div>
-                        </div>
-                    </aside>
-                )}
+            <div className={`pw-shell pw-new-layout pw-v${variant}`}>
                 <div className="pw-content">
-                    {(variant === 1 || variant === 2) && (
-                        <div className="pw-topbar">
-                            <BrandLogo />
-                            <span>Personal workspace</span>
-                            <span className="pw-avatar">O</span>
-                        </div>
-                    )}
                     {screen === 'home' ? (
-                        <main className="pw-main">
-                            <div className="pw-title">
-                                <div>
-                                    <p className="pw-eyebrow">WORKSPACE</p>
-                                    <h1>
-                                        Your sessions<span className="pw-count">{sessions.length}</span>
-                                    </h1>
-                                    <p>Every blueprint. Every answer. One place.</p>
-                                </div>
-                                {variant !== 2 && newButton}
-                            </div>
-                            {variant === 2 && (
-                                <div className="pw-guided">
-                                    <div>
-                                        <span className="pw-kicker">FROM PLAN TO UNDERSTANDING</span>
-                                        <h2>
-                                            Give your drawings
-                                            <br />a second pair of eyes.
-                                        </h2>
-                                        <ol>
-                                            <li>
-                                                <span>01</span>Upload your blueprint
-                                            </li>
-                                            <li>
-                                                <span>02</span>Review what we find
-                                            </li>
-                                            <li>
-                                                <span>03</span>Ask with context
-                                            </li>
-                                        </ol>
-                                    </div>
-                                    {uploadPanel}
-                                </div>
-                            )}
-                            <div className="pw-tools">
-                                <span>{variant === 2 ? 'Recent sessions' : variant === 4 ? 'All sessions' : 'Your library'}</span>
-                                <div>
-                                    <Search size={16} />
-                                    <Input
-                                        aria-label="Search sessions"
-                                        value={query}
-                                        onChange={(e) => setQuery(e.target.value)}
-                                        placeholder="Find a session…"
-                                    />
-                                </div>
-                            </div>
-                            {variant === 3 ? (
-                                <div className="pw-split">
-                                    <div>
-                                        {shown.length ? (
-                                            shown.map(row)
-                                        ) : (
-                                            <div className="pw-list-empty">
-                                                <FolderOpen size={22} />
-                                                <h2>No sessions yet</h2>
-                                                <p>New sessions will appear here.</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <section className="pw-start">
-                                        <span className="pw-kicker">A CLEARER PICTURE</span>
-                                        <Plan small />
-                                        <h2>What are you working on?</h2>
-                                        <p>
-                                            Begin a session with a floor plan.
-                                            <br />
-                                            We’ll help you read between the lines.
-                                        </p>
-                                        {newButton}
-                                    </section>
-                                </div>
-                            ) : variant === 1 ? (
-                                <div className="pw-gallery">
-                                    <button className="pw-new-card" onClick={start}>
-                                        <Plus size={26} />
-                                        <h2>New session</h2>
-                                        <p>Add a blueprint to your library</p>
-                                    </button>
-                                    {shown.map((s) => (
-                                        <button className="pw-session-card" key={s.id} onClick={() => open(s)}>
-                                            <div>
-                                                <Plan small />
-                                            </div>
-                                            <section>
-                                                <h2>{s.name}</h2>
-                                                <p>{s.file}</p>
-                                                <footer>
-                                                    <span>{s.status}</span>
-                                                    <ArrowRight size={16} />
-                                                </footer>
-                                            </section>
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : variant === 4 ? (
-                                <div className="pw-table">
-                                    <div className="pw-table-head">
-                                        <span>SESSION</span>
-                                        <span>STATUS</span>
-                                        <span>ROOMS</span>
-                                    </div>
-                                    {shown.length ? (
-                                        shown.map(row)
-                                    ) : (
-                                        <div className="pw-list-empty">
-                                            <h2>A clean slate.</h2>
-                                            <p>Your sessions will be listed here. Create your first to get started.</p>
-                                            {newButton}
-                                        </div>
-                                    )}
-                                </div>
-                            ) : shown.length ? (
-                                <div>{shown.map(row)}</div>
-                            ) : query ? (
-                                <div className="pw-list-empty">No sessions match “{query}”.</div>
-                            ) : variant === 2 ? (
-                                <div className="pw-list-empty">
-                                    <p>No sessions yet. Upload your first drawing above.</p>
-                                </div>
-                            ) : (
-                                empty()
-                            )}
-                            {query && !shown.length && (variant === 1 || variant === 3 || variant === 4) && (
-                                <p className="pw-muted">No sessions match “{query}”.</p>
-                            )}
-                            <footer className="pw-foot">
-                                <span>Pirto / Drawing intelligence</span>
-                                <span>Your work, with more context.</span>
-                            </footer>
-                        </main>
+                        <SessionLayouts
+                            variant={variant}
+                            sessions={sessions}
+                            onNew={start}
+                            onOpen={(session) => {
+                                const original = sessions.find((s) => s.id === session.id);
+                                if (original) open(original);
+                            }}
+                        />
                     ) : (
                         <main className="pw-flow">
                             <Button variant="ghost" leadingIcon={ArrowLeft} onClick={() => setScreen('home')}>

@@ -5,8 +5,8 @@ const meta = { title: 'Prototypes/Session dashboards', component: SessionWorksho
 >;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const QuietList: Story = { args: { initialVariant: 0 } };
-export const PlanLibrary: Story = { args: { initialVariant: 1 } };
-export const UploadFirst: Story = { args: { initialVariant: 2 } };
-export const Workspace: Story = { args: { initialVariant: 3 } };
-export const SessionIndex: Story = { args: { initialVariant: 4 } };
+export const Balanced: Story = { args: { initialVariant: 0 } };
+export const FiveAcross: Story = { args: { initialVariant: 1 } };
+export const OpenGallery: Story = { args: { initialVariant: 2 } };
+export const DrawingSheets: Story = { args: { initialVariant: 3 } };
+export const WideLibrary: Story = { args: { initialVariant: 4 } };
