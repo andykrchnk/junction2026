@@ -13,8 +13,9 @@ export const DetectionContext = createContext<{ drawing: Drawing; model: CanvasM
 const colors = { room: '#0d9488', icon: '#d97706', junction: '#7c3aed' };
 
 function polygonPath(geometry: DetectedProperty['geometry']): string {
-    if (geometry.type !== 'Polygon') return '';
-    return geometry.coordinates.map((ring) => ring.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${x},${y}`).join(' ') + 'Z').join(' ');
+    if (geometry.type === 'Point') return '';
+    const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
+    return polygons.flatMap((polygon) => polygon.map((ring) => ring.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${x},${y}`).join(' ') + 'Z')).join(' ');
 }
 
 function DetectionSheet({ page, drawingId, model }: Readonly<{ page: PredictionPage; drawingId: string; model: CanvasModel }>) {
@@ -82,7 +83,7 @@ function DetectionSheet({ page, drawingId, model }: Readonly<{ page: PredictionP
                                 strokeWidth: isSelected ? 3 : 1.5,
                                 vectorEffect: 'non-scaling-stroke',
                             };
-                            return property.geometry.type === 'Polygon' ? (
+                            return property.geometry.type !== 'Point' ? (
                                 <path
                                     key={index}
                                     {...common}

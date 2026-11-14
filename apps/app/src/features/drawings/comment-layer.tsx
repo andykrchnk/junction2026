@@ -36,13 +36,15 @@ function commentPoint(params: { comment: ScanComment; drawing: Drawing }) {
             : candidate.type === 'icon' && comment.fixtureId === `${comment.page}:fixture:${index}`,
     );
     if (!page || !property) return null;
+    // Without a supplied centroid/bounds, anchor to a real exterior vertex.
+    const geometryAnchor =
+        property.geometry.type === 'Point'
+            ? property.geometry.coordinates
+            : property.geometry.type === 'Polygon'
+              ? property.geometry.coordinates[0]?.[0]
+              : property.geometry.coordinates[0]?.[0]?.[0];
     const centroid =
-        property.centroid ??
-        (property.bbox
-            ? [(property.bbox[0] + property.bbox[2]) / 2, (property.bbox[1] + property.bbox[3]) / 2]
-            : property.geometry.type === 'Point'
-              ? property.geometry.coordinates
-              : null);
+        property.centroid ?? (property.bbox ? [(property.bbox[0] + property.bbox[2]) / 2, (property.bbox[1] + property.bbox[3]) / 2] : geometryAnchor);
     if (!centroid) return null;
     return { x: centroid[0] / page.width, y: centroid[1] / page.height };
 }

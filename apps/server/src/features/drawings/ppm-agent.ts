@@ -32,9 +32,11 @@ export async function estimatePpm(params: EstimatePpmParams): Promise<PpmCandida
                 detectedRoomCount: rooms.length,
                 rooms: rooms.slice(0, 12).map((room) => {
                     const boundedGeometry =
-                        room.geometry.type === 'Polygon' &&
-                        room.geometry.coordinates.length <= 2 &&
-                        room.geometry.coordinates.reduce((total, ring) => total + ring.length, 0) <= 48
+                        room.geometry.type !== 'Point' &&
+                        (room.geometry.type === 'Polygon' ? [room.geometry.coordinates] : room.geometry.coordinates).reduce(
+                            (total, polygon) => total + polygon.reduce((count, ring) => count + ring.length, 0),
+                            0,
+                        ) <= 48
                             ? room.geometry
                             : null;
                     return {

@@ -64,7 +64,7 @@ Use status answered when sufficient evidence or explicit user inputs allow an an
 Read brief replies in the context of the most recent clarification and continue the original task. User replies may supply measurements, units, room identification, object definitions or explicit confirmations. Use those as user-provided inputs, never as newly verified drawing observations. List the specific user-supplied inputs used in this response in userProvidedInformation; otherwise return an empty array. Attribute them in text, for example "Using the 3 m wall height you provided". Do not invent user confirmations or treat prior assistant guesses as user information. If a reply conflicts with drawing evidence, has ambiguous scope or lacks units, ask for clarification before using it. If the user changes the subject, follow the new question rather than forcing it into the previous clarification.
 Respect limitations and missingInformation, but do not repeat a clarification already answered in the conversation. For calculations show the formula, inputs and units, using compatible measurements for the requested view. A printed area may be read without calibration. A printed ratio or bounding box never establishes pixel-to-real calibration or a room polygon. User-supplied dimensions may support a calculation when the relevant geometry is established; a known length alone does not let you reconstruct missing geometry. Never guess a standard door width.
 The inspection and detected candidates are selective, so their number is not an exhaustive physical object count. Explain uncertainty, repeated depictions, partial visibility and construction state when relevant. Identify supporting evidence by page and descriptive location. Ask only what the requested task needs; missing scale does not block reading labels or printed areas.
-Use saved detector properties when relevant, clearly attributing them as CubiCasa model detections rather than verified drawing facts. Its component softmax and heatmap scores are not calibrated correctness probabilities. Report disagreements with analysis or user inputs rather than silently resolving them. Counts by class are counts of detected candidates on processed pages, not guaranteed physical totals. Pending, missing or failed pages make coverage incomplete. Pixel areas and coordinates are not metres or square metres; never convert them using a printed ratio alone. Full geometries are retained in the database, while the context supplies candidate counts and a bounded property list; do not imply omitted properties were inspected individually.
+Use saved detector properties when relevant, clearly attributing them as processing-pipeline predictions rather than verified drawing facts. Processing confidence, component softmax and heatmap scores are not calibrated correctness probabilities. Processing names and physical measurements are extracted interpretations; retain their original units and check them against the drawing evidence. Report disagreements with analysis or user inputs rather than silently resolving them. Counts by class are counts of detected candidates on processed pages, not guaranteed physical totals. Pending, missing or failed pages make coverage incomplete. Pixel areas and coordinates are not metres or square metres; never convert them using a printed ratio alone. Full geometries are retained in the database, while the context supplies candidate counts and a bounded property list; do not imply omitted properties were inspected individually.
 Write plain text.\nSAVED DETECTOR CONTEXT:\n${JSON.stringify(detectorContext(drawing))}\nSAVED ANALYSIS:\n${JSON.stringify(drawing.analysis)}`,
     });
     const result = await run(agent, pending.question, { session, signal, maxTurns: 1 });
@@ -95,6 +95,23 @@ function detectorContext(drawing: Pick<Drawing, 'attachment' | 'detection'>) {
                 height: page.height,
                 coordinateSystem: page.coordinateSystem,
                 detectedCounts: counts,
+                processingObjects:
+                    'rooms' in page.raw
+                        ? {
+                              rooms: page.raw.rooms
+                                  .slice(0, 200)
+                                  .map(({ id, class: label, confidence, name, measurements }) => ({ id, class: label, confidence, name, measurements })),
+                              fixtures: page.raw.fixtures.slice(0, 200).map(({ id, class: label, confidence, room_ids, measurements }) => ({
+                                  id,
+                                  class: label,
+                                  confidence,
+                                  room_ids,
+                                  measurements,
+                              })),
+                              omittedRooms: Math.max(0, page.raw.rooms.length - 200),
+                              omittedFixtures: Math.max(0, page.raw.fixtures.length - 200),
+                          }
+                        : null,
                 properties: page.detectedProperties.slice(0, 200).map(({ geometry, ...property }) => ({
                     ...property,
                     geometryType: geometry.type,
