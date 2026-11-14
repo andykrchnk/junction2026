@@ -9,6 +9,10 @@ import { Env } from '../../shared/env';
 import { blueprintFiles } from './files';
 import { analyze, answer } from './agent';
 import { detectDrawing } from './detection';
+import { estimatePpm } from './ppm-agent';
+import { resolvePpm } from './ppm-resolution-agent';
+import { createPpmComments } from './ppm-comments';
+import { scanCommentsRouter } from './comments';
 
 export async function getDrawing(id: string, ownerId: string) {
     const doc = await db.drawing.DrawingModel.findOne({ _id: id, ownerId }).select('-canvasDocument -canvasRevision').lean();
@@ -19,7 +23,7 @@ export async function getDrawing(id: string, ownerId: string) {
 async function processDrawing(
     id: string,
     ownerId: string,
-    operation: (drawing: Drawing, signal: AbortSignal, lease: string) => Promise<Partial<Pick<Drawing, 'analysis' | 'messages'>>>,
+    operation: (drawing: Drawing, signal: AbortSignal, lease: string) => Promise<Partial<Pick<Drawing, 'analysis' | 'messages' | 'ppmCandidates' | 'ppm'>>>,
 ) {
     if (!Env.OPENAI_API_KEY) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Add OPENAI_API_KEY to the server to enable analysis and chat.' });
     const lease = crypto.randomUUID();
@@ -52,6 +56,7 @@ async function processDrawing(
 }
 
 export const drawingRouter = t.router({
+    comments: scanCommentsRouter,
     rename: protectedProcedure
         .input(RenameDrawingZod)
         .output(DrawingZod)
@@ -116,8 +121,8 @@ export const drawingRouter = t.router({
         .input(DrawingIdZod)
         .output(DrawingZod)
         .mutation(({ input, ctx }) =>
-            processDrawing(input.id, ctx.user.id, async (drawing, signal) => {
-                if (drawing.analysis) return {};
+            processDrawing(input.id, ctx.user.id, async (drawing, signal, lease) => {
+                if (drawing.analysis && drawing.ppmCandidates != null && drawing.ppm != null) return {};
                 if (!drawing.attachment) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload a blueprint first.' });
                 if (
                     drawing.detection?.status !== 'ready' ||
@@ -127,10 +132,65 @@ export const drawingRouter = t.router({
                 ) {
                     throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Complete NN detection for every page before starting OpenAI analysis.' });
                 }
-                const chunks: Buffer[] = [];
-                for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(drawing.attachment.id))) chunks.push(Buffer.from(chunk));
-                const analysis = await analyze(drawing.attachment, Buffer.concat(chunks), signal, drawing.detection);
-                return { analysis };
+                const attachment = drawing.attachment;
+                const detection = drawing.detection;
+                const saveResult = async (change: Partial<Pick<Drawing, 'analysis' | 'ppmCandidates' | 'ppm'>>) => {
+                    signal.throwIfAborted();
+                    const saved = await db.drawing.DrawingModel.updateOne(
+                        { _id: input.id, ownerId: ctx.user.id, lease, leaseUntil: { $gt: new Date() } },
+                        {
+                            $set: change,
+                            ...(change.ppmCandidates
+                                ? {
+                                      $push: {
+                                          comments: { $each: createPpmComments({ candidates: change.ppmCandidates, createdAt: new Date().toISOString() }) },
+                                      },
+                                  }
+                                : {}),
+                        },
+                    );
+                    if (!saved.matchedCount) throw new TRPCError({ code: 'CONFLICT', message: 'Processing expired. Please retry.' });
+                };
+                const outcomes = await Promise.allSettled([
+                    drawing.analysis
+                        ? Promise.resolve()
+                        : (async () => {
+                              const chunks: Buffer[] = [];
+                              for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(attachment.id))) chunks.push(Buffer.from(chunk));
+                              const analysis = await analyze(attachment, Buffer.concat(chunks), signal, detection);
+                              await saveResult({ analysis });
+                          })(),
+                    (async () => {
+                        const pages = await Promise.all(
+                            detection.pages.map(async (page) => {
+                                const chunks: Buffer[] = [];
+                                for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(page.rasterFileId))) chunks.push(Buffer.from(chunk));
+                                return { page: page.page, width: page.width, height: page.height, bytes: Buffer.concat(chunks) };
+                            }),
+                        );
+                        if (drawing.ppmCandidates == null) {
+                            const ppmCandidates = await estimatePpm({ pages, detection, signal });
+                            await saveResult({ ppmCandidates });
+                        }
+                        return pages;
+                    })(),
+                ]);
+                const failure = outcomes.find((outcome) => outcome.status === 'rejected');
+                if (failure?.status === 'rejected') {
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'One or more analysis calls failed or timed out. Saved results are retained; retry to complete the remaining call.',
+                        cause: failure.reason,
+                    });
+                }
+                const preparedPages = outcomes[1];
+                if (preparedPages.status !== 'fulfilled') throw new Error('Canonical rasters are unavailable.');
+                const current = await getDrawing(input.id, ctx.user.id);
+                if (current.ppm == null) {
+                    const ppm = await resolvePpm({ drawing: current, pages: preparedPages.value, signal });
+                    await saveResult({ ppm });
+                }
+                return {};
             }),
         ),
     ask: protectedProcedure

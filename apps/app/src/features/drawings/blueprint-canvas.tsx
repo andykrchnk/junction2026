@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useUnit } from 'effector-react';
 import { useTheme } from 'next-themes';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { CanvasStateZod, type Drawing } from '@repo/types';
 import { AssetRecordType, createTLStore, createShapeId, getSnapshot, parseTldrawJsonFile, Tldraw, type Editor, type TLAssetStore } from 'tldraw';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&url';
@@ -10,7 +11,19 @@ import { config } from '@/shared/config';
 import { createCanvasModel, type CanvasModel, type LoadedCanvas } from './canvas/model';
 import { readLocal, ViewZod, writeLocal } from './canvas-storage';
 import { DetectionCanvasLayer, DetectionContext, DetectionControls } from './detection-layer';
+import { CommentsContext, CommentCanvasLayer } from './comment-layer';
+import { createCommentsModel } from './canvas/comments-model';
 import 'tldraw/tldraw.css';
+import './blueprint-canvas.css';
+
+function CanvasLayers() {
+    return (
+        <>
+            <DetectionCanvasLayer />
+            <CommentCanvasLayer />
+        </>
+    );
+}
 
 type BlueprintPage = Readonly<{ src: string; width: number; height: number }>;
 type Preparation =
@@ -107,9 +120,40 @@ function CanvasEditor({
     model: CanvasModel;
 }>) {
     const { resolvedTheme } = useTheme();
-    const status = useUnit(model.$status);
+    const [commentsModel] = useState(() => createCommentsModel(drawing.id));
+    const { status, commentMode, openCommentId } = useUnit({ status: model.$status, commentMode: commentsModel.$mode, openCommentId: commentsModel.$openId });
     const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
     const [error, setError] = useState<string | null>(null);
+    useHotkeys(
+        'c',
+        (event) => {
+            if (!activeEditor) return;
+            commentsModel.modeChanged('comment');
+            activeEditor.setCurrentTool('hand');
+            activeEditor.focus();
+            event.stopPropagation();
+        },
+        { enabled: activeEditor !== null, preventDefault: true, eventListenerOptions: { capture: true } },
+        [activeEditor, commentsModel],
+    );
+    useHotkeys(
+        'esc',
+        (event) => {
+            event.stopPropagation();
+            if (event.repeat) return;
+            if (openCommentId !== null) commentsModel.openChanged(null);
+            else commentsModel.modeChanged('default');
+            activeEditor?.setCurrentTool('hand');
+        },
+        {
+            enabled: activeEditor !== null && (commentMode === 'comment' || openCommentId !== null),
+            preventDefault: true,
+            enableOnFormTags: true,
+            enableOnContentEditable: true,
+            eventListenerOptions: { capture: true },
+        },
+        [activeEditor, commentsModel, openCommentId],
+    );
     const [recoveryConflict, setRecoveryConflict] = useState(!!recovery?.document && recovery.revision !== saved.revision);
     const [assets] = useState<TLAssetStore>(() => ({
         upload: async () => {
@@ -272,16 +316,34 @@ function CanvasEditor({
             <div
                 className="relative min-h-0 flex-1"
                 aria-label="Blueprint canvas"
+                data-comment-mode={commentMode}
+                tabIndex={-1}
                 onPointerDownCapture={(event) => {
-                    // Escape and editor shortcuts may leave the hand tool; every new canvas drag pans.
-                    if (event.button === 0 && event.target instanceof Element && event.target.closest('.tl-canvas')) {
-                        activeEditor?.setCurrentTool('hand');
-                        activeEditor?.focus();
-                    }
+                    if (!(event.target instanceof Element) || event.target.closest('[data-comment-ui], input, textarea, select, [contenteditable="true"]'))
+                        return;
+                    if (event.button !== 0 || !activeEditor || !event.target.closest('.tl-canvas')) return;
+                    activeEditor.setCurrentTool('hand');
+                    activeEditor.focus();
+                    if (commentMode !== 'comment') return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const point = activeEditor.screenToPage({ x: event.clientX, y: event.clientY });
+                    const hit = Array.from({ length: drawing.attachment?.pages ?? 0 }, (_, index) => index + 1)
+                        .flatMap((page) => {
+                            const shape = activeEditor.getShape(createShapeId(`blueprint-${page}`));
+                            if (!shape || shape.type !== 'image') return [];
+                            const local = activeEditor.getPointInShapeSpace(shape, point);
+                            const x = local.x / shape.props.w;
+                            const y = local.y / shape.props.h;
+                            return x >= 0 && x <= 1 && y >= 0 && y <= 1 ? [{ page, x, y }] : [];
+                        })
+                        .at(-1);
+                    if (hit) commentsModel.pointRequested(hit);
                 }}
                 onKeyDownCapture={(event) => {
-                    if (!(event.target instanceof Element) || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
-                    if (!event.target.closest('.tl-container') || !activeEditor) return;
+                    if (!activeEditor || !(event.target instanceof Element)) return;
+                    if (event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+                    if (!event.target.closest('.tl-container')) return;
                     if (event.key === '+' || event.key === '=') activeEditor.zoomIn();
                     else if (event.key === '-') activeEditor.zoomOut();
                     else if (event.key === '0') activeEditor.zoomToFit();
@@ -290,17 +352,19 @@ function CanvasEditor({
                     event.stopPropagation();
                 }}
             >
-                <DetectionContext.Provider value={{ drawing, model }}>
-                    <Tldraw
-                        store={store}
-                        onMount={mount}
-                        hideUi
-                        initialState="hand"
-                        licenseKey={config.TLDRAW_LICENSE_KEY}
-                        options={{ maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
-                        components={{ OnTheCanvas: DetectionCanvasLayer }}
-                    />
-                </DetectionContext.Provider>
+                <CommentsContext.Provider value={{ drawing, model: commentsModel }}>
+                    <DetectionContext.Provider value={{ drawing, model }}>
+                        <Tldraw
+                            store={store}
+                            onMount={mount}
+                            hideUi
+                            initialState="hand"
+                            licenseKey={config.TLDRAW_LICENSE_KEY}
+                            options={{ maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
+                            components={{ OnTheCanvas: CanvasLayers }}
+                        />
+                    </DetectionContext.Provider>
+                </CommentsContext.Provider>
                 <DetectionControls drawing={drawing} model={model} />
             </div>
         </div>

@@ -1,0 +1,19 @@
+[data-comment-mode='comment'] .tl-canvas,
+[data-comment-mode='comment'] .tl-canvas * {
+    cursor:
+        url('./comment-cursor.svg') 3 21,
+        crosshair !important;
+}
+
+[data-comment-mode='comment'] .tl-canvas [data-comment-ui],
+[data-comment-mode='comment'] .tl-canvas [data-comment-ui] * {
+    cursor: auto !important;
+}
+
+[data-comment-mode='comment'] .tl-canvas [data-comment-ui] button {
+    cursor: pointer !important;
+}
+
+[data-comment-mode='comment'] .tl-canvas [data-comment-ui] textarea {
+    cursor: text !important;
+}
