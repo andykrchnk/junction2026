@@ -2,19 +2,7 @@ import { useEffect, useState } from 'react';
 import { useUnit } from 'effector-react';
 import { useTheme } from 'next-themes';
 import { CanvasStateZod, type Drawing } from '@repo/types';
-import {
-    AssetRecordType,
-    createTLStore,
-    PageRecordType,
-    createShapeId,
-    getSnapshot,
-    parseTldrawJsonFile,
-    Tldraw,
-    useValue,
-    type Editor,
-    type TLAssetStore,
-    type TLPageId,
-} from 'tldraw';
+import { AssetRecordType, createTLStore, createShapeId, getSnapshot, parseTldrawJsonFile, Tldraw, useValue, type Editor, type TLAssetStore } from 'tldraw';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&url';
 import { Button } from '@/components/ui/button';
 import { authenticatedFetch } from '@/shared/auth';
@@ -73,6 +61,35 @@ function serializeDocument(editor: Editor): string {
     return JSON.stringify({ tldrawFileFormatVersion: 1, schema: document.schema, records: Object.values(document.store) });
 }
 
+function combineSavedPages(editor: Editor): boolean {
+    const savedPages = editor.getPages();
+    const [first] = savedPages;
+    if (!first || savedPages.length === 1) return false;
+    editor.run(
+        () => {
+            let offset = 0;
+            for (const page of savedPages) {
+                const roots = [...editor.getPageShapeIds(page.id)].flatMap((id) => {
+                    const shape = editor.getShape(id);
+                    return shape?.parentId === page.id ? [shape] : [];
+                });
+                let right = 0;
+                for (const shape of roots) {
+                    right = Math.max(right, editor.getShapePageBounds(shape)?.maxX ?? shape.x);
+                    if (page.id !== first.id) editor.reparentShapes([shape], first.id);
+                    editor.updateShape({ id: shape.id, type: shape.type, x: shape.x + offset, y: shape.y });
+                }
+                if (roots.length) offset += Math.max(right, 600) + 80;
+                if (page.id !== first.id) editor.deletePage(page.id);
+            }
+            editor.updatePage({ id: first.id, name: 'Blueprint' });
+            editor.setCurrentPage(first.id);
+        },
+        { ignoreShapeLock: true },
+    );
+    return true;
+}
+
 function CanvasEditor({
     drawing,
     pages,
@@ -91,7 +108,6 @@ function CanvasEditor({
     const { resolvedTheme } = useTheme();
     const status = useUnit(model.$status);
     const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
-    const currentPage = useValue('blueprint page', () => activeEditor?.getCurrentPageId() ?? '', [activeEditor]);
     const zoom = useValue('blueprint zoom', () => activeEditor?.getZoomLevel() ?? 1, [activeEditor]);
     const [error, setError] = useState<string | null>(null);
     const [recoveryConflict, setRecoveryConflict] = useState(!!recovery?.document && recovery.revision !== saved.revision);
@@ -127,17 +143,17 @@ function CanvasEditor({
         try {
             editor.user.updateUserPreferences({ colorScheme: resolvedTheme === 'dark' ? 'dark' : 'light' });
             const document = recovery?.document && recovery.revision === saved.revision ? recovery.document : saved.document;
+            let combinedPages = false;
             if (document) {
                 const parsed = parseTldrawJsonFile({ json: document, schema: editor.store.schema });
                 if (!parsed.ok) throw new Error('This saved canvas could not be opened. Your saved document has not been changed.');
                 editor.store.loadStoreSnapshot(parsed.value.getStoreSnapshot());
+                combinedPages = combineSavedPages(editor);
             } else {
                 const firstPage = editor.getCurrentPageId();
+                editor.updatePage({ id: firstPage, name: 'Blueprint' });
+                let offset = 0;
                 pages.forEach((page, index) => {
-                    const pageId: TLPageId = index === 0 ? firstPage : PageRecordType.createId(`blueprint-${index + 1}`);
-                    if (index > 0) editor.createPage({ id: pageId, name: `Page ${index + 1}` });
-                    else editor.updatePage({ id: pageId, name: 'Page 1' });
-                    editor.setCurrentPage(pageId);
                     const assetId = AssetRecordType.createId(`blueprint-${drawing.attachment?.id}-${index + 1}`);
                     editor.createAssets([
                         {
@@ -158,20 +174,22 @@ function CanvasEditor({
                     editor.createShape({
                         id: createShapeId(`blueprint-${index + 1}`),
                         type: 'image',
-                        x: 0,
+                        x: offset,
                         y: 0,
                         isLocked: true,
                         props: { assetId, w: page.width, h: page.height },
                     });
+                    offset += page.width + 80;
                 });
                 editor.setCurrentPage(firstPage);
             }
             const view = ViewZod.safeParse(readLocal(`${storageKey}:view`));
             const page = view.success ? editor.getPages().find((item) => item.id === view.data.page) : null;
-            if (view.success && page) {
+            let fitFrame: number | null = null;
+            if (view.success && page && !combinedPages) {
                 editor.setCurrentPage(page.id);
                 editor.setCamera(view.data.camera);
-            } else editor.zoomToFit();
+            } else fitFrame = requestAnimationFrame(() => editor.zoomToFit());
             editor.clearHistory();
             editor.updateInstanceState({ isReadonly: true });
             editor.setCurrentTool('hand');
@@ -183,7 +201,7 @@ function CanvasEditor({
             editor.registerExternalContentHandler('url', async () => {
                 setError('Pasting external assets is not supported in this workspace yet.');
             });
-            if (!saved.document || document !== saved.document) model.changed(serializeDocument(editor));
+            if (!saved.document || document !== saved.document || combinedPages) model.changed(serializeDocument(editor));
             const stopDocument = editor.store.listen(
                 () => {
                     const document = serializeDocument(editor);
@@ -206,6 +224,7 @@ function CanvasEditor({
                 stopDocument();
                 stopSession();
                 clearTimeout(viewTimer);
+                if (fitFrame !== null) cancelAnimationFrame(fitFrame);
                 saveView();
             };
         } catch (cause) {
@@ -243,26 +262,9 @@ function CanvasEditor({
             <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 border-b px-3 py-1 text-xs">
                 <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">Drag to pan</span>
-                    {pages.length > 1 && (
-                        <select
-                            aria-label="Blueprint page"
-                            value={currentPage}
-                            className="max-w-32 rounded border bg-background p-1"
-                            onChange={(event) => {
-                                const page = activeEditor?.getPages().find((page) => page.id === event.target.value);
-                                if (page) {
-                                    activeEditor?.setCurrentPage(page.id);
-                                    activeEditor?.zoomToFit();
-                                }
-                            }}
-                        >
-                            {activeEditor?.getPages().map((page) => (
-                                <option key={page.id} value={page.id}>
-                                    {page.name}
-                                </option>
-                            ))}
-                        </select>
-                    )}
+                    <span className="text-muted-foreground">
+                        {pages.length} {pages.length === 1 ? 'sheet' : 'sheets'}
+                    </span>
                 </div>
                 <div className="flex items-center gap-1">
                     <span role="status">
@@ -297,7 +299,7 @@ function CanvasEditor({
                 </div>
             )}
             <div className="relative min-h-0 flex-1" aria-label="Blueprint canvas">
-                <Tldraw store={store} onMount={mount} hideUi licenseKey={config.TLDRAW_LICENSE_KEY} options={{ maxPages: 10 }} />
+                <Tldraw store={store} onMount={mount} hideUi licenseKey={config.TLDRAW_LICENSE_KEY} options={{ maxPages: 1 }} />
             </div>
         </div>
     );

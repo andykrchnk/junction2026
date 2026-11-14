@@ -47,7 +47,7 @@ The Agents SDK session is reconstructed from saved MongoDB question/answer turns
 Drawings open in a tldraw viewer on the left and the existing chat on the right,
 starting at a 70/30 split. The divider supports pointer and keyboard resizing;
 small screens switch between Canvas and Chat. The viewer exposes pan, zoom,
-fit and PDF page navigation. Drawing, media insertion and editing tools are
+and fit, with all PDF sheets arranged side by side on one canvas. Drawing, media insertion and editing tools are
 disabled. Blueprint backgrounds are locked; no neural-network integration or
 geometry overlays are included.
 
@@ -57,7 +57,8 @@ before saving; conflicting writes retain a local recovery draft instead of
 overwriting the server. Saves debounce for one second, with a five-second flush
 while changes continue. Zoom, pan, current page and divider position stay in
 browser storage scoped to user and drawing. Failed saves expose retry and retain
-a browser recovery copy when storage is available. Undo history is not persisted.
+a browser recovery copy when storage is available. Older multi-page canvas documents
+are combined on opening, preserving their shapes. Undo history is not persisted.
 
 Set `VITE_TLDRAW_LICENSE_KEY` in `apps/app/.env` for local builds or in the Railway
 app service variables before a production build. This is a public SDK license
