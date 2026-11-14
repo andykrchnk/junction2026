@@ -1,0 +1,9 @@
+*
+!Dockerfile
+!requirements-service.txt
+!service.py
+!inference.py
+!model/
+!model/*.py
+!utils/
+!utils/*.py
