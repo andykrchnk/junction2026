@@ -9,6 +9,7 @@
         "check-types": "turbo run check-types",
         "format:check": "prettier --check .",
         "check-infra": "tsc --noEmit -p .railway/tsconfig.json",
+        "prepare": "node -e \"if (require('node:fs').existsSync('.git')) require('node:child_process').execFileSync('git', ['config', 'core.hooksPath', '.githooks']);\"",
         "dev:platform": "pnpm --filter @repo/app dev --host 127.0.0.1",
         "dev:storybook": "npm --prefix design-system run storybook -- --ci --host 127.0.0.1",
         "dev:ui": "node scripts/dev-ui.mjs",

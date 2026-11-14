@@ -3,8 +3,8 @@ import { connection } from '../db/connection';
 import { db } from '../db';
 import { Env } from '../shared/env';
 
-await db.user.UserModel.init();
-const server = Bun.serve({ hostname: '0.0.0.0', port: Env.PORT, fetch: app.fetch });
+await Promise.all([db.user.UserModel.init(), db.drawing.DrawingModel.init()]);
+const server = Bun.serve({ hostname: '0.0.0.0', port: Env.PORT, idleTimeout: 255, fetch: app.fetch });
 console.log(`API listening on port ${server.port}`);
 
 async function shutdown() {

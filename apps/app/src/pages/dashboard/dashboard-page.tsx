@@ -1,107 +1,126 @@
 import { BrandLogo } from '@/components/ui/brand-logo';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, Link, useSearch } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
-import { FileStack, LogOut, ArrowUpRight, FolderOpen, ShieldCheck } from 'lucide-react';
+import { LogOut, Plus, FileStack } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { $$user } from '@/entities/user/model';
+import { $$drawings } from '@/features/drawings/model';
+import { DrawingWorkspace } from '@/features/drawings/drawing-workspace';
 import { trpc } from '@/shared/trpc';
 
 export function DashboardPage() {
-    const { user, error, isPending } = useUnit({ user: $$user.$user, error: $$user.$error, isPending: $$user.$isPending });
-    const { data, isPending: isConnecting } = useQuery(trpc.system.status.queryOptions());
+    const { drawing: id } = useSearch({ from: '/' });
     const navigate = useNavigate();
-    const handleSignOut = async () => {
+    const { authError, signingOut, creating, error } = useUnit({
+        authError: $$user.$error,
+        signingOut: $$user.$isPending,
+        creating: $$drawings.$creating,
+        error: $$drawings.$error,
+    });
+    const { data: drawings, isPending, error: listError } = useQuery(trpc.drawings.list.queryOptions());
+    useEffect(() => {
+        $$drawings.opened(id ?? null);
+    }, [id]);
+    const create = async () => {
+        try {
+            const drawing = await $$drawings.createFx();
+            await navigate({ to: '/', search: { drawing: drawing.id } });
+        } catch {
+            /* The feature model owns the error. */
+        }
+    };
+    const signOut = async () => {
         try {
             await $$user.signOutFx();
+            $$drawings.opened(null);
             await navigate({ to: '/login', replace: true });
         } catch {
-            // The auth model keeps the current session and exposes the sign-out error.
+            /* The auth model owns the error. */
         }
     };
     return (
         <div className="flex min-h-svh flex-col md:flex-row">
-            <aside className="bg-card flex border-b p-5 md:w-64 md:shrink-0 md:flex-col md:border-r md:border-b-0 md:p-7">
-                <div className="flex items-center gap-3 text-xl font-semibold tracking-tight">
+            <aside className="bg-card flex flex-col border-b p-5 md:sticky md:top-0 md:h-svh md:w-64 md:shrink-0 md:border-r md:border-b-0">
+                <Link to="/" search={{}} className="mb-6 flex items-center gap-3 text-xl font-semibold tracking-tight">
                     <BrandLogo />
-                </div>
-                <div className="mt-14 hidden md:block">
-                    <p className="text-muted-foreground mb-4 text-[10px] font-semibold tracking-[0.18em] uppercase">Workspace</p>
-                    <div aria-current="page" className="bg-secondary text-primary flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium">
-                        <FolderOpen className="size-4" />
-                        Drawing library
-                    </div>
-                </div>
-                <div className="mt-auto hidden pt-12 md:block">
-                    <Separator />
-                    <div className="mt-6 flex items-center gap-3">
-                        <Avatar>
-                            <AvatarFallback>{user?.email.slice(0, 1).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">{user?.email}</p>
-                        </div>
-                    </div>
-                </div>
+                </Link>
                 <Button
-                    className="ml-auto md:mt-5 md:ml-0 md:justify-start"
-                    variant="ghost"
-                    size="compact"
+                    leadingIcon={Plus}
+                    loading={creating}
                     onClick={() => {
-                        void handleSignOut();
+                        void create();
                     }}
-                    loading={isPending}
-                    leadingIcon={LogOut}
-                    aria-label={isPending ? 'Signing out…' : undefined}
                 >
-                    Sign out
+                    New session
                 </Button>
+                <nav aria-label="Drawing sessions" className="mt-5 flex max-h-44 flex-col gap-1 overflow-y-auto md:max-h-none md:flex-1">
+                    {isPending && (
+                        <p className="text-muted-foreground p-2 text-xs" role="status">
+                            Loading sessions…
+                        </p>
+                    )}
+                    {listError && (
+                        <p className="p-2 text-xs text-destructive" role="alert">
+                            {listError.message}
+                        </p>
+                    )}
+                    {drawings?.map((drawing) => (
+                        <Button key={drawing.id} asChild variant="ghost" active={drawing.id === id} className="h-auto justify-start py-2">
+                            <Link to="/" search={{ drawing: drawing.id }} aria-current={drawing.id === id ? 'page' : undefined}>
+                                <span className="block min-w-0 text-left">
+                                    <span className="block max-w-44 truncate text-sm">{drawing.title}</span>
+                                    <span className="text-muted-foreground block text-xs font-normal">
+                                        {drawing.status} · {new Date(drawing.updatedAt).toLocaleDateString()}
+                                    </span>
+                                </span>
+                            </Link>
+                        </Button>
+                    ))}
+                    {drawings?.length === 0 && <p className="text-muted-foreground p-2 text-xs">Your drawings will appear here.</p>}
+                </nav>
+                <div className="mt-5 border-t pt-4">
+                    <Button
+                        variant="ghost"
+                        size="compact"
+                        leadingIcon={LogOut}
+                        loading={signingOut}
+                        onClick={() => {
+                            void signOut();
+                        }}
+                    >
+                        Sign out
+                    </Button>
+                </div>
             </aside>
-            <main className="min-w-0 flex-1 px-6 py-7 md:px-12">
-                <header className="flex flex-wrap items-center justify-between gap-4 border-b pb-7">
-                    <span className="text-muted-foreground text-sm">
-                        Workspace / <span className="text-foreground">Drawing library</span>
-                    </span>
-                    <span role="status" className="text-muted-foreground flex items-center gap-2 text-xs">
-                        <span className={`size-1.5 rounded-full ${data ? 'bg-primary' : 'bg-amber-600'}`} />
-                        {data ? 'API connected' : isConnecting ? 'Connecting to API…' : 'API unavailable'}
-                    </span>
-                </header>
-                {error && (
-                    <p role="alert" className="text-destructive mt-4 text-sm">
-                        {error}
+            <main className="flex min-w-0 flex-1 flex-col">
+                {(authError || error?.id === null) && (
+                    <p role="alert" className="m-5 text-sm text-destructive">
+                        {authError ?? error?.message}
                     </p>
                 )}
-                <section className="mx-auto max-w-5xl py-12 md:py-16">
-                    <p className="text-primary text-xs font-semibold tracking-[0.16em] uppercase">Your project, in focus</p>
-                    <h1 className="mt-4 text-3xl font-medium tracking-tight md:text-4xl">A clearer view of every drawing.</h1>
-                    <p className="text-muted-foreground mt-4 max-w-xl text-sm leading-relaxed">
-                        Your space for construction drawings and answers grounded in evidence.
-                    </p>
-                    <div className="mt-12 flex items-center justify-between border-b pb-4">
-                        <h2 className="text-sm font-semibold">Drawing library</h2>
-                        <span className="text-muted-foreground text-xs">0 documents</span>
-                    </div>
-                    <div className="bg-card mt-5 flex min-h-80 flex-col items-center justify-center border border-dashed p-8 text-center">
-                        <FileStack className="text-primary mb-5 size-9 stroke-1" />
-                        <h3 className="text-lg font-medium">A clean slate for your next project.</h3>
-                        <p className="text-muted-foreground mt-3 max-w-sm text-sm leading-relaxed">
-                            No drawings have been added. Your project documents will appear here once document ingestion is available.
+                {id ? (
+                    <DrawingWorkspace key={id} id={id} />
+                ) : (
+                    <section className="m-auto max-w-xl px-6 py-20 text-center">
+                        <FileStack className="text-primary mx-auto mb-6 size-10 stroke-1" aria-hidden />
+                        <h1 className="mt-4 text-3xl font-medium tracking-tight">A clearer view of your blueprint.</h1>
+                        <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
+                            Upload a drawing, review its analysis, and ask questions with source evidence. Your sessions stay here when you return.
                         </p>
-                    </div>
-                    <footer className="text-muted-foreground mt-7 flex flex-wrap justify-between gap-3 text-xs">
-                        <span className="flex items-center gap-2">
-                            <ShieldCheck className="size-4" />
-                            Signed in as {user?.email}
-                        </span>
-                        <span className="flex items-center gap-1">
-                            From drawings to decisions
-                            <ArrowUpRight className="size-3" />
-                        </span>
-                    </footer>
-                </section>
+                        <Button
+                            className="mt-7"
+                            leadingIcon={Plus}
+                            loading={creating}
+                            onClick={() => {
+                                void create();
+                            }}
+                        >
+                            Start a drawing session
+                        </Button>
+                    </section>
+                )}
             </main>
         </div>
     );

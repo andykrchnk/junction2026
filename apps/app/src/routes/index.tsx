@@ -1,9 +1,12 @@
+import { z } from 'zod';
+import { MongoIdZod } from '@repo/types';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { DashboardPage } from '@/pages/dashboard/dashboard-page';
 import { $$user } from '@/entities/user/model';
 
 export const Route = createFileRoute('/')({
     ssr: false,
+    validateSearch: z.object({ drawing: MongoIdZod.optional() }),
     beforeLoad: async () => {
         const { user } = await $$user.getUserFx();
         if (!user) throw redirect({ to: '/login' });

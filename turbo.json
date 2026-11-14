@@ -17,7 +17,7 @@
         "dev": {
             "cache": false,
             "persistent": true,
-            "passThroughEnv": ["MONGODB_URI", "MONGODB_DB_NAME", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "APP_ORIGIN", "PORT"]
+            "passThroughEnv": ["OPENAI_API_KEY", "MONGODB_URI", "MONGODB_DB_NAME", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "APP_ORIGIN", "PORT"]
         }
     },
     "globalDependencies": ["design-system/src/**", "design-system/package.json", "design-system/package-lock.json"]

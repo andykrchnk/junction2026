@@ -1,0 +1,50 @@
+import mongoose from 'mongoose';
+import { z } from 'zod';
+import { StoredAnalysisZod, AttachmentZod, DrawingZod, MessageZod } from '@repo/types';
+import { connection } from './connection';
+
+const schema = new mongoose.Schema(
+    {
+        ownerId: { type: String, required: true },
+        title: { type: String, default: 'Untitled drawing' },
+        attachment: { type: mongoose.Schema.Types.Mixed, default: null },
+        analysis: { type: mongoose.Schema.Types.Mixed, default: null },
+        messages: { type: [mongoose.Schema.Types.Mixed], default: [] },
+        lease: { type: String, default: null },
+        leaseUntil: { type: Date, default: null },
+        error: { type: String, default: null },
+    },
+    { timestamps: true, versionKey: false, bufferCommands: false },
+);
+schema.index({ ownerId: 1, updatedAt: -1 });
+type StoredDrawing = mongoose.InferSchemaType<typeof schema>;
+export const DrawingModel = connection.modelNames().includes('Drawing')
+    ? connection.model<StoredDrawing>('Drawing')
+    : connection.model<StoredDrawing>('Drawing', schema, 'drawings');
+const StoredDrawingZod = z.object({
+    _id: z.instanceof(mongoose.Types.ObjectId),
+    title: z.string(),
+    updatedAt: z.date(),
+    attachment: AttachmentZod.nullable(),
+    analysis: StoredAnalysisZod.nullable(),
+    messages: z.array(MessageZod),
+    lease: z.string().nullable(),
+    leaseUntil: z.date().nullable(),
+    error: z.string().nullable(),
+});
+export function DrawingDto(data: unknown) {
+    const doc = StoredDrawingZod.parse(data);
+    const busy = doc.lease !== null && doc.leaseUntil !== null && doc.leaseUntil.getTime() > Date.now();
+    const error = !busy && doc.lease ? 'Processing was interrupted. Please retry.' : doc.error;
+    return DrawingZod.parse({
+        id: doc._id.toHexString(),
+        title: doc.title,
+        updatedAt: doc.updatedAt.toISOString(),
+        attachment: doc.attachment,
+        analysis: doc.analysis,
+        messages: doc.messages,
+        busy,
+        error,
+        status: doc.analysis ? 'ready' : !doc.attachment ? 'empty' : busy ? 'analyzing' : error ? 'failed' : 'uploaded',
+    });
+}

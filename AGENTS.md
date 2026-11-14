@@ -30,7 +30,7 @@ Hono owns HTTP orchestration. tRPC validates shared input/output contracts and e
 
 ## Verification
 
-Use pnpm (see `packageManager`), Bun for the API runtime. Run `pnpm check-types`, `pnpm lint`, `pnpm format:check`, and `pnpm build`. Narrow checks may run during individual steps. Add meaningful regression tests when behavior warrants them; do not create tests that simply mirror implementation. Never claim unrun checks passed. Record a demo only when requested.
+Use pnpm (see `packageManager`), Bun for the API runtime. Run `pnpm check-types`, `pnpm lint`, `pnpm format:check`, and `pnpm build`. Narrow checks may run during individual steps. Do not write or modify tests unless the user directly asks for tests. Never claim unrun checks passed. Record a demo only when requested.
 
 <!-- BEGIN:turborepo-agent-rules -->
 
