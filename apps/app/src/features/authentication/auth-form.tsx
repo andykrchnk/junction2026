@@ -1,3 +1,4 @@
+import { AuthHero } from './auth-hero';
 import { BrandLogo } from '@/components/ui/brand-logo';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate } from '@tanstack/react-router';
@@ -40,35 +41,7 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
     });
     return (
         <div className="grid min-h-svh lg:grid-cols-[1.05fr_1fr]">
-            <aside className="bg-primary text-primary-foreground relative hidden flex-col overflow-hidden p-12 lg:flex">
-                <Link to="/login" className="flex items-center gap-3 text-xl font-semibold tracking-tight">
-                    <BrandLogo />
-                </Link>
-                <div aria-hidden="true" className="absolute inset-x-12 top-[28%] aspect-[1.25] border border-current/15 p-8">
-                    <div className="grid h-full grid-cols-[1fr_1.5fr] gap-3">
-                        <div className="border border-current/30" />
-                        <div className="grid grid-rows-[1fr_0.7fr] gap-3">
-                            <div className="border border-current/30" />
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="border border-current/30" />
-                                <div className="border border-current/30" />
-                            </div>
-                        </div>
-                    </div>
-                    <span className="absolute -bottom-7 right-0 text-[10px] tracking-[0.2em] uppercase opacity-60">01 / A clearer view</span>
-                </div>
-                <div className="mt-auto max-w-md">
-                    <p className="mb-5 text-xs tracking-[0.18em] uppercase opacity-65">Built on evidence</p>
-                    <h2 className="text-4xl leading-tight font-medium tracking-tight">
-                        Less searching.
-                        <br />
-                        More understanding.
-                    </h2>
-                    <p className="mt-5 text-sm leading-relaxed opacity-75">
-                        Bring your construction drawings into one workspace. Make every answer traceable to its source.
-                    </p>
-                </div>
-            </aside>
+            <AuthHero />
             <main className="flex flex-col justify-center px-6 py-12 sm:px-14">
                 <div className="mx-auto w-full max-w-sm">
                     <Link to="/login" className="mb-14 flex items-center gap-2 text-lg font-semibold lg:hidden">
