@@ -1,25 +1,69 @@
-# Overlay on experiments/compose.yaml; use --project-directory at the repo root.
+name: junction-model-comparison
 services:
     pipeline:
-        image: junction-pipeline:standardized
+        image: junction-pipeline:production
         build:
             context: ./packages/processing
             dockerfile: pipeline/Dockerfile
-        ports:
-            - 127.0.0.1:8002:8002
-        env_file: .local/gpu-comparison/service.env
+        ports: ['127.0.0.1:8002:8002']
+        env_file: ./.local/gpu-comparison/service.env
         environment:
             CUBICASA_DETAIL_URL: http://cubicasa-detail:8001
             PADDLEOCR_URL: http://paddleocr:8001
             LEGACY_INFERENCE_URL: http://inference:8001
             GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
             PIPELINE_ARTIFACT_DIR: /artifacts
-        secrets:
-            - gemini_api_key
+        secrets: [gemini_api_key]
         volumes:
             - ./.local/processing-pipeline/artifacts:/artifacts
         networks: [inference, gateway]
         restart: unless-stopped
+    inference:
+        image: junction-cubicasa:production
+        build:
+            context: ./packages/processing/cubicasa
+            target: cuda
+        gpus: all
+        ports: ['127.0.0.1:8001:8001']
+        env_file: ./.local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            CUBICASA_DETAIL_URL: http://cubicasa-detail:8001
+            PADDLEOCR_URL: http://paddleocr:8001
+        volumes:
+            - ./packages/processing/cubicasa/weights:/app/weights:ro
+        networks: [inference, gateway]
+        restart: unless-stopped
+    cubicasa-detail:
+        image: junction-cubicasa:production
+        gpus: all
+        env_file: ./.local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            INFERENCE_LOCAL_MODEL: cubicasa-detail
+        volumes:
+            - ./packages/processing/cubicasa/weights:/app/weights:ro
+        networks: [inference]
+        restart: unless-stopped
+    paddleocr:
+        image: junction-paddleocr:production
+        build:
+            context: ./packages/processing
+            dockerfile: ocr/Dockerfile
+        gpus: all
+        env_file: ./.local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            INFERENCE_LOCAL_MODEL: paddleocr
+        volumes:
+            - ./.local/gpu-comparison:/weights:ro
+        networks: [inference]
+        restart: unless-stopped
+networks:
+    inference:
+        internal: true
+    gateway:
+        driver: bridge
 secrets:
     gemini_api_key:
         file: ./.local/processing-pipeline/gemini-api-key

@@ -6,7 +6,7 @@ RUN pip install --no-cache-dir -r requirements-service.txt
 
 FROM base AS cpu
 RUN pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
-COPY inference.py service.py adapters.py grounding_adapter.py detail.py ./
+COPY inference.py service.py adapters.py detail.py ./
 COPY model ./model
 COPY utils ./utils
 RUN useradd --uid 10001 --create-home inference && mkdir weights && chown inference weights
@@ -17,7 +17,7 @@ CMD ["uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8001", "--workers
 
 FROM base AS cuda
 RUN pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cu124
-COPY inference.py service.py adapters.py grounding_adapter.py detail.py ./
+COPY inference.py service.py adapters.py detail.py ./
 COPY model ./model
 COPY utils ./utils
 RUN useradd --uid 10001 --create-home inference && mkdir weights && chown inference weights

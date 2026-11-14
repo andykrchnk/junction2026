@@ -51,8 +51,6 @@ async def lifespan(app: FastAPI):
         name: url
         for name, url in {
             "cubicasa-detail": os.environ.get("CUBICASA_DETAIL_URL"),
-            "raster2seq": os.environ.get("RASTER2SEQ_URL"),
-            "grounding-sam": os.environ.get("GROUNDING_SAM_URL"),
             "paddleocr": os.environ.get("PADDLEOCR_URL"),
         }.items()
         if url
@@ -217,11 +215,7 @@ async def predictions(
     model: Literal[
         "cubicasa",
         "cubicasa-detail",
-        "raster2seq",
-        "grounding-sam",
         "paddleocr",
-        "roomformer",
-        "sympointv2",
     ] = "cubicasa",
 ):
     lock = request.app.state.inference_lock

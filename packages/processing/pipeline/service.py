@@ -183,10 +183,6 @@ async def legacy(
         "cubicasa",
         "cubicasa-detail",
         "paddleocr",
-        "raster2seq",
-        "grounding-sam",
-        "roomformer",
-        "sympointv2",
     ] = "cubicasa",
     response_format: Literal["json", "zip"] = "json",
 ):

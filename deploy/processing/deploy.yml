@@ -63,7 +63,7 @@
         changed_when: false
       - name: Switch and verify deployment
         block:
-            - name: Reconcile core services without stopping comparison workers
+            - name: Reconcile production services
               ansible.builtin.command:
                   argv: "{{ ['docker', 'compose', '-f', release_compose, 'up', '-d', '--no-deps'] + services }}"
               register: compose_up
@@ -84,6 +84,29 @@
               until: legacy_readiness.status == 200
               retries: 30
               delay: 5
+            - name: Find retired model containers owned by this deployment
+              ansible.builtin.command:
+                  argv:
+                      [
+                          docker,
+                          ps,
+                          --all,
+                          --quiet,
+                          --filter,
+                          'label=com.docker.compose.project=junction-model-comparison',
+                          --filter,
+                          'label=com.docker.compose.service={{ item }}',
+                      ]
+              loop: [raster2seq, grounding-sam]
+              register: retired_workers
+              changed_when: false
+            - name: Remove only retired model containers after core readiness
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'rm', '--force'] + item.stdout_lines }}"
+              loop: '{{ retired_workers.results }}'
+              loop_control:
+                  label: '{{ item.item }}'
+              when: item.stdout | trim | length > 0
             - name: Record successfully deployed release
               ansible.builtin.file:
                   src: '{{ release_dir }}'
@@ -97,7 +120,7 @@
               when: previous.stat.islnk | default(false)
             - name: Restore original deployment on first-release failure
               ansible.builtin.command:
-                  argv: "{{ ['docker', 'compose', '--project-directory', assets_root, '-f', assets_root + '/packages/processing/experiments/compose.yaml', '-f', assets_root + '/packages/processing/compose.yaml', 'up', '-d', '--no-deps'] + services }}"
+                  argv: "{{ ['docker', 'compose', '--project-directory', assets_root, '-f', assets_root + '/packages/processing/compose.yaml', 'up', '-d', '--no-deps'] + services }}"
               when: not (previous.stat.islnk | default(false))
             - name: Verify restored service readiness
               ansible.builtin.uri:

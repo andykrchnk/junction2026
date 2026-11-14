@@ -14,6 +14,7 @@ from model.segmentation_net import ROOM_CLASSES, ICON_CLASSES
 from utils.preprocessor import preprocess_image
 from utils.room_instances import extract_instances, InstanceSettings, polygon_parts
 from utils.official_postprocessing import get_polygons
+from utils.geometry_cleanup import clean_instances
 
 
 class CubiCasaDetailAdapter:
@@ -55,7 +56,13 @@ class CubiCasaDetailAdapter:
         extracted = extract_instances(
             rooms, icons, regions, structures, transform, self.settings
         )
+        cleanup = clean_instances(extracted, source, transform, rooms)
         raw = {
+            "geometry_cleanup": cleanup,
+            "original_instances": [
+                {"id": r["id"], "geometry_wkt": r["original_geometry_wkt"]}
+                for r in extracted["instances"]
+            ],
             "transform": transform.to_dict(),
             "settings": asdict(self.settings),
             "official_room_regions": [
@@ -104,7 +111,7 @@ class CubiCasaDetailAdapter:
         summary.update(
             metadata(
                 "cubicasa-detail",
-                CUBICASA_REVISION + ":wall-instances-v1:2048",
+                CUBICASA_REVISION + ":wall-aligned-v3:2048",
                 {
                     "rooms": True,
                     "icons": True,
@@ -125,6 +132,7 @@ class CubiCasaDetailAdapter:
             label = ROOM_CLASSES[item["class_id"]]
             record = {
                 "geometry_wkt": shape.wkt,
+                "cleanup": item["cleanup"],
                 "area_px": shape.area,
                 "bbox": list(shape.bounds),
                 "confidence": item["class_mean_softmax"],

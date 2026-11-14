@@ -137,12 +137,10 @@ an isolated temporary directory, cleaned after JSON generation or ZIP delivery.
 The API omits Matplotlib visualizations to reduce response time and memory.
 
 Model implementations, checkpoint paths and preprocessing live in `adapters.py`.
-The endpoint accepts `model=cubicasa|cubicasa-detail|raster2seq|grounding-sam|paddleocr`, with
-CubiCasa as the default. Optional models run in separate private workers behind
-this same authenticated upload boundary. See [the GPU comparison workflow](../experiments/README.md)
-for pinned sources, setup, capabilities and unsupported-field semantics.
-Deployment secrets, worker URLs and runtime device selection use the environment. Model scores remain uncalibrated; polygon areas are pixels,
-not square metres.
+The compatibility endpoint accepts `model=cubicasa|cubicasa-detail|paddleocr`.
+The standardized consumer endpoint is `/v1/process`, without model selection.
+Deployment uses [the production Compose stack](../compose.yaml); historical
+experiments are archived in `experiments/floorplans` at the repository root.
 
 ### Command line
 

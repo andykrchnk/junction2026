@@ -60,10 +60,10 @@ Remove the feature branch trigger after merging if only master should deploy.
 2. Renders a release-specific Compose file without printing secret values.
 3. Builds SHA-tagged pipeline, CubiCasa and PaddleOCR images.
 4. Runs the pipeline contract tests before touching the live services.
-5. Reconciles the four core services in the existing Compose project, preserving
-   the comparison-only Raster2Seq and Grounding workers.
+5. Reconciles the four production services in the existing Compose project.
 6. Checks geometry/OCR/orchestrator and legacy-gateway readiness.
-7. Updates `/opt/junction-processing/current` only after success.
+7. Removes only retired Raster2Seq and Grounding containers identified by project/service labels, retaining weights and images.
+8. Updates `/opt/junction-processing/current` only after success.
 
 On startup/readiness failure, the playbook restores the previous successful release.
 On the first deployment, rollback uses the existing working-checkout Compose setup.

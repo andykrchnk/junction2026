@@ -8,19 +8,17 @@ with `x-api-key`, and returns only `coordinate_system`, `image`, `rooms`, and
 
 ## Deployment
 
-Run from the repository root, after preparing the existing model worker images and
-checkpoints using `packages/processing/experiments/README.md`. Keep the existing
+Run from the repository root with the existing CubiCasa checkpoint and PaddleOCR
+weights mounted from their persistent locations. Keep the existing
 `.local/gpu-comparison/service.env` private. Put the Gemini credential in
 `.local/processing-pipeline/gemini-api-key` with mode `0600`; never commit it.
 
 ```bash
 docker compose --project-directory "$PWD" \
-  -f packages/processing/experiments/compose.yaml \
-  -f packages/processing/compose.yaml build pipeline
+  -f packages/processing/compose.yaml build inference paddleocr pipeline
 
 docker compose --project-directory "$PWD" \
-  -f packages/processing/experiments/compose.yaml \
-  -f packages/processing/compose.yaml up -d pipeline
+  -f packages/processing/compose.yaml up -d inference cubicasa-detail paddleocr pipeline
 ```
 
 The standardized service listens at `127.0.0.1:8002`. GPU workers remain on the
@@ -64,7 +62,9 @@ unknown measurements. Response headers identify degraded processing.
 All class values are members of the exact 12-room/structure or 11-icon CubiCasa
 vocabularies. Structural/background predictions are not returned as rooms. `No Icon`
 is an internal removal decision, not an extra fixture object. No invented classes
-are accepted from Gemini or workers. Classification never changes the geometry.
+are accepted from Gemini or workers. Classification never changes the geometry. The geometry worker applies bounded
+wall-aligned cleanup before verification and recomputes selected-class support
+over the final regions. Cleanup diagnostics remain internal.
 
 Geometry is a GeoJSON-shaped Polygon or MultiPolygon in original-image `[x,y]`
 pixels with top-left origin; it is not geographic RFC7946 longitude/latitude.

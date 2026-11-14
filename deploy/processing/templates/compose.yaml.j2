@@ -30,8 +30,6 @@ services:
             INFERENCE_DEVICE: cuda
             CUBICASA_DETAIL_URL: http://cubicasa-detail:8001
             PADDLEOCR_URL: http://paddleocr:8001
-            RASTER2SEQ_URL: http://raster2seq:8001
-            GROUNDING_SAM_URL: http://grounding-sam:8001
         volumes:
             - {{ assets_root }}/packages/processing/cubicasa/weights:/app/weights:ro
         networks: [inference, gateway]
@@ -50,15 +48,14 @@ services:
     paddleocr:
         image: junction-paddleocr:{{ release_sha }}
         build:
-            context: {{ release_dir }}/packages/processing/experiments
-            dockerfile: Dockerfile.paddleocr
+            context: {{ release_dir }}/packages/processing
+            dockerfile: ocr/Dockerfile
         gpus: all
         env_file: {{ assets_root }}/.local/gpu-comparison/service.env
         environment:
             INFERENCE_DEVICE: cuda
             INFERENCE_LOCAL_MODEL: paddleocr
         volumes:
-            - {{ release_dir }}/packages/processing/cubicasa:/app:ro
             - {{ assets_root }}/.local/gpu-comparison:/weights:ro
         networks: [inference]
         restart: unless-stopped
