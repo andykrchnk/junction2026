@@ -22,6 +22,7 @@ export const DETECTED_OBJECT_COLORS = {
         Garage: '#4f7894',
         Undefined: '#8a737f',
         Sauna: '#a66c42',
+        Balcony: '#668b61',
     },
     icon: {
         'No Icon': '#777777',

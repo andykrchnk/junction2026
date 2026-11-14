@@ -32,7 +32,7 @@ STRUCTURAL_CLASSES = {"Background", "Wall", "Railing"}
 
 
 # Service extensions are resolved after inference; worker labels remain unchanged.
-SERVICE_ROOM_CLASSES = ROOM_CLASSES + ("Sauna",)
+SERVICE_ROOM_CLASSES = ROOM_CLASSES + ("Sauna", "Balcony")
 ServiceRoomClass = Enum(
     "ServiceRoomClass",
     {f"C{i}": v for i, v in enumerate(SERVICE_ROOM_CLASSES)},

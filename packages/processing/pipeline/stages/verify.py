@@ -4,6 +4,8 @@ from stages.annotations import extract, resolve
 from clients.gemini import VerificationFailure
 
 DESCRIPTIONS = {
+    "Balcony": "An exterior balcony or recessed loggia supported by its printed label and/or visible building access and outer railing/parapet boundary. Do not classify every outdoor region, terrace or narrow fragment as a balcony.",
+    "Outdoor": "Other outdoor space, or an exterior region whose specific use is not established as Balcony.",
     "Sauna": "Sauna room supported by a sauna label or seating tiers and heater in the drawing; a bench or generic appliance alone is insufficient.",
     "Door": "Door opening. Include connected leaf and swing arc OUTSIDE the narrow target outline. A glazed door remains Door.",
     "Window": "Window glazing/opening, with no connected door leaf and swing arc. Parallel lines alone are not sufficient.",

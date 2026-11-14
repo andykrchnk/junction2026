@@ -66,7 +66,7 @@ unknown measurements. Response headers identify degraded processing.
 ## Output semantics
 
 Room output classes use the service vocabulary: the 12 CubiCasa room/structure
-classes plus Sauna. Fixture classes retain the 11-icon CubiCasa vocabulary. Worker
+classes plus Sauna and Balcony. Fixture classes retain the 11-icon CubiCasa vocabulary. Worker
 validation still accepts only the original CubiCasa classes. Structural/background predictions are not returned as rooms. `No Icon`
 is an internal removal decision, not an extra fixture object. Only explicitly supported classes
 are accepted from Gemini or workers. Classification never changes the geometry. The geometry worker applies bounded
@@ -158,8 +158,12 @@ verification accepts a Door with existence and swing evidence. Failures retain
 the exclusion. They do not become geometry barriers before verification. Exact
 duplicate class/geometry targets are removed before verification.
 
-Fixture context stays internal and geometry is unchanged. Sauna is a service-only
-room class selected by Decisions from labels and visual/fixture evidence after
+Fixture context stays internal and geometry is unchanged. Sauna and Balcony are service-only
+room classes selected by Decisions from labels and visual/fixture evidence after
 inference; CubiCasa weights and worker taxonomy are unchanged. There is no Heater
-fixture extension. The shared consumer schema and colors support Sauna. Names
-remain printed OCR labels or null; a relabelled Sauna uses its Decisions class score.
+fixture extension. The shared consumer schema and colors support both extensions. Names
+remain printed OCR labels or null; a relabelled room uses its Decisions class score.
+
+Balcony requires supporting label or architectural context; other or unspecified
+outdoor regions remain Outdoor. Relabelling does not recover missing balcony
+boundaries or expand room geometry.
