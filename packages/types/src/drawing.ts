@@ -120,6 +120,8 @@ export const AttachmentZod = z.object({
     pages: z.number().int().positive(),
 });
 export const DrawingSummaryZod = z.object({
+    createdAt: z.string().optional(),
+    documentCount: z.number().int().nonnegative().optional(),
     id: MongoIdZod,
     title: z.string(),
     updatedAt: z.string(),

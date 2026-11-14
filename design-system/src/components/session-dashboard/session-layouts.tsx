@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, ChevronDown, ArrowUpRight, FileText, LogOut } from '@/lib/icons-remix';
+import { Progress } from '../ui/progress';
 import { Button } from '../ui/button';
 import { BrandLogo } from '../ui/brand-logo';
 import { DropdownMenu, DropdownTrigger, DropdownContent } from '../ui/dropdown';
@@ -10,8 +11,8 @@ import './session-layouts.css';
 
 export const OFFICIAL_TABLE_VARIANT = 0; // Quiet rules
 
-type PreviewSession = { id: number; name: string; file: string; status: string; rooms?: number };
-const sortLabels = ['Recently added', 'Name A–Z', 'Name Z–A', 'Room count'];
+type PreviewSession = { id: number; name: string; file: string; status: string; rooms?: number; createdAt?: string; documentCount?: number };
+const sortLabels = ['Recently added', 'Name A–Z', 'Name Z–A', 'Document count'];
 export const layoutDirections = [
     { name: 'Balanced', short: 'Balanced', note: 'Three generous cards with an understated frame.' },
     { name: 'Five across', short: 'Compact', note: 'Five plans in a row, close to your sketch.' },
@@ -69,7 +70,13 @@ export function SessionLayouts({
     const [sort, setSort] = useState(0);
     const [accountOpen, setAccountOpen] = useState(false);
     const ordered = [...sessions].sort((a, b) =>
-        sort === 1 ? a.name.localeCompare(b.name) : sort === 2 ? b.name.localeCompare(a.name) : sort === 3 ? (b.rooms ?? 0) - (a.rooms ?? 0) : b.id - a.id,
+        sort === 1
+            ? a.name.localeCompare(b.name)
+            : sort === 2
+              ? b.name.localeCompare(a.name)
+              : sort === 3
+                ? (b.documentCount ?? 0) - (a.documentCount ?? 0)
+                : b.id - a.id,
     );
     return (
         <div className={`sl-root sl-${variant}`}>
@@ -137,10 +144,10 @@ export function SessionLayouts({
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Session</TableHead>
-                                    <TableHead>Document</TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Date created</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead>Rooms</TableHead>
+                                    <TableHead>Documents uploaded</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -159,11 +166,29 @@ export function SessionLayouts({
                                                 {s.name}
                                             </button>
                                         </TableCell>
-                                        <TableCell>{s.file}</TableCell>
                                         <TableCell>
-                                            <span className={`sl-table-status ${s.status === 'Ready' ? 'is-ready' : 'needs-review'}`}>{s.status}</span>
+                                            {s.createdAt ? (
+                                                <time dateTime={s.createdAt}>
+                                                    {new Intl.DateTimeFormat('en-GB', {
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                        year: 'numeric',
+                                                        timeZone: 'UTC',
+                                                    }).format(new Date(s.createdAt))}
+                                                </time>
+                                            ) : (
+                                                '—'
+                                            )}
                                         </TableCell>
-                                        <TableCell>{s.rooms ?? '—'}</TableCell>
+                                        <TableCell>
+                                            <div className="sl-status-cell">
+                                                <span className={`sl-table-status ${s.status === 'Ready' ? 'is-ready' : 'needs-review'}`}>{s.status}</span>
+                                                {(s.status === 'Uploading' || s.status === 'Analyzing') && (
+                                                    <Progress value={null} aria-label={s.status} className="sl-status-progress" />
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>{s.documentCount ?? '—'}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

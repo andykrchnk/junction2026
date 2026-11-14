@@ -42,13 +42,23 @@ const tableDirections = [
     { name: 'Column grid', short: 'Grid', note: 'A precise grid with a stronger session column.' },
 ];
 
-type Session = { id: number; name: string; file: string; status: string; rooms: number; notes?: string[]; source?: File };
+type Session = {
+    id: number;
+    name: string;
+    file: string;
+    status: string;
+    rooms: number;
+    createdAt?: string;
+    documentCount?: number;
+    notes?: string[];
+    source?: File;
+};
 const examples: Session[] = [
-    { id: 1, name: 'Courtyard house', file: 'Ground floor.pdf', status: 'Ready', rooms: 8 },
-    { id: 2, name: 'Riverside apartment', file: 'Level 02.pdf', status: 'Needs review', rooms: 6 },
-    { id: 3, name: 'Garden studio', file: 'Studio plan.png', status: 'Ready', rooms: 3 },
-    { id: 4, name: 'Northside residence', file: 'First floor.pdf', status: 'Ready', rooms: 7 },
-    { id: 5, name: 'Workshop extension', file: 'Proposed plan.pdf', status: 'Needs review', rooms: 4 },
+    { createdAt: '2026-11-10T10:00:00Z', documentCount: 3, id: 1, name: 'Courtyard house', file: 'Ground floor.pdf', status: 'Ready', rooms: 8 },
+    { createdAt: '2026-11-11T10:00:00Z', documentCount: 2, id: 2, name: 'Riverside apartment', file: 'Level 02.pdf', status: 'Needs review', rooms: 6 },
+    { createdAt: '2026-11-12T10:00:00Z', documentCount: 1, id: 3, name: 'Garden studio', file: 'Studio plan.png', status: 'Ready', rooms: 3 },
+    { createdAt: '2026-11-13T10:00:00Z', documentCount: 4, id: 4, name: 'Northside residence', file: 'First floor.pdf', status: 'Analyzing', rooms: 7 },
+    { createdAt: '2026-11-14T10:00:00Z', documentCount: 1, id: 5, name: 'Workshop extension', file: 'Proposed plan.pdf', status: 'Uploading', rooms: 4 },
 ];
 const roomSamples = [
     { name: 'Living Room', score: 96, x: 24, y: 24, w: 225, h: 158 },
@@ -183,6 +193,8 @@ export function SessionWorkshop({
     function enter() {
         const session = {
             id: Date.now(),
+            createdAt: new Date().toISOString(),
+            documentCount: file ? 1 : 0,
             name: name.trim() || 'Untitled session',
             file: file?.name || 'Sample blueprint',
             status: 'Ready',

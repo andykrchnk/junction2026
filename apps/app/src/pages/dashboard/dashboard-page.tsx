@@ -57,6 +57,8 @@ export function DashboardPage() {
                 sessions={(drawings ?? []).map((drawing, index, all) => ({
                     id: all.length - index,
                     name: drawing.title,
+                    createdAt: drawing.createdAt,
+                    documentCount: drawing.documentCount,
                     file: `Updated ${new Date(drawing.updatedAt).toLocaleDateString()}`,
                     status: { empty: 'New', uploaded: 'Uploaded', analyzing: 'Analyzing', ready: 'Ready', failed: 'Needs attention' }[drawing.status],
                 }))}

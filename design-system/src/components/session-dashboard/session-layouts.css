@@ -441,3 +441,36 @@
     outline: 1px solid var(--foreground);
     outline-offset: -1px;
 }
+
+.sl-status-cell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    min-width: 120px;
+}
+.sl-status-progress {
+    height: 3px;
+    max-width: 144px;
+    background: var(--muted);
+    border-radius: 0;
+}
+.sl-status-progress [data-slot='progress-indicator'] {
+    width: 40%;
+    background: var(--foreground);
+    animation: session-processing 1.8s ease-in-out infinite;
+}
+@keyframes session-processing {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(350%);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sl-status-progress [data-slot='progress-indicator'] {
+        animation: none;
+        transform: translateX(75%) !important;
+    }
+}
