@@ -4,7 +4,12 @@ The production pipeline is CubiCasa geometry and bounded wall-aligned cleanup,
 PaddleOCR text extraction, and Decisions verification. Consumers use
 `POST /v1/process`; its response contains only the agreed drawing objects.
 
-From the repository root:
+The standalone Compose project is named `junction-processing`. Existing servers
+using `junction-model-comparison` should migrate through the Ansible deployment
+first; it stops the old core before claiming the same ports and GPU resources.
+Do not start both projects concurrently.
+
+From the repository root (fresh or already migrated server):
 
 ```bash
 docker compose --project-directory "$PWD" -f packages/processing/compose.yaml build inference paddleocr pipeline

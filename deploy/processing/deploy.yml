@@ -61,8 +61,29 @@
         ansible.builtin.command:
             argv: [docker, run, --rm, --entrypoint, python, 'junction-pipeline:{{ release_sha }}', -m, unittest, test_contract]
         changed_when: false
+      - name: Find legacy core containers for project migration
+        ansible.builtin.command:
+            argv:
+                - docker
+                - ps
+                - --all
+                - --quiet
+                - --filter
+                - label=com.docker.compose.project=junction-model-comparison
+                - --filter
+                - 'label=com.docker.compose.service={{ item }}'
+        loop: '{{ services }}'
+        register: legacy_core
+        changed_when: false
+      - name: Remember legacy container IDs
+        ansible.builtin.set_fact:
+            legacy_core_ids: "{{ legacy_core.results | map(attribute='stdout_lines') | flatten }}"
       - name: Switch and verify deployment
         block:
+            - name: Stop legacy core before acquiring its ports and GPU resources
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'stop'] + legacy_core_ids }}"
+              when: legacy_core_ids | length > 0
             - name: Reconcile production services
               ansible.builtin.command:
                   argv: "{{ ['docker', 'compose', '-f', release_compose, 'up', '-d', '--no-deps'] + services }}"
@@ -107,6 +128,10 @@
               loop_control:
                   label: '{{ item.item }}'
               when: item.stdout | trim | length > 0
+            - name: Remove stopped legacy core after successful readiness checks
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'rm'] + legacy_core_ids }}"
+              when: legacy_core_ids | length > 0
             - name: Record successfully deployed release
               ansible.builtin.file:
                   src: '{{ release_dir }}'
@@ -114,14 +139,23 @@
                   state: link
                   force: true
         rescue:
+            - name: Stop candidate project before restoring a differently named stack
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'compose', '-f', release_compose, 'stop'] + services }}"
             - name: Restore previous successful deployment
               ansible.builtin.command:
                   argv: "{{ ['docker', 'compose', '-f', previous.stat.lnk_source + '/compose.deploy.yaml', 'up', '-d', '--no-deps'] + services }}"
               when: previous.stat.islnk | default(false)
+            - name: Restart legacy core when no managed release exists
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'start'] + legacy_core_ids }}"
+              when:
+                  - not (previous.stat.islnk | default(false))
+                  - legacy_core_ids | length > 0
             - name: Restore original deployment on first-release failure
               ansible.builtin.command:
                   argv: "{{ ['docker', 'compose', '--project-directory', assets_root, '-f', assets_root + '/packages/processing/compose.yaml', 'up', '-d', '--no-deps'] + services }}"
-              when: not (previous.stat.islnk | default(false))
+              when: not (previous.stat.islnk | default(false)) and legacy_core_ids | length == 0
             - name: Verify restored service readiness
               ansible.builtin.uri:
                   url: http://127.0.0.1:8002/health/ready

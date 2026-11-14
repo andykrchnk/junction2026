@@ -92,3 +92,28 @@ Validate the playbook without deploying:
 /opt/junction-processing/ansible/bin/ansible-playbook \
   -i localhost, -c local deploy/processing/deploy.yml --syntax-check
 ```
+
+## Production project migration
+
+The standalone production project is `junction-processing`. The historical
+`junction-model-comparison` name appears in the playbook only to discover and
+retire old containers. No experiment Compose file is required.
+
+On the first migration, images and contract tests finish before the playbook stops
+only the old core service containers. It starts the new project on the existing
+loopback ports, checks readiness, and removes the stopped old core containers.
+On failure it stops the candidate project before restoring the previous release,
+so rollback cannot leave two projects competing for the same ports or GPU memory.
+Later deployments reconcile the same `junction-processing` project normally.
+
+If manually rolling back to a release whose playbook predates this migration,
+stop the current core first because that older playbook does not know the new name:
+
+```bash
+docker compose -f /opt/junction-processing/current/compose.deploy.yaml \
+  stop inference cubicasa-detail paddleocr pipeline
+```
+
+Then run the stored-release rollback command above. Existing assets and private
+secret paths are deliberately retained; their filesystem names do not determine
+the Docker Compose project name.
