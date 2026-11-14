@@ -109,3 +109,30 @@ def context(target, image, ocr, overview):
             )
     parts = [image_part(clean), image_part(marked), overview]
     return parts, tokens, bounds
+
+
+def room_fixtures(room, targets):
+    """Supply scored fixture decisions substantially inside this room."""
+    result = []
+    for fixture in targets:
+        verification = fixture.get("fixture_verification")
+        if (
+            fixture["kind"] != "fixture"
+            or not verification
+            or verification["class"] == "No Icon"
+            or fixture.get("decision") == "removed"
+        ):
+            continue
+        geometry = fixture["geometry"]
+        overlap = room["geometry"].intersection(geometry).area / geometry.area
+        if overlap < 0.5:
+            continue
+        result.append(
+            {
+                **verification,
+                "accepted": bool(fixture.get("accepted_classification")),
+                "bounds": list(geometry.bounds),
+                "fraction_inside_room": overlap,
+            }
+        )
+    return result
