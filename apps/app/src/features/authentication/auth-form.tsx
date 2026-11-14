@@ -1,8 +1,9 @@
+import { BrandLogo } from '@/components/ui/brand-logo';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
 import { useEffect } from 'react';
-import { ArrowRight, Layers3 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { SignInInputZod, SignUpInputZod } from '@repo/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,8 +42,7 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
         <div className="grid min-h-svh lg:grid-cols-[1.05fr_1fr]">
             <aside className="bg-primary text-primary-foreground relative hidden flex-col overflow-hidden p-12 lg:flex">
                 <Link to="/login" className="flex items-center gap-3 text-xl font-semibold tracking-tight">
-                    <Layers3 className="size-6" />
-                    junction.
+                    <BrandLogo />
                 </Link>
                 <div aria-hidden="true" className="absolute inset-x-12 top-[28%] aspect-[1.25] border border-current/15 p-8">
                     <div className="grid h-full grid-cols-[1fr_1.5fr] gap-3">
@@ -72,8 +72,7 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
             <main className="flex flex-col justify-center px-6 py-12 sm:px-14">
                 <div className="mx-auto w-full max-w-sm">
                     <Link to="/login" className="mb-14 flex items-center gap-2 text-lg font-semibold lg:hidden">
-                        <Layers3 className="size-5" />
-                        junction.
+                        <BrandLogo />
                     </Link>
                     <p className="text-primary mb-3 text-xs font-semibold tracking-[0.14em] uppercase">Your drawing workspace</p>
                     <h1 className="text-3xl font-medium tracking-tight">{mode === 'register' ? 'Start with a clearer view.' : 'Welcome back.'}</h1>
@@ -146,12 +145,12 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
                         </Button>
                     </form>
                     <p className="text-muted-foreground mt-7 text-center text-sm">
-                        {mode === 'register' ? 'Already have an account? ' : 'New to Junction? '}
+                        {mode === 'register' ? 'Already have an account? ' : 'New to Verifico? '}
                         <Link className="text-primary font-medium underline-offset-4 hover:underline" to={mode === 'register' ? '/login' : '/register'}>
                             {mode === 'register' ? 'Sign in' : 'Create an account'}
                         </Link>
                     </p>
-                    <p className="text-muted-foreground mt-16 text-xs">Junction 2026 · Construction intelligence</p>
+                    <p className="text-muted-foreground mt-16 text-xs">Verifico · Construction intelligence</p>
                 </div>
             </main>
         </div>

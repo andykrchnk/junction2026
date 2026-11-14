@@ -1,7 +1,8 @@
+import { BrandLogo } from '@/components/ui/brand-logo';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
-import { FileStack, Layers3, LogOut, ArrowUpRight, FolderOpen, ShieldCheck } from 'lucide-react';
+import { FileStack, LogOut, ArrowUpRight, FolderOpen, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -24,8 +25,7 @@ export function DashboardPage() {
         <div className="flex min-h-svh flex-col md:flex-row">
             <aside className="bg-card flex border-b p-5 md:w-64 md:shrink-0 md:flex-col md:border-r md:border-b-0 md:p-7">
                 <div className="flex items-center gap-3 text-xl font-semibold tracking-tight">
-                    <Layers3 className="text-primary size-6" />
-                    junction.
+                    <BrandLogo />
                 </div>
                 <div className="mt-14 hidden md:block">
                     <p className="text-muted-foreground mb-4 text-[10px] font-semibold tracking-[0.18em] uppercase">Workspace</p>
