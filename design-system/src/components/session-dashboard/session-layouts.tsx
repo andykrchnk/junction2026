@@ -37,7 +37,7 @@ function SessionDate({ value }: Readonly<{ value?: string }>) {
         <>—</>
     );
 }
-function SessionStatus({ status, rooms, uploadProgress }: Readonly<{ status: string; rooms?: number; uploadProgress?: number }>) {
+export function SessionStatus({ status, rooms, uploadProgress }: Readonly<{ status: string; rooms?: number; uploadProgress?: number }>) {
     const uploading = status === 'Uploading';
     const analyzing = status === 'Analyzing';
     const identified = !uploading && !analyzing && rooms !== undefined;
