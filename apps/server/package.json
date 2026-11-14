@@ -15,12 +15,14 @@
         "lint": "eslint src"
     },
     "dependencies": {
+        "@agendajs/mongo-backend": "4.0.5",
         "@better-auth/mongo-adapter": "1.7.23",
         "@hono/trpc-server": "0.4.2",
         "@napi-rs/canvas": "^1.1.1",
         "@openai/agents": "^0.22.0",
         "@repo/types": "workspace:*",
         "@trpc/server": "11.28.0",
+        "agenda": "6.2.8",
         "better-auth": "1.7.23",
         "file-type": "^22.3.0",
         "hono": "^4.7.11",

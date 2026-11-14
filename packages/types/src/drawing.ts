@@ -25,7 +25,14 @@ export const DrawingSummaryZod = z.object({
     updatedAt: z.string(),
     status: z.enum(['empty', 'uploaded', 'analyzing', 'ready', 'failed']),
 });
+export const DrawingJobProgressZod = z.object({
+    status: z.enum(['queued', 'running', 'completed']),
+    completed: z.number().int().nonnegative(),
+    total: z.number().int().positive(),
+    currentPage: z.number().int().positive().nullable(),
+});
 export const DrawingZod = DrawingSummaryZod.extend({
+    processing: DrawingJobProgressZod.nullable().optional(),
     blueprints: z.array(BlueprintZod),
     messages: z.array(MessageZod),
     busy: z.boolean(),

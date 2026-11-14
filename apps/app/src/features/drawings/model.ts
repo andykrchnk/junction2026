@@ -1,7 +1,6 @@
 import { createEffect, createEvent, createStore, sample } from 'effector';
 import { readonly } from 'patronum';
-import { blueprintNeedsAnalysis, hasDetailedEntityDescription, MAX_FILE_BYTES, UploadErrorZod, type Drawing, type UpdateDrawingUpload } from '@repo/types';
-import { TRPCClientError } from '@trpc/client';
+import { MAX_FILE_BYTES, UploadErrorZod, type Drawing, type UpdateDrawingUpload } from '@repo/types';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import { queryClient, trpc, trpcClient } from '@/shared/trpc';
@@ -11,7 +10,6 @@ const stageChanged = createEvent<{ id: string; label: string }>();
 
 const opened = createEvent<string | null>();
 const draftChanged = createEvent<string>();
-const analysisRequested = createEvent<string>();
 const operationStarted = createEvent<string>();
 const operationFinished = createEvent<string>();
 const $stages = createStore<Record<string, string>>({});
@@ -21,7 +19,6 @@ const $draft = createStore('');
 const $activity = createStore<Record<string, number>>({});
 const $error = createStore<{ id: string | null; message: string } | null>(null);
 const $inferenceError = createStore<{ id: string; message: string } | null>(null);
-const $analysisRunning = createStore<Record<string, boolean>>({});
 const refresh = async (id?: string) => {
     await Promise.all([
         queryClient.invalidateQueries(trpc.drawings.list.queryFilter()),
@@ -55,89 +52,19 @@ const uploadFx = createEffect(async ({ id, file }: { id: string; file: File }) =
     await refresh(id);
     return id;
 });
-function isProcessing(drawing: Drawing): boolean {
-    return (
-        drawing.busy ||
-        drawing.blueprints.some(
-            (blueprint) =>
-                blueprint.status.type === 'processing' ||
-                [...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? [])].some((entity) => entity.enrichment.type === 'processing'),
-        )
-    );
-}
-async function waitForProcessing(params: { id: string; deadline: number }): Promise<Drawing> {
-    const drawing = await trpcClient.drawings.get.query({ id: params.id });
-    queryClient.setQueryData(trpc.drawings.get.queryOptions({ id: params.id }).queryKey, drawing);
-    if (!isProcessing(drawing)) return drawing;
-    if (Date.now() >= params.deadline) throw new Error('This drawing is still being processed. Wait a moment, then retry.');
-    await new Promise<void>((resolve) => setTimeout(resolve, Math.min(1000, Math.max(0, params.deadline - Date.now()))));
-    return waitForProcessing(params);
-}
+// Processing belongs to the backend. These effects only enqueue explicit retries.
 const inferFx = createEffect(async (id: string) => {
-    const drawing = await waitForProcessing({ id, deadline: Date.now() + 300_000 });
-    if (!drawing.blueprints.length || drawing.blueprints.some((blueprint) => blueprint.status.type === 'processing' && blueprint.status.stage === 'inference'))
-        return drawing;
-    // The service accepts one image at a time. Persist each page before requesting the next.
-    for (const blueprint of drawing.blueprints) {
-        if (blueprint.layout && blueprint.raster) continue;
-        const page = blueprint.pageNumber;
-        try {
-            const updated = await trpcClient.drawings.detect.mutate({ id, page });
-            if (updated.blueprints.some((item) => item.status.type === 'not_configured')) return updated;
-        } finally {
-            await refresh(id);
-        }
-    }
-    const detected = await trpcClient.drawings.get.query({ id });
-    // A cover retry reuses saved geometries rather than invoking inference again.
-    return detected.blueprints.length > 0 && detected.blueprints.every((blueprint) => blueprint.layout && blueprint.raster) && !detected.covers
-        ? trpcClient.drawings.detect.mutate({ id, page: 1 })
-        : detected;
+    const drawing = await trpcClient.drawings.analyze.mutate({ id });
+    await refresh(id);
+    return drawing;
 });
 const analyzeFx = createEffect(async (id: string) => {
-    try {
-        const drawing = await trpcClient.drawings.get.query({ id });
-        if (!drawing.blueprints.length || !drawing.blueprints.some(blueprintNeedsAnalysis)) return drawing;
-        const detected = await inferFx(id);
-        const incomplete = detected.blueprints.find((blueprint) => !blueprint.layout || !blueprint.raster);
-        if (incomplete) {
-            const status = incomplete.status;
-            throw new Error(
-                status.type === 'not_configured'
-                    ? 'Object detection is not configured. Connect the inference service, then retry analysis.'
-                    : status.type === 'processing'
-                      ? 'Object detection is still running. Wait a moment, then retry analysis.'
-                      : status.type === 'failed' || status.type === 'partial'
-                        ? status.error
-                        : 'Object detection has not finished. Retry analysis to resume.',
-            );
-        }
-        let current = detected;
-        while (current.blueprints.some(blueprintNeedsAnalysis)) {
-            if (isProcessing(current)) current = await waitForProcessing({ id, deadline: Date.now() + 300_000 });
-            const blueprint = current.blueprints.find(blueprintNeedsAnalysis);
-            if (!blueprint) break;
-            const completed = [...(blueprint?.layout?.rooms ?? []), ...(blueprint?.layout?.fixtures ?? [])].filter(hasDetailedEntityDescription).length;
-            stageChanged({ id, label: `Reviewing sheet ${blueprint?.pageNumber ?? 1} · ${completed} objects described` });
-            try {
-                current = await trpcClient.drawings.analyze.mutate({ id });
-            } catch (cause) {
-                if (!(cause instanceof TRPCClientError) || cause.data?.code !== 'CONFLICT') throw cause;
-                const latest = await trpcClient.drawings.get.query({ id });
-                if (!isProcessing(latest) && latest.blueprints.some(blueprintNeedsAnalysis)) throw cause;
-                current = isProcessing(latest) ? await waitForProcessing({ id, deadline: Date.now() + 300_000 }) : latest;
-            }
-            queryClient.setQueryData(trpc.drawings.get.queryOptions({ id }).queryKey, current);
-        }
-        return current;
-    } finally {
-        await refresh(id);
-    }
+    const drawing = await trpcClient.drawings.analyze.mutate({ id });
+    await refresh(id);
+    return drawing;
 });
 const askFx = createEffect(async (input: { id: string; message: Drawing['messages'][number] }) => {
     try {
-        const drawing = await trpcClient.drawings.get.query({ id: input.id });
-        if (!drawing.blueprints.length || drawing.blueprints.some(blueprintNeedsAnalysis)) await analyzeFx(input.id);
         stageChanged({ id: input.id, label: 'Reviewing blueprint evidence' });
         return await trpcClient.drawings.ask.mutate({ id: input.id, message: { id: input.message.id, question: input.message.question } });
     } finally {
@@ -169,12 +96,7 @@ sample({ clock: analyzeFx.fail, fn: ({ params, error }) => ({ id: params, messag
 sample({ clock: askFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
 sample({ clock: askFx.done, source: $id, filter: (id, { params }) => id === params.id, fn: () => '', target: $draft });
 sample({ clock: [opened, inferFx], fn: () => null, target: $inferenceError });
-sample({ clock: opened, filter: (id): id is string => id !== null, target: analysisRequested });
 sample({ clock: inferFx.fail, fn: ({ params, error }) => ({ id: params, message: error.message }), target: $inferenceError });
-sample({ clock: analyzeFx, source: $analysisRunning, fn: (running, id) => ({ ...running, [id]: true }), target: $analysisRunning });
-sample({ clock: analyzeFx.finally, source: $analysisRunning, fn: (running, { params }) => ({ ...running, [params]: false }), target: $analysisRunning });
-sample({ clock: uploadFx.doneData, target: analysisRequested });
-sample({ clock: analysisRequested, source: $analysisRunning, filter: (running, id) => !running[id], fn: (_, id) => id, target: analyzeFx });
 
 export const $$drawings = {
     canvasSelectionRequested,
