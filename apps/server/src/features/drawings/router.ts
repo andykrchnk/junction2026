@@ -25,14 +25,14 @@ export const drawingRouter = t.router({
         .output(DrawingZod)
         .mutation(async ({ input, ctx }) => {
             const doc = await db.drawing.DrawingModel.findOneAndUpdate(
-                { _id: input.id, ownerId: ctx.user.id, 'blueprints.0': { $exists: true } },
+                { _id: input.id, ownerId: ctx.user.id, 'blueprints.pageNumber': input.page ?? 1 },
                 {
                     $set: {
-                        ...(input.name !== undefined ? { 'blueprints.$[].attachment.name': input.name } : {}),
-                        ...(input.hiddenFromCanvas !== undefined ? { 'blueprints.$[].attachment.hiddenFromCanvas': input.hiddenFromCanvas } : {}),
+                        ...(input.name !== undefined ? { 'blueprints.$[blueprint].attachment.name': input.name } : {}),
+                        ...(input.hiddenFromCanvas !== undefined ? { 'blueprints.$[blueprint].attachment.hiddenFromCanvas': input.hiddenFromCanvas } : {}),
                     },
                 },
-                { new: true },
+                { new: true, arrayFilters: [{ 'blueprint.pageNumber': input.page ?? 1 }] },
             ).lean();
             if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Upload not found.' });
             return db.drawing.DrawingDto(doc);

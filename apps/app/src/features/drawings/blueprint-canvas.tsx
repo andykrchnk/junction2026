@@ -1,5 +1,5 @@
 import { layoutPages } from './layout';
-import { useEffect, useState, useId, useRef } from 'react';
+import { useEffect, useState, useId, useRef, useMemo } from 'react';
 import { useUnit } from 'effector-react';
 import { useReducedMotion } from 'motion/react';
 import { useTheme } from 'next-themes';
@@ -14,6 +14,8 @@ import {
     parseTldrawJsonFile,
     Tldraw,
     type Editor,
+    type TLShape,
+    type TldrawProps,
     type TLAssetStore,
     type TLGridProps,
 } from 'tldraw';
@@ -28,6 +30,10 @@ import { CommentsContext, CommentCanvasLayer } from './comment-layer';
 import { createCommentsModel } from './canvas/comments-model';
 import 'tldraw/tldraw.css';
 import './blueprint-canvas.css';
+
+const blueprintVisibility = (shape: TLShape) => (shape.meta.blueprintHidden === true ? 'hidden' : 'inherit');
+
+const canvasOptions: TldrawProps['options'] = { maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } };
 
 type SelectionGesture = {
     pointerId: number;
@@ -69,8 +75,8 @@ type BlueprintPage = Readonly<{ src: string; width: number; height: number }>;
 type Preparation =
     { type: 'loading' } | { type: 'ready'; pages: BlueprintPage[]; saved: LoadedCanvas; recovery: LoadedCanvas | null } | { type: 'error'; message: string };
 
-async function preparePages(drawing: Drawing): Promise<BlueprintPage[]> {
-    const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/file`);
+async function prepareAttachment(drawing: Drawing): Promise<BlueprintPage[]> {
+    const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/file?page=${drawing.blueprints[0]?.pageNumber ?? 1}`);
     if (!response.ok) throw new Error('Could not load the blueprint. Try opening it again.');
     const blob = await response.blob();
     if (drawing.blueprints[0]?.attachment.mediaType !== 'application/pdf') {
@@ -107,6 +113,19 @@ async function preparePages(drawing: Drawing): Promise<BlueprintPage[]> {
         throw error;
     } finally {
         await task.destroy();
+    }
+}
+
+async function preparePages(drawing: Drawing): Promise<BlueprintPage[]> {
+    const pages: BlueprintPage[] = [];
+    try {
+        for (const id of new Set(drawing.blueprints.map((item) => item.attachment.id))) {
+            pages.push(...(await prepareAttachment({ ...drawing, blueprints: drawing.blueprints.filter((item) => item.attachment.id === id) })));
+        }
+        return pages;
+    } catch (error) {
+        pages.forEach((page) => URL.revokeObjectURL(page.src));
+        throw error;
     }
 }
 
@@ -169,9 +188,23 @@ function CanvasEditor({
     });
     const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
     const [error, setError] = useState<string | null>(null);
+    useEffect(() => {
+        if (!activeEditor) return;
+        for (const blueprint of drawing.blueprints) {
+            const shape = activeEditor.getShape(createShapeId(`blueprint-${blueprint.pageNumber}`));
+            const hidden = Boolean(blueprint.attachment.hiddenFromCanvas);
+            if (shape && shape.meta.blueprintHidden !== hidden) activeEditor.store.put([{ ...shape, meta: { ...shape.meta, blueprintHidden: hidden } }]);
+        }
+    }, [activeEditor, drawing.blueprints]);
     const selectionGesture = useRef<SelectionGesture | null>(null);
     const focus = useUnit(model.$focus);
     const reducedMotion = useReducedMotion();
+    const sheetFocus = useUnit(model.$sheetFocus);
+    useEffect(() => {
+        if (!activeEditor || !sheetFocus) return;
+        const bounds = activeEditor.getShapePageBounds(createShapeId(`blueprint-${sheetFocus.page}`));
+        if (bounds) activeEditor.zoomToBounds(bounds.clone().expandBy(48), { animation: { duration: reducedMotion ? 0 : 350 } });
+    }, [activeEditor, sheetFocus, reducedMotion]);
     useEffect(() => {
         if (!activeEditor || !focus) return;
         const page = layoutPages(drawing.blueprints).find((page) => page.page === focus.object.page);
@@ -261,11 +294,14 @@ function CanvasEditor({
                 if (!parsed.ok) throw new Error('This saved canvas could not be opened. Your saved document has not been changed.');
                 editor.store.loadStoreSnapshot(parsed.value.getStoreSnapshot());
                 combinedPages = combineSavedPages(editor);
-            } else {
+            }
+            {
                 const firstPage = editor.getCurrentPageId();
                 editor.updatePage({ id: firstPage, name: 'Blueprint' });
-                let offset = 0;
+                let offset = Math.max(0, ...editor.getCurrentPageShapes().map((shape) => (editor.getShapePageBounds(shape)?.maxX ?? 0) + 80));
                 pages.forEach((page, index) => {
+                    if (editor.getShape(createShapeId(`blueprint-${index + 1}`))) return;
+                    combinedPages = true;
                     const assetId = AssetRecordType.createId(`blueprint-${drawing.blueprints[0]?.attachment.id}-${index + 1}`);
                     editor.createAssets([
                         {
@@ -308,7 +344,7 @@ function CanvasEditor({
             setActiveEditor(editor);
             // Uploaded assets need durable storage. Keep file/URL insertion disabled until that exists.
             editor.registerExternalContentHandler('files', async () => {
-                setError('Upload a blueprint in a new drawing session.');
+                setError('Add documents using the Blueprints menu.');
             });
             editor.registerExternalContentHandler('url', async () => {
                 setError('Pasting external assets is not supported in this workspace yet.');
@@ -411,6 +447,7 @@ function CanvasEditor({
                     event.stopPropagation();
                     const point = activeEditor.screenToPage({ x: event.clientX, y: event.clientY });
                     const hit = drawing.blueprints
+                        .filter((item) => !item.attachment.hiddenFromCanvas)
                         .map((blueprint) => blueprint.pageNumber)
                         .flatMap((page) => {
                             const shape = activeEditor.getShape(createShapeId(`blueprint-${page}`));
@@ -454,15 +491,23 @@ function CanvasEditor({
                     event.stopPropagation();
                 }}
             >
-                <CommentsContext.Provider value={{ drawing, model: commentsModel }}>
-                    <DetectionContext.Provider value={{ drawing, model }}>
+                <CommentsContext.Provider
+                    value={{
+                        drawing: { ...drawing, blueprints: drawing.blueprints.filter((item) => !item.attachment.hiddenFromCanvas) },
+                        model: commentsModel,
+                    }}
+                >
+                    <DetectionContext.Provider
+                        value={{ drawing: { ...drawing, blueprints: drawing.blueprints.filter((item) => !item.attachment.hiddenFromCanvas) }, model }}
+                    >
                         <Tldraw
+                            getShapeVisibility={blueprintVisibility}
                             store={store}
                             onMount={mount}
                             hideUi
                             initialState="hand"
                             licenseKey={config.TLDRAW_LICENSE_KEY}
-                            options={{ maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
+                            options={canvasOptions}
                             components={{ OnTheCanvas: CanvasLayers, Grid: SquareGrid, Background: CanvasBackground }}
                         />
                     </DetectionContext.Provider>
@@ -495,7 +540,7 @@ function SavedBlueprintCanvas({ drawing, userId, model }: Readonly<{ drawing: Dr
             disposed = true;
             pages.forEach((page) => URL.revokeObjectURL(page.src));
         };
-        // Attachment identity is immutable within a drawing session.
+        // The parent remounts this loader when the blueprint identities change.
     }, [drawing.id, model, storageKey]);
 
     if (preparation.type === 'loading')
@@ -514,6 +559,10 @@ function SavedBlueprintCanvas({ drawing, userId, model }: Readonly<{ drawing: Dr
 }
 
 function EmptyBlueprintCanvas({ locked }: Readonly<{ locked: boolean }>) {
+    const options = useMemo<TldrawProps['options']>(
+        () => ({ maxPages: 1, camera: { isLocked: locked, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }),
+        [locked],
+    );
     const { resolvedTheme } = useTheme();
     const [editor, setEditor] = useState<Editor | null>(null);
     useEffect(() => {
@@ -525,7 +574,7 @@ function EmptyBlueprintCanvas({ locked }: Readonly<{ locked: boolean }>) {
             components={{ Grid: SquareGrid, Background: CanvasBackground }}
             initialState="hand"
             licenseKey={config.TLDRAW_LICENSE_KEY}
-            options={{ maxPages: 1, camera: { isLocked: locked, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
+            options={options}
             onMount={(instance) => {
                 instance.updateInstanceState({ isReadonly: true, isGridMode: true });
                 instance.user.updateUserPreferences({ colorScheme: resolvedTheme === 'dark' ? 'dark' : 'light' });
@@ -539,7 +588,7 @@ function EmptyBlueprintCanvas({ locked }: Readonly<{ locked: boolean }>) {
 
 export default function BlueprintCanvas(props: Readonly<{ drawing: Drawing; userId: string; model: CanvasModel }>) {
     return props.drawing.blueprints.some((blueprint) => !blueprint.attachment.hiddenFromCanvas) ? (
-        <SavedBlueprintCanvas {...props} />
+        <SavedBlueprintCanvas key={props.drawing.blueprints.map((item) => item.id).join(',')} {...props} />
     ) : (
         <EmptyBlueprintCanvas locked={!props.drawing.blueprints.length} />
     );
