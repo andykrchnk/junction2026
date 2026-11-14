@@ -9,7 +9,7 @@ import { prepareRaster, RasterPreparationError } from './raster';
 import { InferenceError, predictRaster } from './inference';
 import { storeDrawingCovers, deleteUnreferencedDrawingCovers } from './covers';
 
-type DetectDrawingParams = { id: string; ownerId: string; page: number };
+type DetectDrawingParams = { id: string; ownerId: string; page: number; job?: { lease: string; signal: AbortSignal } };
 
 async function readDrawing(params: Pick<DetectDrawingParams, 'id' | 'ownerId'>) {
     const doc = await db.drawing.DrawingModel.findOne({ _id: params.id, ownerId: params.ownerId }).lean();
@@ -19,11 +19,18 @@ async function readDrawing(params: Pick<DetectDrawingParams, 'id' | 'ownerId'>) 
 
 async function ensureDrawingCovers(params: { drawing: Drawing; ownerId: string }) {
     const { drawing, ownerId } = params;
-    if (drawing.covers || drawing.blueprints.some((blueprint) => !blueprint.layout || !blueprint.raster)) return drawing;
+    if (
+        drawing.covers ||
+        drawing.blueprints.some(
+            (blueprint) => (!blueprint.layout || !blueprint.raster) && !['failed', 'rejected', 'not_configured'].includes(blueprint.status.type),
+        )
+    )
+        return drawing;
     const pages = drawing.blueprints.flatMap((blueprint) => {
         const page = db.drawing.predictionPage(blueprint);
         return page ? [page] : [];
     });
+    if (!pages.length) return drawing;
     // Detection is already durable: cover failures must never discard successful geometry.
     const covers = await storeDrawingCovers({ drawingId: drawing.id, ownerId, pages });
     try {
@@ -47,6 +54,9 @@ export async function detectDrawing(params: DetectDrawingParams) {
     if (!target) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid blueprint page.' });
     if (target.layout && target.raster) return ensureDrawingCovers({ drawing: current, ownerId: params.ownerId });
 
+    const jobFilter = params.job
+        ? { 'processingJob.lease': params.job.lease, 'processingJob.status': 'running' }
+        : { 'processingJob.status': { $nin: ['queued', 'running'] } };
     const availableLease = {
         $and: [
             { $or: [{ inferenceLease: null }, { inferenceLeaseUntil: { $lte: new Date() } }] },
@@ -55,7 +65,7 @@ export async function detectDrawing(params: DetectDrawingParams) {
     };
     const lease = crypto.randomUUID();
     const doc = await db.drawing.DrawingModel.findOneAndUpdate(
-        { _id: params.id, ownerId: params.ownerId, ...availableLease },
+        { _id: params.id, ownerId: params.ownerId, ...jobFilter, ...availableLease },
         {
             $set: {
                 inferenceLease: lease,
@@ -67,8 +77,8 @@ export async function detectDrawing(params: DetectDrawingParams) {
     if (!doc) throw new TRPCError({ code: 'CONFLICT', message: 'Detection is already running for this drawing. Wait and retry.' });
 
     const drawing = db.drawing.DrawingDto(doc);
-    const signal = AbortSignal.timeout(Env.INFERENCE_TIMEOUT_MS);
-    const ownedLease = { _id: params.id, ownerId: params.ownerId, inferenceLease: lease };
+    const signal = AbortSignal.any([AbortSignal.timeout(Env.INFERENCE_TIMEOUT_MS), ...(params.job ? [params.job.signal] : [])]);
+    const ownedLease = { _id: params.id, ownerId: params.ownerId, ...jobFilter, inferenceLease: lease };
     const blueprint = drawing.blueprints.find((item) => item.pageNumber === params.page);
     if (!blueprint) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid blueprint page.' });
     const ownedBlueprint = { ...ownedLease, 'blueprints.id': blueprint.id };
@@ -159,7 +169,12 @@ export async function detectDrawing(params: DetectDrawingParams) {
                 : 'Detection failed or timed out. Please retry.';
         await db.drawing.DrawingModel.updateOne(ownedBlueprint, {
             $set: {
-                'blueprints.$.status': { type: 'failed', stage: 'inference', error: message },
+                'blueprints.$.status':
+                    cause instanceof InferenceError && cause.busy
+                        ? { type: 'pending', stage: 'inference' }
+                        : cause instanceof InferenceError && cause.rejectionCode
+                          ? { type: 'rejected', stage: 'inference', error: message, code: cause.rejectionCode }
+                          : { type: 'failed', stage: 'inference', error: message },
                 inferenceLease: null,
                 inferenceLeaseUntil: null,
             },

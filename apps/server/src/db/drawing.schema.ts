@@ -30,12 +30,28 @@ const schema = new mongoose.Schema(
         lease: { type: String, default: null },
         leaseUntil: { type: Date, default: null },
         error: { type: String, default: null },
+        processingJob: { type: mongoose.Schema.Types.Mixed, default: null },
         canvasDocument: { type: String, default: null },
         canvasRevision: { type: Number, default: 0 },
     },
     { timestamps: true, versionKey: false, bufferCommands: false },
 );
 schema.index({ ownerId: 1, updatedAt: -1 });
+schema.index({ 'processingJob.status': 1, 'processingJob.availableAt': 1, 'processingJob.leaseUntil': 1 });
+
+export const StoredJobZod = z.object({
+    status: z.enum(['queued', 'running', 'completed']),
+    pages: z.array(z.number().int().positive()).min(1),
+    cursor: z.number().int().nonnegative(),
+    attempts: z.number().int().nonnegative(),
+    availableAt: z.date(),
+    lease: z.string().nullable(),
+    leaseUntil: z.date().nullable(),
+});
+export function createProcessingJob(pages: number[]) {
+    return StoredJobZod.parse({ status: 'queued', pages, cursor: 0, attempts: 0, availableAt: new Date(), lease: null, leaseUntil: null });
+}
+
 type StoredDrawing = mongoose.InferSchemaType<typeof schema>;
 export const DrawingModel = connection.modelNames().includes('Drawing')
     ? connection.model<StoredDrawing>('Drawing')
@@ -53,12 +69,15 @@ const StoredDrawingZod = z.object({
     lease: z.string().nullable(),
     leaseUntil: z.date().nullable(),
     error: z.string().nullable(),
+    processingJob: StoredJobZod.nullable().optional(),
 });
 export function DrawingDto(data: unknown) {
     const doc = StoredDrawingZod.parse(data);
+    const job = doc.processingJob;
+    const jobBusy = job?.status === 'queued' || job?.status === 'running';
     const busy = doc.lease !== null && doc.leaseUntil !== null && doc.leaseUntil.getTime() > Date.now();
     const inferenceBusy = doc.inferenceLease !== null && doc.inferenceLeaseUntil !== null && doc.inferenceLeaseUntil.getTime() > Date.now();
-    const error = !busy && doc.lease ? 'Processing was interrupted. Please retry.' : doc.error;
+    const error = !jobBusy && !busy && doc.lease ? 'Processing was interrupted. Please retry.' : doc.error;
     const blueprints = doc.blueprints.map((blueprint) => {
         const recoverEntity = <T extends LayoutRoom | LayoutFixture>(entity: T) =>
             !busy && entity.enrichment.type === 'processing'
@@ -79,12 +98,15 @@ export function DrawingDto(data: unknown) {
         };
         if (blueprint.status.type !== 'processing') return recovered;
         const active = blueprint.status.stage === 'inference' ? inferenceBusy : busy;
+        if (!active && jobBusy) return { ...blueprint, status: { type: 'pending' as const, stage: blueprint.status.stage } };
         return active
             ? recovered
             : { ...recovered, status: { type: 'partial' as const, stage: blueprint.status.stage, error: 'Processing was interrupted. Retry to resume.' } };
     });
     const ready = blueprints.length > 0 && blueprints.every((blueprint) => blueprint.status.type === 'ready');
-    const failed = blueprints.some((blueprint) => blueprint.status.type === 'failed' || blueprint.status.type === 'partial');
+    const failed = blueprints.some(
+        (blueprint) => blueprint.status.type === 'failed' || blueprint.status.type === 'partial' || blueprint.status.type === 'rejected',
+    );
     return DrawingZod.parse({
         id: doc._id.toHexString(),
         title: doc.title,
@@ -94,9 +116,12 @@ export function DrawingDto(data: unknown) {
         blueprints: blueprints.map((blueprint) => ({ ...blueprint, comments: blueprint.comments.filter((comment) => comment.deletedAt == null) })),
         covers: doc.covers,
         messages: doc.messages,
-        busy: busy || inferenceBusy,
+        busy: jobBusy || busy || inferenceBusy,
+        processing: job
+            ? { status: job.status, completed: Math.min(job.cursor, job.pages.length), total: job.pages.length, currentPage: job.pages[job.cursor] ?? null }
+            : null,
         error,
-        status: ready ? 'ready' : !blueprints.length ? 'empty' : busy || inferenceBusy ? 'analyzing' : error || failed ? 'failed' : 'uploaded',
+        status: ready ? 'ready' : !blueprints.length ? 'empty' : jobBusy || busy || inferenceBusy ? 'analyzing' : error || failed ? 'failed' : 'uploaded',
     });
 }
 

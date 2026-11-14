@@ -6,7 +6,16 @@ import { layoutProperties } from '../../db/drawing.schema';
 import type { Raster } from './raster';
 import { z } from 'zod';
 
-export class InferenceError extends Error {}
+export class InferenceError extends Error {
+    constructor(
+        message: string,
+        options?: ErrorOptions,
+        public readonly rejectionCode: string | null = null,
+        public readonly busy = false,
+    ) {
+        super(message, options);
+    }
+}
 
 const ProviderErrorZod = z.object({ code: z.string().optional() });
 
@@ -50,8 +59,13 @@ export async function predictRaster(
             }
             if (!response.ok) {
                 await response.body?.cancel();
+                const rejection = response.headers.get('X-Processing-Error');
+                if (response.status === 422 && rejection === 'unusable_drawing')
+                    throw new InferenceError('This page is not a readable technical drawing.', undefined, rejection);
+                if (response.status === 422 && rejection === 'unsupported_piping_electrical')
+                    throw new InferenceError('Piping and electrical pages are not supported yet.', undefined, rejection);
                 if (response.status === 401) throw new Error('Inference authentication failed. Check the server configuration.');
-                if (response.status === 503) throw new Error('The inference service is busy. Retry detection shortly.');
+                if (response.status === 503) throw new InferenceError('The inference service is busy. Retry detection shortly.', undefined, null, true);
                 if ([413, 415, 422].includes(response.status)) throw new Error('The inference service cannot process this image or its size.');
                 throw new Error('The inference service request failed.');
             }
@@ -65,8 +79,9 @@ export async function predictRaster(
                 .filter((stage) => ['ocr', 'gemini', 'verification_limit'].includes(stage));
             return { raw, detectedProperties: layoutProperties(raw), degraded };
         }
-        throw new Error('The inference service is busy. Retry detection shortly.');
+        throw new InferenceError('The inference service is busy. Retry detection shortly.', undefined, null, true);
     } catch (cause) {
+        if (cause instanceof InferenceError) throw cause;
         if (signal.aborted) throw new InferenceError('Inference was interrupted or timed out. Retry detection.');
         const providerError = ProviderErrorZod.safeParse(cause);
         if (providerError.success && providerError.data.code && /CERTIFICATE|CERT_|UNABLE_TO_VERIFY|SELF_SIGNED/.test(providerError.data.code)) {

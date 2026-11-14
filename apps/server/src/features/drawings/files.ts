@@ -52,6 +52,7 @@ drawingFiles.post('/:id/file', async (c) => {
             {
                 $set: {
                     title: name,
+                    processingJob: db.drawing.createProcessingJob(Array.from({ length: pages }, (_, index) => index + 1)),
                     blueprints: db.drawing.createBlueprints({ id: upload.id.toHexString(), name, mediaType: mediaType.data, pages }),
                 },
             },
@@ -61,7 +62,10 @@ drawingFiles.post('/:id/file', async (c) => {
             return c.json({ message: 'A blueprint is already attached.' }, 409);
         }
     } catch (error) {
-        await blueprintFiles.delete(upload.id).catch(() => {});
+        const referenced = await db.drawing.DrawingModel.exists({ _id: id.data, ownerId, 'blueprints.attachment.id': upload.id.toHexString() }).catch(
+            () => true,
+        );
+        if (!referenced) await blueprintFiles.delete(upload.id).catch(() => {});
         throw error;
     }
     return c.json({ ok: true });

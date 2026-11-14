@@ -179,6 +179,7 @@ export const BlueprintStatusZod = z.discriminatedUnion('type', [
     z.object({ type: z.literal('pending'), stage: BlueprintStageZod }),
     z.object({ type: z.literal('partial'), stage: BlueprintStageZod, error: z.string() }),
     z.object({ type: z.literal('failed'), stage: BlueprintStageZod, error: z.string() }),
+    z.object({ type: z.literal('rejected'), stage: z.literal('inference'), error: z.string(), code: z.string() }),
     z.object({ type: z.literal('not_configured'), stage: z.literal('inference') }),
     z.object({ type: z.literal('ready') }),
 ]);
