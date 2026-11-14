@@ -36,6 +36,11 @@ export function DrawingCover({ drawing }: Readonly<{ drawing: DrawingSummary }>)
         return <FileText size={48} aria-label="Drawing document" />;
     }
     return (
-        <img src={preview.url} alt={`${drawing.title} room outline cover`} className="h-full w-full object-contain" onError={() => setFailedUrl(preview.url)} />
+        <img
+            src={preview.url}
+            alt={`${drawing.title} room outline cover`}
+            className="absolute inset-0 h-full w-full object-cover"
+            onError={() => setFailedUrl(preview.url)}
+        />
     );
 }

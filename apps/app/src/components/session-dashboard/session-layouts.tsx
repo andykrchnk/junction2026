@@ -208,7 +208,7 @@ export function SessionLayouts({
                     <div className="sl-grid">
                         {ordered.map((s, i) => (
                             <button className="sl-card" key={s.id} onClick={() => onOpen(s)}>
-                                <div className="sl-image">
+                                <div className={`sl-image${!sample && s.cover ? ' sl-image-cover' : ''}`}>
                                     {sample ? <Thumbnail index={i} /> : (s.cover ?? <FileText size={48} aria-label="Drawing document" />)}
                                     {variant === 3 && <span className="sl-sheet-number">A / {String(i + 1).padStart(2, '0')}</span>}
                                 </div>
