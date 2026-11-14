@@ -1,0 +1,261 @@
+import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useUnit } from 'effector-react';
+import { AnimatePresence, MotionConfig } from 'motion/react';
+import { ArrowUp, FileUp, FileText, RefreshCw } from 'lucide-react';
+import type { Drawing } from '@repo/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ChatMessage } from '@/components/ui/chat-message';
+import { trpc } from '@/shared/trpc';
+import { authenticatedFetch } from '@/shared/auth';
+import { config } from '@/shared/config';
+import { $$drawings } from './model';
+
+function BlueprintPreview({ drawing }: Readonly<{ drawing: Drawing }>) {
+    const [url, setUrl] = useState<string | null>(null);
+    const { data, isError } = useQuery({
+        queryKey: ['blueprint-file', drawing.id],
+        queryFn: async () => {
+            const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/file`);
+            if (!response.ok) throw new Error('Could not load blueprint.');
+            return response.blob();
+        },
+    });
+    useEffect(() => {
+        if (!data) return;
+        const objectUrl = URL.createObjectURL(data);
+        setUrl(objectUrl);
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [data]);
+    return (
+        <details className="rounded-md border bg-card p-3">
+            <summary className="cursor-pointer text-sm">Original blueprint · {drawing.attachment?.name}</summary>
+            {url ? (
+                <div className="mt-3">
+                    <a href={url} download={drawing.attachment?.name} className="text-primary text-xs underline">
+                        Download original
+                    </a>
+                    {drawing.attachment?.mediaType === 'application/pdf' ? (
+                        <iframe title="Original blueprint" src={url} className="mt-2 h-[65svh] w-full" />
+                    ) : (
+                        <img alt="Original blueprint" src={url} className="mt-2 max-h-[65svh] w-full object-contain" />
+                    )}
+                </div>
+            ) : (
+                <p className="mt-2 text-sm" role="status">
+                    {isError ? 'Could not load blueprint. Reopen the session to retry.' : 'Loading blueprint…'}
+                </p>
+            )}
+        </details>
+    );
+}
+
+export function DrawingWorkspace({ id }: Readonly<{ id: string }>) {
+    const {
+        data: drawing,
+        isPending,
+        error: loadError,
+    } = useQuery({
+        ...trpc.drawings.get.queryOptions({ id }),
+        refetchInterval: (query) => (query.state.data?.busy ? 2000 : false),
+    });
+    const { draft, error, uploading, activity, asking } = useUnit({
+        draft: $$drawings.$draft,
+        error: $$drawings.$error,
+        uploading: $$drawings.$uploading,
+        activity: $$drawings.$activity,
+        asking: $$drawings.$asking,
+    });
+    const endRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        endRef.current?.scrollIntoView({ block: 'nearest' });
+    }, [drawing?.messages.length, drawing?.messages.at(-1)?.answer]);
+    if (isPending)
+        return (
+            <p role="status" className="p-8 text-sm">
+                Opening drawing…
+            </p>
+        );
+    if (!drawing)
+        return (
+            <p role="alert" className="p-8 text-sm text-destructive">
+                {loadError?.message ?? 'Drawing not found.'}
+            </p>
+        );
+    const busy = drawing.busy || (activity[id] ?? 0) > 0;
+    const pending = drawing.messages.find((message) => !message.answer);
+    const visibleError = error?.id === id ? error.message : drawing.error;
+    const ask = (question: string) => {
+        void $$drawings.askFx({ id, message: { id: crypto.randomUUID(), question, answer: null } }).catch(() => {});
+    };
+    return (
+        <MotionConfig reducedMotion="user">
+            <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-5 py-6 md:px-8">
+                <header className="mb-6 border-b pb-5">
+                    <p className="text-primary text-xs font-medium">Drawing workspace</p>
+                    <h1 className="mt-2 break-words text-xl font-medium">{drawing.title}</h1>
+                    <p className="text-muted-foreground mt-2 text-sm">
+                        {drawing.analysis ? 'Answers grounded in your saved blueprint analysis.' : 'One blueprint. A clearer starting point.'}
+                    </p>
+                </header>
+                {visibleError && (
+                    <p role="alert" className="mb-4 rounded-md border border-destructive/30 bg-card p-3 text-sm text-destructive">
+                        {visibleError}
+                    </p>
+                )}
+                {!drawing.attachment ? (
+                    <div className="bg-card my-auto rounded-lg border border-dashed p-8 text-center">
+                        <FileUp className="text-primary mx-auto mb-4 size-8" aria-hidden />
+                        <h2 className="text-lg font-medium">Start with a blueprint</h2>
+                        <p className="text-muted-foreground mt-2 text-sm">Upload one JPEG, PNG or PDF, up to 20 MB. PDFs can have up to 10 pages.</p>
+                        <label htmlFor="blueprint" className="mt-6 mb-2 block text-left text-sm">
+                            Blueprint file
+                        </label>
+                        <Input
+                            id="blueprint"
+                            type="file"
+                            accept="image/jpeg,image/png,application/pdf"
+                            disabled={busy}
+                            onChange={(event) => {
+                                const file = event.currentTarget.files?.[0];
+                                if (file) void $$drawings.uploadFx({ id, file }).catch(() => {});
+                                event.currentTarget.value = '';
+                            }}
+                        />
+                        {uploading && busy && (
+                            <p className="mt-3 text-sm" role="status">
+                                Saving your blueprint…
+                            </p>
+                        )}
+                    </div>
+                ) : (
+                    <>
+                        <BlueprintPreview key={id} drawing={drawing} />
+                        {!drawing.analysis && (
+                            <div className="py-10 text-center">
+                                <FileText className="text-primary mx-auto mb-3 size-7" aria-hidden />
+                                <p role="status" className="mb-4 text-sm">
+                                    {busy ? 'Analyzing your blueprint. You can return to this session later.' : 'Prepare the analysis to start chatting.'}
+                                </p>
+                                <Button
+                                    loading={busy}
+                                    leadingIcon={RefreshCw}
+                                    onClick={() => {
+                                        void $$drawings.analyzeFx(id).catch(() => {});
+                                    }}
+                                >
+                                    {visibleError ? 'Retry analysis' : 'Analyze blueprint'}
+                                </Button>
+                            </div>
+                        )}
+                        {drawing.analysis && (
+                            <>
+                                <details className="my-4 rounded-md border bg-card p-4" open={drawing.messages.length === 0}>
+                                    <summary className="cursor-pointer text-sm font-medium">
+                                        Initial analysis · {drawing.analysis.observations.length} observations
+                                    </summary>
+                                    <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed">{drawing.analysis.summary}</p>
+                                    <ul className="text-muted-foreground mt-3 list-disc space-y-1 pl-5 text-xs">
+                                        {drawing.analysis.limitations.map((limitation, index) => (
+                                            <li key={index}>{limitation}</li>
+                                        ))}
+                                    </ul>
+                                    <div className="mt-4 space-y-3">
+                                        {drawing.analysis.observations.map((item) => (
+                                            <div key={item.id} id={`source-${item.id}`} className="scroll-mt-4 border-t pt-3 text-sm">
+                                                <p className="font-medium">
+                                                    {item.id} · Page {item.page} · {item.location}
+                                                </p>
+                                                <p className="mt-1">{item.fact}</p>
+                                                <p className="text-muted-foreground mt-1 text-xs">Evidence: {item.evidence}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </details>
+                                <div role="log" aria-label="Conversation" className="flex flex-1 flex-col gap-5 py-4">
+                                    <AnimatePresence initial={false}>
+                                        {drawing.messages.flatMap((message) => [
+                                            <ChatMessage key={`${message.id}-user`} from="user">
+                                                {message.question}
+                                            </ChatMessage>,
+                                            message.answer ? (
+                                                <ChatMessage key={`${message.id}-assistant`} from="assistant">
+                                                    {message.answer.text}
+                                                    {message.answer.sources.length > 0 && (
+                                                        <details className="mt-3 text-xs">
+                                                            <summary className="cursor-pointer text-primary">Source evidence</summary>
+                                                            {message.answer.sources.map((source) => {
+                                                                const item = drawing.analysis?.observations.find((observation) => observation.id === source);
+                                                                return item ? (
+                                                                    <p key={source} className="mt-2 text-muted-foreground">
+                                                                        {source} · Page {item.page}, {item.location}: {item.evidence}
+                                                                    </p>
+                                                                ) : null;
+                                                            })}
+                                                        </details>
+                                                    )}
+                                                </ChatMessage>
+                                            ) : null,
+                                        ])}
+                                    </AnimatePresence>
+                                    {busy && (
+                                        <p role="status" className="text-muted-foreground text-sm">
+                                            Preparing an answer…
+                                        </p>
+                                    )}
+                                    {pending && !busy && (
+                                        <Button
+                                            variant="secondary"
+                                            className="self-start"
+                                            onClick={() => {
+                                                void $$drawings.askFx({ id, message: pending }).catch(() => {});
+                                            }}
+                                        >
+                                            Retry answer
+                                        </Button>
+                                    )}
+                                    <div ref={endRef} />
+                                </div>
+                                <form
+                                    className="bg-background mt-4 border-t py-4 md:sticky md:bottom-0"
+                                    onSubmit={(event) => {
+                                        event.preventDefault();
+                                        if (draft.trim() && !busy && !pending) ask(draft.trim());
+                                    }}
+                                >
+                                    <label htmlFor="question" className="mb-2 block text-xs text-muted-foreground">
+                                        Ask about this drawing
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id="question"
+                                            value={draft}
+                                            onChange={(event) => $$drawings.draftChanged(event.target.value)}
+                                            placeholder="How much floor tiling do the toilets need?"
+                                            maxLength={4000}
+                                            disabled={busy || !!pending}
+                                            autoComplete="off"
+                                        />
+                                        <Button
+                                            type="submit"
+                                            size="icon"
+                                            aria-label="Send question"
+                                            disabled={!draft.trim() || !!pending || busy}
+                                            loading={asking && busy}
+                                        >
+                                            <ArrowUp className="size-4" />
+                                        </Button>
+                                    </div>
+                                    <p className="text-muted-foreground mt-2 text-xs">
+                                        Prototype analysis may miss details. Check quantities against the original drawing.
+                                    </p>
+                                </form>
+                            </>
+                        )}
+                    </>
+                )}
+            </section>
+        </MotionConfig>
+    );
+}
