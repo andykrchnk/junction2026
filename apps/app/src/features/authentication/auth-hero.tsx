@@ -12,7 +12,7 @@ export function AuthHero() {
             preset: constellation,
             clear: iconRef.current,
             charset: ' .:-=+YCIFSA#@',
-            palette: '#ff7a59',
+            palette: 'var(--primary)',
             cursor: false,
         });
         return () => backdrop.destroy();
@@ -22,7 +22,7 @@ export function AuthHero() {
         <aside
             ref={heroRef}
             className="relative isolate hidden items-center justify-center overflow-hidden p-12 lg:flex"
-            style={{ backgroundColor: '#1C1C1C' }}
+            style={{ backgroundColor: 'var(--primary-foreground)' }}
         >
             <div ref={iconRef} className="relative z-10 flex items-center justify-center text-white">
                 <BrandLogo iconOnly />
