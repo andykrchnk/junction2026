@@ -52,10 +52,9 @@ function SessionStatus({ status, rooms, uploadProgress }: Readonly<{ status: str
     return (
         <div className="sl-status-cell">
             <span className="sl-status-icon-label">
-                <Icon size={16} />
+                <Icon size={16} className={uploading ? 'sl-icon-uploading' : analyzing ? 'sl-icon-analyzing' : undefined} />
                 <span>{label}</span>
             </span>
-            {status === 'Needs review' && identified && <span className="sl-status-note">Needs review</span>}
         </div>
     );
 }
@@ -138,7 +137,7 @@ export function SessionLayouts({
             <main className="sl-main">
                 <div className="sl-heading">
                     <h1>Your sessions</h1>
-                    <Button leadingIcon={Plus} onClick={onNew} loading={pending}>
+                    <Button className="sl-new-session" leadingIcon={Plus} onClick={onNew} loading={pending}>
                         New session
                     </Button>
                 </div>

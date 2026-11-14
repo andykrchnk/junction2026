@@ -486,3 +486,35 @@
     color: var(--muted-foreground);
     font-size: var(--fs-caption);
 }
+
+.sl-new-session {
+    --primary-foreground: #fff;
+}
+.sl-icon-uploading {
+    animation: session-upload 1.4s ease-in-out infinite;
+}
+.sl-icon-analyzing {
+    animation: session-analyze 2.4s linear infinite;
+}
+@keyframes session-upload {
+    0%,
+    100% {
+        transform: translateY(1px);
+        opacity: 0.65;
+    }
+    50% {
+        transform: translateY(-2px);
+        opacity: 1;
+    }
+}
+@keyframes session-analyze {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sl-icon-uploading,
+    .sl-icon-analyzing {
+        animation: none;
+    }
+}
