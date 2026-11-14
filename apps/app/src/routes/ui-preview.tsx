@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
-import { SessionWorkshop } from '../../../../design-system/src/prototypes/session-workshop';
+import { SessionWorkshop } from '@/prototypes/session-workshop';
 
 export const Route = createFileRoute('/ui-preview')({
     ssr: false,
     validateSearch: z.object({ tables: z.literal(1).optional(), view: z.enum(['cards', 'table']).optional() }),
     beforeLoad: () => {
-        if (!import.meta.env.DEV || sessionStorage.getItem('pirto-design-preview') !== 'active') throw redirect({ to: '/login' });
+        if (!import.meta.env.DEV) throw redirect({ to: '/login' });
     },
     component: DashboardPreview,
 });
@@ -22,7 +22,6 @@ function DashboardPreview() {
             initialTable={view === 'table'}
             tableExperiment={tables === 1}
             onSignOut={() => {
-                sessionStorage.removeItem('pirto-design-preview');
                 void navigate({ to: '/login' });
             }}
         />

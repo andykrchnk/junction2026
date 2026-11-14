@@ -1,14 +1,14 @@
-import { AuthHero } from './auth-hero';
-import { BrandLogo } from '@/components/ui/brand-logo';
+import { AuthHero } from '@/features/authentication/auth-hero';
+import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
 import { useEffect } from 'react';
-import { ArrowRight } from '@/lib/icons-remix';
+import { ArrowRight } from '@repo/design-system/lib/icons-remix';
 import { SignInInputZod, SignUpInputZod } from '@repo/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@repo/design-system/components/ui/button';
+import { Input } from '@repo/design-system/components/ui/input';
+import { Label } from '@repo/design-system/components/ui/label';
 import { $$user } from '@/entities/user/model';
 
 type AuthFormProps = { mode: 'sign-in' | 'register' };
@@ -28,11 +28,6 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
             },
         },
         onSubmit: async ({ value }) => {
-            if (import.meta.env.DEV && mode === 'sign-in' && value.email === 'demo@pirto.local' && value.password === 'Preview2026!') {
-                sessionStorage.setItem('pirto-design-preview', 'active');
-                await navigate({ to: '/ui-preview' });
-                return;
-            }
             try {
                 if (mode === 'register') await $$user.signUpFx(value);
                 else await $$user.signInFx(value);

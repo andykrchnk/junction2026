@@ -1,11 +1,11 @@
-import { SessionLayouts } from '../../../../../design-system/src/components/session-dashboard/session-layouts';
-import { BrandLogo } from '@/components/ui/brand-logo';
+import { SessionLayouts } from '@/components/session-dashboard/session-layouts';
+import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, Link, useSearch } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
-import { LogOut, Plus, FileStack } from '@/lib/icons-remix';
-import { Button } from '@/components/ui/button';
+import { LogOut, Plus, FileStack } from '@repo/design-system/lib/icons-remix';
+import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { $$drawings } from '@/features/drawings/model';
 import { DrawingWorkspace } from '@/features/drawings/drawing-workspace';

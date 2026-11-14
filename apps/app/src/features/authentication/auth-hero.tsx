@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { background, constellation } from 'asciify-engine/kit';
-import { BrandLogo } from '@/components/ui/brand-logo';
+import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
 
 export function AuthHero() {
     const heroRef = useRef<HTMLElement>(null);

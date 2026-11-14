@@ -2,10 +2,10 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/shared/trpc';
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { FluidProvider } from '@/lib/fluid-provider';
-import { remixIcons } from '@/lib/icons-remix';
+import { FluidProvider } from '@repo/design-system/lib/fluid-provider';
+import { remixIcons } from '@repo/design-system/lib/icons-remix';
 import { ThemeProvider } from 'next-themes';
-import appCss from '../styles.css?url';
+import appCss from '@/styles.css?url';
 
 export const Route = createRootRoute({
     head: () => ({
