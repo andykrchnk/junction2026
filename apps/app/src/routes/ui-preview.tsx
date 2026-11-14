@@ -4,7 +4,7 @@ import { SessionWorkshop } from '../../../../design-system/src/prototypes/sessio
 
 export const Route = createFileRoute('/ui-preview')({
     ssr: false,
-    validateSearch: z.object({ tables: z.literal(1).optional() }),
+    validateSearch: z.object({ tables: z.literal(1).optional(), view: z.enum(['cards', 'table']).optional() }),
     beforeLoad: () => {
         if (!import.meta.env.DEV || sessionStorage.getItem('pirto-design-preview') !== 'active') throw redirect({ to: '/login' });
     },
@@ -14,11 +14,12 @@ export const Route = createFileRoute('/ui-preview')({
 // Local UI simulation only; never grants a platform session or server access.
 function DashboardPreview() {
     const navigate = useNavigate();
-    const { tables } = Route.useSearch();
+    const { tables, view } = Route.useSearch();
     return (
         <SessionWorkshop
-            key={tables ?? 'official'}
+            key={`${tables ?? 'official'}-${view ?? 'cards'}`}
             official
+            initialTable={view === 'table'}
             tableExperiment={tables === 1}
             onSignOut={() => {
                 sessionStorage.removeItem('pirto-design-preview');

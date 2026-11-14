@@ -1,4 +1,4 @@
-import { SessionLayouts, layoutDirections } from '../components/session-dashboard/session-layouts';
+import { SessionLayouts, layoutDirections, OFFICIAL_TABLE_VARIANT } from '../components/session-dashboard/session-layouts';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Plus, Upload, FileText, Check, X, ScanLine } from '@/lib/icons-remix';
 import { Button } from '../components/ui/button';
@@ -104,8 +104,9 @@ export function SessionWorkshop({
     initialVariant = 0,
     official = false,
     tableExperiment = false,
+    initialTable = false,
     onSignOut,
-}: Readonly<{ initialVariant?: number; official?: boolean; tableExperiment?: boolean; onSignOut?: () => void }>) {
+}: Readonly<{ initialVariant?: number; official?: boolean; tableExperiment?: boolean; initialTable?: boolean; onSignOut?: () => void }>) {
     const directions = tableExperiment ? tableDirections : layoutDirections;
     const [variant, setVariant] = useState(initialVariant);
     const [sessions, setSessions] = useState<Session[]>(examples);
@@ -286,8 +287,8 @@ export function SessionWorkshop({
                     {screen === 'home' ? (
                         <SessionLayouts
                             variant={official || tableExperiment ? 0 : variant}
-                            initialTable={tableExperiment}
-                            tableVariant={tableExperiment ? variant : 0}
+                            initialTable={tableExperiment || initialTable}
+                            tableVariant={tableExperiment ? variant : OFFICIAL_TABLE_VARIANT}
                             onSignOut={onSignOut}
                             sessions={sessions}
                             onNew={start}

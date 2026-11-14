@@ -8,6 +8,8 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { ViewSwitch } from './view-switch';
 import './session-layouts.css';
 
+export const OFFICIAL_TABLE_VARIANT = 0; // Quiet rules
+
 type PreviewSession = { id: number; name: string; file: string; status: string; rooms?: number };
 const sortLabels = ['Recently added', 'Name A–Z', 'Name Z–A', 'Room count'];
 export const layoutDirections = [
@@ -47,7 +49,7 @@ export function SessionLayouts({
     loading = false,
     sample = true,
     error,
-    tableVariant = 0,
+    tableVariant = OFFICIAL_TABLE_VARIANT,
     initialTable = false,
 }: Readonly<{
     variant: number;

@@ -6,3 +6,5 @@ const meta = { title: 'Official/Dashboard', component: SessionWorkshop, args: { 
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Balanced: Story = {};
+
+export const QuietTable: Story = { args: { initialTable: true } };
