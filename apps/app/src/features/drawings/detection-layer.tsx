@@ -121,7 +121,7 @@ function SheetName({ page, name, multiple }: Readonly<{ page: number; name: stri
     const label = multiple ? `${name} · Sheet ${page}` : name;
     return (
         <g transform={`matrix(${transform.a} ${transform.b} ${transform.c} ${transform.d} ${transform.e} ${transform.f})`}>
-            <text x={0} y={-12 / zoom} fill="var(--foreground)" fontSize={14 / zoom} fontWeight={500}>
+            <text x={0} y={-12 / zoom} fill="var(--muted-foreground)" fontSize={14 / zoom} fontWeight={400}>
                 <title>{label}</title>
                 {label.length > 60 ? `${label.slice(0, 57)}…` : label}
             </text>
