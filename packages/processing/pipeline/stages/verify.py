@@ -1,5 +1,5 @@
 import json
-from taxonomy import ROOM_CLASSES, ICON_CLASSES
+from taxonomy import ROOM_CLASSES, ICON_CLASSES, STRUCTURAL_CLASSES
 from stages.annotations import extract, resolve
 from clients.gemini import VerificationFailure
 
@@ -62,6 +62,40 @@ def verify(target, parts, tokens, bounds, client):
         },
     }
     if target["kind"] == "room":
+        # One choice resolves the class OR abstains, rather than independently
+        # answering "resolved" while distributing class support across guesses.
+        questions["class"] = {
+            "type": "choice",
+            "instructions": (
+                "Resolve this target's room use. Choose an exact room class only when an "
+                "associated printed label or clear visual context supports it. Interpret labels "
+                "in their original language and verify their association using placement and walls. "
+                "Reconcile the class with the printed name. Imperfect boundaries alone do not "
+                "invalidate clear room use. Choose ambiguous rather than a best guess when evidence "
+                "is insufficient. Choose conflicting_room_uses when the target spans distinct "
+                "spaces with incompatible uses. Linework or wall fragments are ambiguous, not rooms."
+            ),
+            "criteria": {
+                **{
+                    c: "Supported room use: " + DESCRIPTIONS.get(c, c)
+                    for c in ROOM_CLASSES
+                    if c not in STRUCTURAL_CLASSES and c != "Undefined"
+                },
+                "ambiguous": "Insufficient room-use evidence, unclear label association, non-room fragment, or use outside the supported classes; retain original classification.",
+                "conflicting_room_uses": "The target spans distinct spaces with incompatible room uses; no single room class is supported.",
+            },
+        }
+        questions["class_basis"] = {
+            "type": "choice",
+            "instructions": "What is the main basis for your room-use resolution? This explanation remains internal.",
+            "criteria": {
+                "printed_label": "An unambiguous printed room label belongs to the target and supports its class.",
+                "visual_context": "Fixtures and surrounding drawing context identify the room use without a clear printed label.",
+                "label_and_visual_context": "Both an associated printed label and visual context support the class.",
+                "insufficient_evidence": "Room use or the association of a label with this target is unclear.",
+                "conflicting_room_uses": "Distinct spaces with incompatible uses are covered by one target.",
+            },
+        }
         questions["single_space"] = {
             "type": "noul",
             "instructions": "Does the target follow one whole physical space rather than crossing separating walls or covering a fragment?",

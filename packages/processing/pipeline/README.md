@@ -121,3 +121,19 @@ The contract regressions cover exact classes, GeoJSON holes/validity, dangling r
 references, unsupported verifier labels, preservation on weak evidence, door/window
 conflicts and explicit-unit handling. Run actual endpoint smoke checks with a configured
 Gemini credential and the live worker containers before deployment.
+
+## Room-use resolution
+
+Decisions resolves room use from the associated printed label and visual context,
+independently of outline quality. One class-choice question selects a supported room class or abstains with
+`ambiguous` or `conflicting_room_uses`; the selected outcome and a structured
+evidence basis are recorded internally. A resolved
+class with a supporting basis is applied without the previous fixed class/evidence/
+whole-space score gates. Structural classes and inconsistent decisions are not
+applied to rooms. Ambiguous, conflicting, missing, or failed verification retains
+the original class and score. Fixture and measurement gates are unchanged.
+
+Resolution, basis, and geometry diagnostics remain in private decision artifacts.
+The public response is unchanged. A relabelled room uses the verifier's selected-
+class score, which remains uncalibrated and is not geometry confidence. There are
+no translation dictionaries or label-matching rules.

@@ -64,7 +64,7 @@ def process(image, image_bytes, settings):
         json.dumps(
             {
                 "degraded": sorted(degraded),
-                "policy": "conservative-v1",
+                "policy": "room-resolution-v2",
                 "model": settings.model,
             }
         )
