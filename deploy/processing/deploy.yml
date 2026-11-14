@@ -1,0 +1,169 @@
+---
+- name: Deploy standardized floor-plan processing on the GPU host
+  hosts: all
+  connection: local
+  gather_facts: false
+  vars:
+      deploy_root: /opt/junction-processing
+      assets_root: /root/work/junction2026
+      release_compose: '{{ release_dir }}/compose.deploy.yaml'
+      services: [inference, cubicasa-detail, paddleocr, pipeline]
+  tasks:
+      - name: Validate immutable release identity
+        ansible.builtin.assert:
+            that:
+                - release_sha is match('^[0-9a-f]{40}$')
+                - release_dir == deploy_root + '/releases/' + release_sha
+      - name: Check Docker Compose support
+        ansible.builtin.command: docker compose version
+        changed_when: false
+      - name: Check NVIDIA GPU access
+        ansible.builtin.command: nvidia-smi --query-gpu=name --format=csv,noheader
+        changed_when: false
+      - name: Inspect required existing secrets and model assets
+        ansible.builtin.stat:
+            path: '{{ item }}'
+        loop:
+            - '{{ assets_root }}/.local/gpu-comparison/service.env'
+            - '{{ assets_root }}/.local/processing-pipeline/gemini-api-key'
+            - '{{ assets_root }}/packages/processing/cubicasa/weights/cubicasa5k.pkl'
+            - '{{ assets_root }}/.local/gpu-comparison/ocr/det/inference.pdmodel'
+            - '{{ assets_root }}/.local/gpu-comparison/ocr/rec/inference.pdmodel'
+            - '{{ assets_root }}/.local/gpu-comparison/ocr/cls/inference.pdmodel'
+        register: required_assets
+        no_log: true
+      - name: Require provisioned credentials and checkpoints
+        ansible.builtin.assert:
+            that: item.stat.exists
+            fail_msg: Required server credentials or model assets are missing; provision them before deployment.
+        loop: '{{ required_assets.results }}'
+        no_log: true
+      - name: Inspect previous successful release
+        ansible.builtin.stat:
+            path: '{{ deploy_root }}/current'
+            follow: false
+        register: previous
+      - name: Render isolated release deployment
+        ansible.builtin.template:
+            src: templates/compose.yaml.j2
+            dest: '{{ release_compose }}'
+            mode: '0600'
+      - name: Validate Compose without printing resolved secrets
+        ansible.builtin.command:
+            argv: [docker, compose, -f, '{{ release_compose }}', config, --quiet]
+        changed_when: false
+      - name: Build pinned dependencies into versioned application images
+        ansible.builtin.command:
+            argv: [docker, compose, -f, '{{ release_compose }}', build, pipeline, inference, paddleocr]
+        register: build_result
+        changed_when: "'Built' in build_result.stderr"
+      - name: Verify pipeline contract before switching services
+        ansible.builtin.command:
+            argv: [docker, run, --rm, --entrypoint, python, 'junction-pipeline:{{ release_sha }}', -m, unittest, test_contract]
+        changed_when: false
+      - name: Find legacy core containers for project migration
+        ansible.builtin.command:
+            argv:
+                - docker
+                - ps
+                - --all
+                - --quiet
+                - --filter
+                - label=com.docker.compose.project=junction-model-comparison
+                - --filter
+                - 'label=com.docker.compose.service={{ item }}'
+        loop: '{{ services }}'
+        register: legacy_core
+        changed_when: false
+      - name: Remember legacy container IDs
+        ansible.builtin.set_fact:
+            legacy_core_ids: "{{ legacy_core.results | map(attribute='stdout_lines') | flatten }}"
+      - name: Switch and verify deployment
+        block:
+            - name: Stop legacy core before acquiring its ports and GPU resources
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'stop'] + legacy_core_ids }}"
+              when: legacy_core_ids | length > 0
+            - name: Reconcile production services
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'compose', '-f', release_compose, 'up', '-d', '--no-deps'] + services }}"
+              register: compose_up
+              changed_when: "'Started' in compose_up.stderr or 'Recreated' in compose_up.stderr"
+            - name: Wait for geometry OCR and orchestration readiness
+              ansible.builtin.uri:
+                  url: http://127.0.0.1:8002/health/ready
+                  status_code: 200
+              register: readiness
+              until: readiness.status == 200
+              retries: 60
+              delay: 5
+            - name: Wait for legacy compatibility gateway
+              ansible.builtin.uri:
+                  url: http://127.0.0.1:8001/health/ready
+                  status_code: 200
+              register: legacy_readiness
+              until: legacy_readiness.status == 200
+              retries: 30
+              delay: 5
+            - name: Find retired model containers owned by this deployment
+              ansible.builtin.command:
+                  argv:
+                      [
+                          docker,
+                          ps,
+                          --all,
+                          --quiet,
+                          --filter,
+                          'label=com.docker.compose.project=junction-model-comparison',
+                          --filter,
+                          'label=com.docker.compose.service={{ item }}',
+                      ]
+              loop: [raster2seq, grounding-sam]
+              register: retired_workers
+              changed_when: false
+            - name: Remove only retired model containers after core readiness
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'rm', '--force'] + item.stdout_lines }}"
+              loop: '{{ retired_workers.results }}'
+              loop_control:
+                  label: '{{ item.item }}'
+              when: item.stdout | trim | length > 0
+            - name: Remove stopped legacy core after successful readiness checks
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'rm'] + legacy_core_ids }}"
+              when: legacy_core_ids | length > 0
+            - name: Record successfully deployed release
+              ansible.builtin.file:
+                  src: '{{ release_dir }}'
+                  dest: '{{ deploy_root }}/current'
+                  state: link
+                  force: true
+        rescue:
+            - name: Stop candidate project before restoring a differently named stack
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'compose', '-f', release_compose, 'stop'] + services }}"
+            - name: Restore previous successful deployment
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'compose', '-f', previous.stat.lnk_source + '/compose.deploy.yaml', 'up', '-d', '--no-deps'] + services }}"
+              when: previous.stat.islnk | default(false)
+            - name: Restart legacy core when no managed release exists
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'start'] + legacy_core_ids }}"
+              when:
+                  - not (previous.stat.islnk | default(false))
+                  - legacy_core_ids | length > 0
+            - name: Restore original deployment on first-release failure
+              ansible.builtin.command:
+                  argv: "{{ ['docker', 'compose', '--project-directory', assets_root, '-f', assets_root + '/packages/processing/compose.yaml', 'up', '-d', '--no-deps'] + services }}"
+              when: not (previous.stat.islnk | default(false)) and legacy_core_ids | length == 0
+            - name: Verify restored service readiness
+              ansible.builtin.uri:
+                  url: http://127.0.0.1:8002/health/ready
+                  status_code: 200
+              register: restored
+              until: restored.status == 200
+              retries: 60
+              delay: 5
+            - name: Report failed deployment after rollback
+              ansible.builtin.fail:
+                  msg: New release failed readiness; previous deployment restored. Inspect deployment logs.

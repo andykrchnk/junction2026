@@ -1,0 +1,8 @@
+**
+!pipeline
+!pipeline/**
+!cubicasa
+!cubicasa/model
+!cubicasa/model/segmentation_net.py
+**/__pycache__
+**/*.pyc

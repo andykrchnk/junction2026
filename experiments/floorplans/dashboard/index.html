@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Floor plans · Results</title>
+        <link rel="stylesheet" href="dashboard.css" />
+    </head>
+    <body>
+        <header>
+            <div>
+                <span class="eyebrow">FLOOR PLAN LAB</span>
+                <h1>See what improved.</h1>
+                <p>Compare outlines. Find the remaining problems. Decide what to review.</p>
+            </div>
+            <span class="badge">Private · saved experiments</span>
+        </header>
+        <nav aria-label="Dashboard views">
+            <button class="active" data-tab="compare">Compare drawings</button><button data-tab="progress">Where we are</button
+            ><button data-tab="models">Models &amp; evidence</button>
+        </nav>
+        <div id="load" role="status">Loading saved results…</div>
+        <main hidden id="app">
+            <section id="compare" class="tab">
+                <div class="workspace">
+                    <aside>
+                        <div class="section-label">DRAWINGS</div>
+                        <label class="sr" for="scope">Drawing set</label
+                        ><select id="scope">
+                            <option value="updated">Latest results · 6</option>
+                            <option value="review">Drawings with review flags</option>
+                            <option value="all">All benchmark drawings · 26</option>
+                        </select>
+                        <div id="drawings"></div>
+                        <p class="muted small">Latest geometry is available for 6 of 26 drawings. Names remain unverified.</p>
+                    </aside>
+                    <div class="content">
+                        <div class="drawing-heading">
+                            <div>
+                                <h2 id="title"></h2>
+                                <p id="subtitle"></p>
+                            </div>
+                            <a id="download" class="button">Download result</a>
+                        </div>
+                        <div id="takeaway" class="callout"></div>
+                        <div id="metrics" class="metrics"></div>
+                        <div class="toolbar">
+                            <label
+                                >Earlier result
+                                <select id="version">
+                                    <option value="separated" selected>Separated outlines · v2</option>
+                                    <option value="previous">Clean outlines · v1 / 2048</option>
+                                    <option value="baseline">Original CubiCasa · 1024</option>
+                                </select></label
+                            ><label><input type="checkbox" id="review" checked /> Include review proposals</label
+                            ><button id="zoomout" aria-label="Zoom out">−</button><output id="zoomlabel">Fit</output
+                            ><button id="zoomin" aria-label="Zoom in">+</button><button id="reset">Reset view</button
+                            ><button id="original">Show original</button><a class="button" href="structure.html">Wall experiment · v4</a>
+                        </div>
+                        <div class="panels">
+                            <section>
+                                <div class="pane-heading"><strong id="beforetitle">Previous</strong><span>Earlier</span></div>
+                                <div id="left" class="viewport"></div>
+                            </section>
+                            <section>
+                                <div class="pane-heading">
+                                    <label class="sr" for="result">Current experiment</label
+                                    ><select id="result">
+                                        <option value="wall-aligned">Wall-aligned outlines · v3</option>
+                                        <option value="simplify-only">Simplification-only control</option>
+                                        <option value="separated">Separated outlines · v2</option></select
+                                    ><span>Current experiment</span>
+                                </div>
+                                <div id="right" class="viewport"></div>
+                            </section>
+                        </div>
+                        <p class="legend">
+                            <span class="dot blue"></span> Region proposal <span class="dot orange"></span> Dashed = flagged for review
+                            <span class="muted">Scroll to zoom · drag to pan · views move together</span>
+                        </p>
+                        <div class="reviewbar">
+                            <div>
+                                <h3>Review this drawing</h3>
+                                <p id="reviewcount"></p>
+                            </div>
+                            <div id="queue"></div>
+                        </div>
+                        <div id="selection" class="selection" aria-live="polite">Click a current outline to inspect it, or choose a flagged region above.</div>
+                        <details>
+                            <summary>Overlay options &amp; source</summary>
+                            <div class="options">
+                                <label><input id="walls" type="checkbox" /> Walls</label
+                                ><label><input id="openings" type="checkbox" /> Doors &amp; windows</label
+                                ><label><input id="fixtures" type="checkbox" /> Fixtures</label
+                                ><label><input id="names" type="checkbox" /> Unverified model names</label
+                                ><label><input id="reference" type="checkbox" /> CAD reference (where available)</label>
+                            </div>
+                            <p class="small">
+                                Passing the structural checks does not verify a room. Review flags can miss merged regions. Hiding flagged proposals can remove
+                                real spaces. V3 retains larger ambiguous shapes for review; it does not verify wall geometry. Scores are not calibrated
+                                probabilities.
+                            </p>
+                            <a id="credit">Source credit</a> · <a href="instance-comparison.json">Geometry measurements</a> ·
+                            <a href="manifest.json">Dataset &amp; preprocessing</a>
+                        </details>
+                    </div>
+                </div>
+            </section>
+            <section id="progress" class="tab" hidden>
+                <div class="intro">
+                    <span class="eyebrow">CURRENT POSITION</span>
+                    <h2>Cleaner boundaries. Still needs review.</h2>
+                    <p>Keep CubiCasa as the default. Use the new outlines as review candidates; complex plans still contain merges.</p>
+                </div>
+                <div class="stages">
+                    <article>
+                        <span class="stage">01 · ORIGINAL</span>
+                        <h3>CubiCasa baseline</h3>
+                        <strong>26 drawings</strong>
+                        <p>Noisy class boundaries. Preserved for comparison.</p>
+                    </article>
+                    <article>
+                        <span class="stage">02 · PREVIOUS</span>
+                        <h3>Clean outlines</h3>
+                        <strong>6 drawings</strong>
+                        <p>More regular geometry, but neighboring spaces can merge.</p>
+                    </article>
+                    <article>
+                        <span class="stage">03 · SEPARATION</span>
+                        <h3>Separated outlines</h3>
+                        <strong>6 drawings · 8 region flags</strong>
+                        <p>Walls constrain boundaries. Room names are still guesses.</p>
+                    </article>
+                </div>
+                <article class="callout">
+                    <strong>04 · V3 BOUNDARY CLEANUP</strong>
+                    <p id="alignment-summary">Loading experiment results…</p>
+                </article>
+                <h3>Boundary cleanup · v2 → v3</h3>
+                <p class="muted">All proposals included. Fewer vertices means simpler geometry, not higher accuracy.</p>
+                <div class="tablewrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Drawing</th>
+                                <th>Vertices</th>
+                                <th>Short segments</th>
+                                <th>CAD footprint IoU</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alignmentrows"></tbody>
+                    </table>
+                </div>
+                <p class="small muted">
+                    Short segments are edges shorter than the estimated wall width. This is a noise diagnostic, not a count of incorrect edges. CAD footprint
+                    IoU measures union overlap; v3 is a visualization experiment and does not repair missed walls.
+                </p>
+                <h3>Earlier separation experiment · v1 → v2</h3>
+                <p class="muted">Three drawings have compatible CAD references. Counts below use the current display policy: flagged proposals excluded.</p>
+                <div class="tablewrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Drawing</th>
+                                <th>Matched CAD regions<br />Previous → current</th>
+                                <th>Merged proposals<br />Previous → current</th>
+                                <th>Next action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="progressrows"></tbody>
+                    </table>
+                </div>
+                <p class="small muted">
+                    A match requires polygon IoU ≥ 0.5 and one-to-one assignment. CAD zones may include open-plan subdivisions. This selected sample is not a
+                    held-out benchmark.
+                </p>
+                <div class="callout">
+                    Next: inspect the complex Swiss plan first. Its CAD matches improve, but merged proposals increase from 7 to 9 even after review flags are
+                    excluded.
+                </div>
+                <a href="gemini-decision/index.html" class="pilot"
+                    ><strong>Room-name &amp; fixture review pilot →</strong
+                    ><span>Gemini experiment · separate visual review evidence; does not repair outlines.</span></a
+                >
+            </section>
+            <section id="models" class="tab" hidden>
+                <div class="intro">
+                    <h2>Working models &amp; saved evidence</h2>
+                    <p>Geometry, detection and OCR have different jobs. Timings below belong to the original 26-drawing benchmark.</p>
+                </div>
+                <div class="tablewrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Use</th>
+                                <th>Result</th>
+                                <th>Warmed median</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modelrows"></tbody>
+                    </table>
+                </div>
+                <p class="small muted">
+                    Median includes the warmed inference pipeline; model loading is separate. V2 and v3 cover six drawings. V3 reuses saved predictions and is
+                    not represented by the baseline timing.
+                </p>
+                <details>
+                    <summary>Methods, limitations &amp; downloads</summary>
+                    <p>
+                        All geometry comparisons retain source-image coordinates. Previous and current refinement use the same 2048 forward output. The same
+                        0.01% page-area filter is used for predictions and CAD references. New outlines use model walls and openings to split the footprint; CAD
+                        is evaluation only.
+                    </p>
+                    <p>
+                        Only three drawings support CAD geometry scoring. Other results are qualitative. CubiCasa-domain samples may overlap training data.
+                        Model names and class scores are unverified. Review heuristics do not catch every merge.
+                    </p>
+                    <div class="links">
+                        <a href="report-detailed.html">Full original report · 26 drawings</a><a href="refinement-v2.html">Detailed refinement viewer</a
+                        ><a href="refinement-v1.html">Earlier refinement report</a><a href="gemini-decision/index.html">Gemini pilot</a
+                        ><a href="comparison-artifacts.zip">Raw outputs &amp; overlays ZIP</a><a href="benchmark.csv">Original benchmark CSV</a
+                        ><a href="instance-comparison.csv">Geometry comparison CSV</a><a href="instance-reproduction.txt">Model reproduction commands</a
+                        ><a href="dashboard-reproduction.txt">Dashboard refresh command</a><a href="alignment-comparison.csv">V3 cleanup measurements · CSV</a
+                        ><a href="alignment-comparison.json">V3 full measurements</a><a href="alignment-reproduction.txt">V3 reproduction commands</a>
+                    </div>
+                </details>
+            </section>
+        </main>
+        <footer>Saved results · no inference runs when you use this dashboard · CubiCasa remains the service default</footer>
+        <script src="dashboard.js"></script>
+    </body>
+</html>

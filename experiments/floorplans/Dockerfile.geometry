@@ -1,0 +1,2 @@
+FROM junction-prepare:gpu-comparison
+RUN pip install --no-cache-dir ezdxf==1.4.2 shapely==2.1.1

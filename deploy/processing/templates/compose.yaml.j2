@@ -1,0 +1,69 @@
+name: junction-processing
+services:
+    pipeline:
+        image: junction-pipeline:{{ release_sha }}
+        build:
+            context: {{ release_dir }}/packages/processing
+            dockerfile: pipeline/Dockerfile
+        ports: ["127.0.0.1:8002:8002"]
+        env_file: {{ assets_root }}/.local/gpu-comparison/service.env
+        environment:
+            CUBICASA_DETAIL_URL: http://cubicasa-detail:8001
+            PADDLEOCR_URL: http://paddleocr:8001
+            LEGACY_INFERENCE_URL: http://inference:8001
+            GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
+            PIPELINE_ARTIFACT_DIR: /artifacts
+        secrets: [gemini_api_key]
+        volumes:
+            - {{ assets_root }}/.local/processing-pipeline/artifacts:/artifacts
+        networks: [inference, gateway]
+        restart: unless-stopped
+    inference:
+        image: junction-cubicasa:{{ release_sha }}
+        build:
+            context: {{ release_dir }}/packages/processing/cubicasa
+            target: cuda
+        gpus: all
+        ports: ["127.0.0.1:8001:8001"]
+        env_file: {{ assets_root }}/.local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            CUBICASA_DETAIL_URL: http://cubicasa-detail:8001
+            PADDLEOCR_URL: http://paddleocr:8001
+        volumes:
+            - {{ assets_root }}/packages/processing/cubicasa/weights:/app/weights:ro
+        networks: [inference, gateway]
+        restart: unless-stopped
+    cubicasa-detail:
+        image: junction-cubicasa:{{ release_sha }}
+        gpus: all
+        env_file: {{ assets_root }}/.local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            INFERENCE_LOCAL_MODEL: cubicasa-detail
+        volumes:
+            - {{ assets_root }}/packages/processing/cubicasa/weights:/app/weights:ro
+        networks: [inference]
+        restart: unless-stopped
+    paddleocr:
+        image: junction-paddleocr:{{ release_sha }}
+        build:
+            context: {{ release_dir }}/packages/processing
+            dockerfile: ocr/Dockerfile
+        gpus: all
+        env_file: {{ assets_root }}/.local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            INFERENCE_LOCAL_MODEL: paddleocr
+        volumes:
+            - {{ assets_root }}/.local/gpu-comparison:/weights:ro
+        networks: [inference]
+        restart: unless-stopped
+networks:
+    inference:
+        internal: true
+    gateway:
+        driver: bridge
+secrets:
+    gemini_api_key:
+        file: {{ assets_root }}/.local/processing-pipeline/gemini-api-key

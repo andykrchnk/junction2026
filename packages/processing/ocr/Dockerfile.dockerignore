@@ -1,0 +1,6 @@
+**
+!ocr
+!ocr/Dockerfile
+!cubicasa
+!cubicasa/service.py
+!cubicasa/adapters.py

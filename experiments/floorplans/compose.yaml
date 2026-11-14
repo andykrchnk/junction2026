@@ -1,0 +1,70 @@
+name: junction-model-comparison
+services:
+    inference:
+        image: junction-cubicasa:gpu-comparison
+        gpus: all
+        ports:
+            - 127.0.0.1:8001:8001
+        env_file: .local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            CUBICASA_DETAIL_URL: http://cubicasa-detail:8001
+            RASTER2SEQ_URL: http://raster2seq:8001
+            GROUNDING_SAM_URL: http://grounding-sam:8001
+            PADDLEOCR_URL: http://paddleocr:8001
+        volumes:
+            - ./packages/processing/cubicasa:/app:ro
+        networks: [inference, gateway]
+        restart: unless-stopped
+    cubicasa-detail:
+        image: junction-cubicasa:gpu-comparison
+        gpus: all
+        env_file: .local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            INFERENCE_LOCAL_MODEL: cubicasa-detail
+        volumes:
+            - ./packages/processing/cubicasa:/app:ro
+        networks: [inference]
+        restart: unless-stopped
+    raster2seq:
+        image: junction-raster2seq:gpu-comparison
+        gpus: all
+        env_file: .local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            INFERENCE_LOCAL_MODEL: raster2seq
+        volumes:
+            - ./packages/processing/cubicasa:/app:ro
+            - ./.local/gpu-comparison:/weights:ro
+        networks: [inference]
+        restart: unless-stopped
+    grounding-sam:
+        image: junction-grounding:gpu-comparison
+        gpus: all
+        env_file: .local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            INFERENCE_LOCAL_MODEL: grounding-sam
+        volumes:
+            - ./packages/processing/cubicasa:/app:ro
+            - ./.local/gpu-comparison:/weights:ro
+        networks: [inference]
+        restart: unless-stopped
+    paddleocr:
+        image: junction-paddleocr:gpu-comparison
+        gpus: all
+        env_file: .local/gpu-comparison/service.env
+        environment:
+            INFERENCE_DEVICE: cuda
+            INFERENCE_LOCAL_MODEL: paddleocr
+        volumes:
+            - ./packages/processing/cubicasa:/app:ro
+            - ./.local/gpu-comparison:/weights:ro
+        networks: [inference]
+        restart: unless-stopped
+networks:
+    inference:
+        internal: true
+    gateway:
+        driver: bridge

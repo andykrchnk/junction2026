@@ -8,3 +8,10 @@ The original inference wrapper was obtained from
 [CubicasaRoomSegmentation](https://github.com/Aswi-ni/CubicasaRoomSegmentation).
 Local changes correct preprocessing, add confidence output and provide HTTP
 serving and containers.
+
+The structural polygonizer in `utils/official_postprocessing.py` is copied from
+CubiCasa5k commit `c34440266665a11f4484eb06cd2e4b7d72ad76c1`,
+`floortrans/post_prosessing.py`, under the same CC BY-NC 4.0 licence.
+Compatibility changes retain dimensions in SciPy `stats.mode` and use Shapely's
+`.geoms` to iterate multipart geometry. The room-instance extractor and detail
+adapter are local additions; semantic model weights are unchanged.
