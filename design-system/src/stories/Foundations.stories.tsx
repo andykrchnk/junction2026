@@ -38,5 +38,40 @@ function SpacingSample({role,description}: {role:string;description:string}) {
  </section>
 }
 export const Spacing = { render: () => <div className="max-w-6xl"><h1 className="text-2xl font-semibold mb-3">Spacing scale</h1><p className="text-sm text-muted-foreground mb-8">The green area is the exact space between two blocks. Horizontal and vertical examples use the same token. Pixel values are measured from the current design tokens; the blocks are illustrative.</p>{spacingRoles.map(([role,description])=><SpacingSample key={role} role={role} description={description}/>)}</div> }
-export const Colors = { render: () => <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:16}}>{["background", "foreground", "card", "card-foreground", "popover", "popover-foreground", "primary", "primary-foreground", "secondary", "secondary-foreground", "muted", "muted-foreground", "accent", "accent-foreground", "destructive", "border", "input", "ring"].map(role => <div key={role}><div style={{height:64,background:`var(--${role})`,border:'1px solid var(--border)'}}/><code>--{role}</code></div>)}</div> }
+function ColorSample({ role }: Readonly<{ role: string }>) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [hex, setHex] = useState('');
+    useEffect(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 1;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        const read = () => {
+            if (!ref.current || !context) return;
+            context.clearRect(0, 0, 1, 1);
+            context.fillStyle = getComputedStyle(ref.current).backgroundColor;
+            context.fillRect(0, 0, 1, 1);
+            const channels = Array.from(context.getImageData(0, 0, 1, 1).data);
+            setHex(
+                '#' +
+                    channels
+                        .slice(0, channels[3] === 255 ? 3 : 4)
+                        .map((value) => value.toString(16).padStart(2, '0'))
+                        .join('')
+                        .toUpperCase(),
+            );
+        };
+        read();
+        const observer = new MutationObserver(read);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+        return () => observer.disconnect();
+    }, [role]);
+    return (
+        <div>
+            <div ref={ref} style={{ height: 64, background: `var(--${role})`, border: '1px solid var(--border)' }} />
+            <code style={{ display: 'block' }}>--{role}</code>
+            <code style={{ display: 'block', marginTop: 4, color: 'var(--muted-foreground)', fontSize: 12 }}>{hex}</code>
+        </div>
+    );
+}
+export const Colors = { render: () => <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:16}}>{["background", "foreground", "card", "card-foreground", "popover", "popover-foreground", "primary", "primary-foreground", "secondary", "secondary-foreground", "muted", "muted-foreground", "accent", "accent-foreground", "destructive", "border", "input", "ring"].map(role => <ColorSample key={role} role={role}/>)}</div> }
 export const Motion = { render: () => <div><h2>Official spring presets</h2><p>Fast: 80ms, no bounce · Moderate: 160ms, no bounce · Slow: 240ms, 0.12 bounce.</p><p>Explore the interactive components in Fluid / All components. Motion follows your system reduced-motion preference.</p></div> }
