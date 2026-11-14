@@ -1,9 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { useUnit } from 'effector-react';
 import { useTheme } from 'next-themes';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { CanvasStateZod, type Drawing } from '@repo/types';
-import { AssetRecordType, createTLStore, createShapeId, getSnapshot, parseTldrawJsonFile, Tldraw, type Editor, type TLAssetStore } from 'tldraw';
+import {
+    AssetRecordType,
+    createTLStore,
+    createShapeId,
+    getSnapshot,
+    parseTldrawJsonFile,
+    Tldraw,
+    type Editor,
+    type TLAssetStore,
+    type TLGridProps,
+} from 'tldraw';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&url';
 import { Button } from '@repo/design-system/components/ui/button';
 import { authenticatedFetch } from '@/shared/auth';
@@ -22,6 +32,21 @@ function CanvasLayers() {
             <DetectionCanvasLayer />
             <CommentCanvasLayer />
         </>
+    );
+}
+
+function SquareGrid({ x, y, z, size }: TLGridProps) {
+    const id = useId();
+    const spacing = size * z * Math.pow(2, Math.ceil(Math.log2(16 / (size * z))));
+    return (
+        <svg className="tl-grid" aria-hidden="true" width="100%" height="100%">
+            <defs>
+                <pattern id={id} width={spacing} height={spacing} patternUnits="userSpaceOnUse" x={x * z} y={y * z}>
+                    <path d={`M ${spacing} 0 H 0 V ${spacing}`} fill="none" stroke="var(--muted-foreground)" strokeOpacity={0.16} strokeWidth={1} />
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill={`url(#${id})`} />
+        </svg>
     );
 }
 
@@ -235,7 +260,7 @@ function CanvasEditor({
                 editor.setCamera(view.data.camera);
             } else fitFrame = requestAnimationFrame(() => editor.zoomToFit());
             editor.clearHistory();
-            editor.updateInstanceState({ isReadonly: true });
+            editor.updateInstanceState({ isReadonly: true, isGridMode: true });
             editor.setCurrentTool('hand');
             setActiveEditor(editor);
             // Uploaded assets need durable storage. Keep file/URL insertion disabled until that exists.
@@ -272,7 +297,7 @@ function CanvasEditor({
                 saveView();
             };
         } catch (cause) {
-            editor.updateInstanceState({ isReadonly: true });
+            editor.updateInstanceState({ isReadonly: true, isGridMode: true });
             setError(cause instanceof Error ? cause.message : 'Could not open canvas.');
         }
     };
@@ -361,7 +386,7 @@ function CanvasEditor({
                             initialState="hand"
                             licenseKey={config.TLDRAW_LICENSE_KEY}
                             options={{ maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
-                            components={{ OnTheCanvas: CanvasLayers }}
+                            components={{ OnTheCanvas: CanvasLayers, Grid: SquareGrid }}
                         />
                     </DetectionContext.Provider>
                 </CommentsContext.Provider>
@@ -422,11 +447,12 @@ function EmptyBlueprintCanvas() {
     return (
         <Tldraw
             hideUi
+            components={{ Grid: SquareGrid }}
             initialState="hand"
             licenseKey={config.TLDRAW_LICENSE_KEY}
             options={{ maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
             onMount={(instance) => {
-                instance.updateInstanceState({ isReadonly: true });
+                instance.updateInstanceState({ isReadonly: true, isGridMode: true });
                 instance.user.updateUserPreferences({ colorScheme: resolvedTheme === 'dark' ? 'dark' : 'light' });
                 instance.registerExternalContentHandler('files', async () => {});
                 instance.registerExternalContentHandler('url', async () => {});
@@ -437,5 +463,5 @@ function EmptyBlueprintCanvas() {
 }
 
 export default function BlueprintCanvas(props: Readonly<{ drawing: Drawing; userId: string }>) {
-    return props.drawing.attachment ? <SavedBlueprintCanvas {...props} /> : <EmptyBlueprintCanvas />;
+    return props.drawing.attachment && !props.drawing.attachment.hiddenFromCanvas ? <SavedBlueprintCanvas {...props} /> : <EmptyBlueprintCanvas />;
 }

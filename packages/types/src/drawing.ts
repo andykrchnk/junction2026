@@ -139,6 +139,7 @@ export const AttachmentZod = z.object({
     name: z.string(),
     mediaType: z.enum(['image/jpeg', 'image/png', 'application/pdf']),
     pages: z.number().int().positive(),
+    hiddenFromCanvas: z.boolean().optional(),
 });
 export const DrawingSummaryZod = z.object({
     createdAt: z.string().optional(),
@@ -167,3 +168,6 @@ export type Analysis = z.infer<typeof AnalysisZod>;
 export type Attachment = z.infer<typeof AttachmentZod>;
 export type DrawingSummary = z.infer<typeof DrawingSummaryZod>;
 export const UploadErrorZod = z.object({ message: z.string() });
+
+export const UpdateDrawingUploadZod = DrawingIdZod.extend({ name: z.string().trim().min(1).max(200).optional(), hiddenFromCanvas: z.boolean().optional() });
+export type UpdateDrawingUpload = z.infer<typeof UpdateDrawingUploadZod>;

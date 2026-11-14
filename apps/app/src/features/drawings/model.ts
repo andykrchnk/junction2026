@@ -1,6 +1,6 @@
 import { createEffect, createEvent, createStore, sample } from 'effector';
 import { readonly } from 'patronum';
-import { MAX_FILE_BYTES, UploadErrorZod, type Drawing } from '@repo/types';
+import { MAX_FILE_BYTES, UploadErrorZod, type Drawing, type UpdateDrawingUpload } from '@repo/types';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import { queryClient, trpc, trpcClient } from '@/shared/trpc';
@@ -22,6 +22,11 @@ const refresh = async (id?: string) => {
         ...(id ? [queryClient.invalidateQueries(trpc.drawings.get.queryFilter({ id }))] : []),
     ]);
 };
+const updateUploadFx = createEffect(async (input: UpdateDrawingUpload) => {
+    const drawing = await trpcClient.drawings.updateUpload.mutate(input);
+    await refresh(input.id);
+    return drawing;
+});
 const renameFx = createEffect(async (input: { id: string; title: string }) => {
     const drawing = await trpcClient.drawings.rename.mutate(input);
     await refresh(input.id);
@@ -125,6 +130,7 @@ sample({ clock: analysisRequested, source: $analysisRunning, filter: (running, i
 export const $$drawings = {
     opened,
     renameFx,
+    updateUploadFx,
     draftChanged,
     createFx,
     uploadFx,
