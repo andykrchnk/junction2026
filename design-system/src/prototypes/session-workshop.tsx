@@ -34,7 +34,13 @@ export const ICON_CLASSES = [
     'Bathtub',
     'Chimney',
 ];
-const directions = layoutDirections;
+const tableDirections = [
+    { name: 'Quiet rules', short: 'Quiet', note: 'Open surface with fine neutral dividers.' },
+    { name: 'Framed', short: 'Framed', note: 'A contained table with a muted header and status labels.' },
+    { name: 'Ledger', short: 'Ledger', note: 'Compact rows with alternating neutral surfaces.' },
+    { name: 'Roomy rows', short: 'Roomy', note: 'Separate row surfaces with generous breathing room.' },
+    { name: 'Column grid', short: 'Grid', note: 'A precise grid with a stronger session column.' },
+];
 
 type Session = { id: number; name: string; file: string; status: string; rooms: number; notes?: string[]; source?: File };
 const examples: Session[] = [
@@ -97,8 +103,10 @@ function Plan({ selected = -1, onSelect, small = false }: Readonly<{ selected?: 
 export function SessionWorkshop({
     initialVariant = 0,
     official = false,
+    tableExperiment = false,
     onSignOut,
-}: Readonly<{ initialVariant?: number; official?: boolean; onSignOut?: () => void }>) {
+}: Readonly<{ initialVariant?: number; official?: boolean; tableExperiment?: boolean; onSignOut?: () => void }>) {
+    const directions = tableExperiment ? tableDirections : layoutDirections;
     const [variant, setVariant] = useState(initialVariant);
     const [sessions, setSessions] = useState<Session[]>(examples);
     const [screen, setScreen] = useState<'home' | 'upload' | 'scan' | 'review' | 'session'>('home');
@@ -218,12 +226,12 @@ export function SessionWorkshop({
     );
     return (
         <div className={`pw-root ${official ? 'pw-official' : ''}`}>
-            {!official && (
+            {(!official || tableExperiment) && (
                 <>
                     <header className="pw-workshop">
                         <div>
                             <span className="pw-kicker">DESIGN EXPLORATION</span>
-                            <strong>Session dashboards</strong>
+                            <strong>{tableExperiment ? 'Table explorations' : 'Session dashboards'}</strong>
                         </div>
                         <nav aria-label="Dashboard iterations">
                             {directions.map((d, i) => (
@@ -277,7 +285,9 @@ export function SessionWorkshop({
                 <div className="pw-content">
                     {screen === 'home' ? (
                         <SessionLayouts
-                            variant={official ? 0 : variant}
+                            variant={official || tableExperiment ? 0 : variant}
+                            initialTable={tableExperiment}
+                            tableVariant={tableExperiment ? variant : 0}
                             onSignOut={onSignOut}
                             sessions={sessions}
                             onNew={start}

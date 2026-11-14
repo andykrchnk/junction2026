@@ -47,6 +47,8 @@ export function SessionLayouts({
     loading = false,
     sample = true,
     error,
+    tableVariant = 0,
+    initialTable = false,
 }: Readonly<{
     variant: number;
     sessions: PreviewSession[];
@@ -58,8 +60,10 @@ export function SessionLayouts({
     loading?: boolean;
     sample?: boolean;
     error?: string;
+    tableVariant?: number;
+    initialTable?: boolean;
 }>) {
-    const [list, setList] = useState(false);
+    const [list, setList] = useState(initialTable);
     const [sort, setSort] = useState(0);
     const [accountOpen, setAccountOpen] = useState(false);
     const ordered = [...sessions].sort((a, b) =>
@@ -127,7 +131,7 @@ export function SessionLayouts({
                         </Button>
                     </div>
                 ) : list ? (
-                    <div className="sl-table">
+                    <div className={`sl-table sl-table-${tableVariant}`}>
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -141,15 +145,17 @@ export function SessionLayouts({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {ordered.map((s) => (
-                                    <TableRow key={s.id}>
+                                {ordered.map((s, index) => (
+                                    <TableRow key={s.id} index={index}>
                                         <TableCell>
                                             <Button variant="ghost" onClick={() => onOpen(s)}>
                                                 {s.name}
                                             </Button>
                                         </TableCell>
                                         <TableCell>{s.file}</TableCell>
-                                        <TableCell>{s.status}</TableCell>
+                                        <TableCell>
+                                            <span className={`sl-table-status ${s.status === 'Ready' ? 'is-ready' : 'needs-review'}`}>{s.status}</span>
+                                        </TableCell>
                                         <TableCell>{s.rooms ?? '—'}</TableCell>
                                         <TableCell>
                                             <Button variant="ghost" aria-label={`Open ${s.name}`} onClick={() => onOpen(s)}>
