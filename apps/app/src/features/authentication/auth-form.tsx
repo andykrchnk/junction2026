@@ -145,12 +145,12 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
                         </Button>
                     </form>
                     <p className="text-muted-foreground mt-7 text-center text-sm">
-                        {mode === 'register' ? 'Already have an account? ' : 'New to Verifico? '}
+                        {mode === 'register' ? 'Already have an account? ' : 'New to Pirtoa? '}
                         <Link className="text-primary font-medium underline-offset-4 hover:underline" to={mode === 'register' ? '/login' : '/register'}>
                             {mode === 'register' ? 'Sign in' : 'Create an account'}
                         </Link>
                     </p>
-                    <p className="text-muted-foreground mt-16 text-xs">Verifico · Construction intelligence</p>
+                    <p className="text-muted-foreground mt-16 text-xs">Pirtoa · Construction intelligence</p>
                 </div>
             </main>
         </div>
