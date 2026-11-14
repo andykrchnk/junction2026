@@ -36,7 +36,7 @@ Application profiles live in a separate `users` collection with independent IDs,
 
 Create a session at `/`, upload one JPEG/PNG/PDF, review the initial analysis, then chat. The original is stored in Atlas GridFS (`blueprints.files` / `blueprints.chunks`). Application-owned `drawings` documents hold attachment metadata, immutable analysis and up to 100 question/answer turns. Sessions are private to their application user; their URLs can be bookmarked.
 
-Set server-only `OPENAI_API_KEY` and optionally `OPENAI_MODEL` (default `gpt-4.1-mini`, with image/PDF and structured-output support). Auth and file upload work without a key; analysis/chat explain the missing configuration. No OpenAI key is bundled into the app, and SDK tracing is disabled for drawing content.
+Set server-only `OPENAI_API_KEY`. The model is selected in `apps/server/src/shared/config.ts` (`gpt-4.1-mini`) and shared by analysis and chat. Auth and file upload work without a key; analysis/chat explain the missing configuration. No OpenAI key is bundled into the app, and SDK tracing is disabled for drawing content.
 
 Uploads are limited to 20 MB and PDFs to 10 pages. A new drawing requires a new session. Analysis and chat use synchronous, non-streamed requests with a two-minute model timeout. Database leases expire after 150 seconds: refresh/reopen an interrupted session and retry. No worker, queue, local file storage or database container is required. Files, initial analysis and completed turns survive deployment. An interrupted call may incur another provider call on retry; operation IDs and leases prevent duplicate committed turns and stale writes.
 
@@ -67,7 +67,7 @@ They create and drop only a uniquely named `junction_poc_test_*` database; the A
 
 1. Link the intended Railway project/environment and enable generated public domains for both services.
 2. Set shared `APP_ORIGIN` to the dashboard origin and `API_URL` to the public API origin, both HTTPS with no trailing slash.
-3. Set the server variables `MONGODB_URI`, `MONGODB_DB_NAME`, `BETTER_AUTH_SECRET` and `OPENAI_API_KEY`; optionally set `OPENAI_MODEL`. `preserve()` retains these Railway-managed secrets; it does not generate them.
+3. Set the server variables `MONGODB_URI`, `MONGODB_DB_NAME`, `BETTER_AUTH_SECRET` and `OPENAI_API_KEY`. `preserve()` retains these Railway-managed secrets; it does not generate them. Model selection lives in the server's source configuration.
 4. Run `railway config plan`, review the result, then apply the configuration when deployment is authorized.
 5. Verify the API `/health`, registration, login, authenticated refresh and logout. Rebuild the app when changing `API_URL`.
 
