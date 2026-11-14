@@ -16,9 +16,16 @@ function previousDescription(entity: LayoutRoom | LayoutFixture) {
 }
 
 // Reset calibration without replacing user comments that may be written concurrently.
-export async function resetBlueprintPpm(params: Readonly<{ drawingId: string; ownerId: string; lease: string; blueprintId: string }>) {
+export async function resetBlueprintPpm(params: Readonly<{ drawingId: string; ownerId: string; lease: string; blueprintId: string; jobLease?: string }>) {
     const result = await db.drawing.DrawingModel.updateOne(
-        { _id: params.drawingId, ownerId: params.ownerId, lease: params.lease, leaseUntil: { $gt: new Date() }, 'blueprints.id': params.blueprintId },
+        {
+            _id: params.drawingId,
+            ownerId: params.ownerId,
+            lease: params.lease,
+            leaseUntil: { $gt: new Date() },
+            'blueprints.id': params.blueprintId,
+            ...(params.jobLease ? { 'processingJob.lease': params.jobLease, 'processingJob.status': 'running' } : {}),
+        },
         {
             $set: { 'blueprints.$.ppm': null, 'blueprints.$.ppmCandidates': null, 'blueprints.$.status': { type: 'pending', stage: 'ppm' } },
             $pull: { 'blueprints.$.comments': { source: 'ppm' } },
@@ -30,7 +37,7 @@ export async function resetBlueprintPpm(params: Readonly<{ drawingId: string; ow
 // One bounded stage per claim; durable jobs resume from persisted checkpoints.
 export async function processBlueprint(params: ProcessBlueprintParams) {
     const { drawing, ownerId, signal, lease } = params;
-    const blueprint = drawing.blueprints.find((item) => params.blueprintId ? item.id === params.blueprintId : blueprintNeedsAnalysis(item));
+    const blueprint = drawing.blueprints.find((item) => (params.blueprintId ? item.id === params.blueprintId : blueprintNeedsAnalysis(item)));
     if (!blueprint) return;
     if (!blueprint.raster || !blueprint.layout) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Complete inference before blueprint analysis.' });
     const owned = {
@@ -88,7 +95,7 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
         }
         if (stage === 'entities') {
             if (blueprint.ppm !== null || blueprint.ppmCandidates !== null) {
-                await resetBlueprintPpm({ drawingId: drawing.id, ownerId, lease, blueprintId: blueprint.id });
+                await resetBlueprintPpm({ drawingId: drawing.id, ownerId, lease, blueprintId: blueprint.id, jobLease: params.jobLease });
                 await save({ status: { type: 'processing', stage: 'entities' } });
             }
             const rooms = blueprint.layout.rooms.map((entity, index) => ({ kind: 'room' as const, collection: 'rooms', entity, index }));

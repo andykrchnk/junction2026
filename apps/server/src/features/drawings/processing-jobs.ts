@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { Agenda } from 'agenda';
 import { MongoBackend } from '@agendajs/mongo-backend';
 import { z } from 'zod';
-import { MongoIdZod } from '@repo/types';
+import { MongoIdZod, blueprintNeedsAnalysis } from '@repo/types';
 import { database } from '../../db/connection';
 import { db } from '../../db';
 import { Env } from '../../shared/env';
@@ -18,13 +18,15 @@ const JobDataZod = z.object({ drawingId: MongoIdZod, runId: z.string().uuid() })
 const MAX_ATTEMPTS = 3;
 
 // Progress doubles as an outbox record, atomically committed with uploaded pages.
-export async function enqueueDrawing(id: string, ownerId: string, page?: number) {
+export async function enqueueDrawing(id: string, ownerId: string, page?: number, retryPpm = false) {
     const drawing = await getDrawing(id, ownerId);
     if (drawing.processing?.status === 'queued' || drawing.processing?.status === 'running') return drawing;
     if (page !== undefined && !drawing.blueprints.some((blueprint) => blueprint.pageNumber === page))
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid blueprint page.' });
+    if (retryPpm && drawing.blueprints.some((blueprint) => !blueprint.layout || !blueprint.raster))
+        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Complete inference before retrying calibration.' });
     const pages = drawing.blueprints
-        .filter((blueprint) => blueprint.status.type !== 'ready' && (page === undefined || blueprint.pageNumber === page))
+        .filter((blueprint) => (retryPpm || blueprintNeedsAnalysis(blueprint)) && (page === undefined || blueprint.pageNumber === page))
         .map((blueprint) => blueprint.pageNumber);
     if (!pages.length) return drawing;
     await db.drawing.DrawingModel.updateOne(
@@ -37,7 +39,20 @@ export async function enqueueDrawing(id: string, ownerId: string, page?: number)
                 { $or: [{ inferenceLease: null }, { inferenceLeaseUntil: { $lte: new Date() } }] },
             ],
         },
-        { $set: { processingJob: db.drawing.createProcessingJob(pages), error: null } },
+        {
+            $set: {
+                processingJob: db.drawing.createProcessingJob(pages),
+                error: null,
+                ...(retryPpm
+                    ? {
+                          'blueprints.$[].ppm': null,
+                          'blueprints.$[].ppmCandidates': null,
+                          'blueprints.$[].status': { type: 'pending', stage: 'ppm' },
+                      }
+                    : {}),
+            },
+            ...(retryPpm ? { $pull: { 'blueprints.$[].comments': { source: 'ppm' } } } : {}),
+        },
     );
     return getDrawing(id, ownerId);
 }
@@ -85,7 +100,7 @@ async function processDrawingStage(data: z.infer<typeof JobDataZod>, signal: Abo
             advance = true;
             return;
         }
-        if (blueprint.status.type === 'ready') {
+        if (!blueprintNeedsAnalysis(blueprint)) {
             advance = true;
             return;
         }
