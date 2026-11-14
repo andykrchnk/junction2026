@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Plus, ChevronDown, FileText, LogOut, Upload, ScanLine, GridIcon, Check, ArrowUpRight } from '@repo/design-system/lib/icons-remix';
+import { Plus, ChevronDown, FileText, Upload, ScanLine, GridIcon, Check, ArrowUpRight } from '@repo/design-system/lib/icons-remix';
 import { Button } from '@repo/design-system/components/ui/button';
-import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
+import { AppHeader } from '@/components/app-header';
 import { DropdownMenu, DropdownTrigger, DropdownContent } from '@repo/design-system/components/ui/dropdown';
 import { MenuItem } from '@repo/design-system/components/ui/menu-item';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@repo/design-system/components/ui/table';
@@ -106,7 +106,6 @@ export function SessionLayouts({
 }>) {
     const [list, setList] = useState(initialTable);
     const [sort, setSort] = useState(0);
-    const [accountOpen, setAccountOpen] = useState(false);
     const ordered = [...sessions].sort((a, b) =>
         sort === 1
             ? a.name.localeCompare(b.name)
@@ -118,22 +117,7 @@ export function SessionLayouts({
     );
     return (
         <div className={`sl-root sl-${variant}`}>
-            <header className="sl-header">
-                <BrandLogo className="sl-logo" />
-                <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
-                    <DropdownTrigger
-                        render={
-                            <Button variant="ghost" className="sl-account">
-                                <span className="sl-avatar">{accountName.slice(0, 1).toUpperCase()}</span>
-                                <span>{accountName}</span>
-                            </Button>
-                        }
-                    />
-                    <DropdownContent align="end">
-                        {onSignOut && <MenuItem index={0} label="Log out" trailingIcon={LogOut} onSelect={onSignOut} />}
-                    </DropdownContent>
-                </DropdownMenu>
-            </header>
+            <AppHeader accountName={accountName} onSignOut={onSignOut} />
             <main className="sl-main">
                 <div className="sl-heading">
                     <h1>Your sessions</h1>

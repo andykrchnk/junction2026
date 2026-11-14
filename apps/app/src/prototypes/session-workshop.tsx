@@ -1,3 +1,4 @@
+import { AppHeader } from '@/components/app-header';
 import { WorkspacePanels } from '@/features/drawings/drawing-workspace';
 import { SessionLayouts, layoutDirections, OFFICIAL_TABLE_VARIANT } from '@/components/session-dashboard/session-layouts';
 import { useEffect, useRef, useState } from 'react';
@@ -264,28 +265,31 @@ export function SessionWorkshop({
     );
     if (official && screen === 'session' && active?.status === 'New') {
         return (
-            <div className="flex min-h-svh">
-                <aside className="bg-card w-64 shrink-0 border-r p-5">
-                    <Button variant="ghost" leadingIcon={ArrowLeft} onClick={() => setScreen('home')}>
-                        Your sessions
-                    </Button>
-                </aside>
-                <WorkspacePanels
-                    id={String(active.id).padStart(24, '0')}
-                    userId="local-preview"
-                    previewDrawing={{
-                        id: String(active.id).padStart(24, '0'),
-                        title: active.name,
-                        updatedAt: active.createdAt ?? '',
-                        status: 'empty',
-                        attachment: null,
-                        analysis: null,
-                        detection: null,
-                        messages: [],
-                        busy: false,
-                        error: null,
-                    }}
-                />
+            <div className="flex h-svh flex-col overflow-hidden">
+                <AppHeader onSignOut={onSignOut} />
+                <div className="flex min-h-0 flex-1">
+                    <aside className="bg-card w-64 shrink-0 border-r p-5">
+                        <Button variant="ghost" leadingIcon={ArrowLeft} onClick={() => setScreen('home')}>
+                            Your sessions
+                        </Button>
+                    </aside>
+                    <WorkspacePanels
+                        id={String(active.id).padStart(24, '0')}
+                        userId="local-preview"
+                        previewDrawing={{
+                            id: String(active.id).padStart(24, '0'),
+                            title: active.name,
+                            updatedAt: active.createdAt ?? '',
+                            status: 'empty',
+                            attachment: null,
+                            analysis: null,
+                            detection: null,
+                            messages: [],
+                            busy: false,
+                            error: null,
+                        }}
+                    />
+                </div>
             </div>
         );
     }

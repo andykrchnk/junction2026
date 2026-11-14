@@ -82,7 +82,7 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         </div>
     );
     return (
-        <section className="flex h-svh min-h-0 flex-1 flex-col overflow-hidden">
+        <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
             <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b px-5">
                 <div className="min-w-0">
                     <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">Drawing workspace</p>
