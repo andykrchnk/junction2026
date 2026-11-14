@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { useUnit } from 'effector-react';
 import type { Drawing, UpdateDrawingUpload } from '@repo/types';
 import { Input } from '@repo/design-system/components/ui/input';
 import { Button } from '@repo/design-system/components/ui/button';
 import { DropdownMenu, DropdownTrigger, DropdownContent } from '@repo/design-system/components/ui/dropdown';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@repo/design-system/components/ui/dialog';
+import { ScrollArea } from '@repo/design-system/components/ui/scroll-area';
 import { MenuItem } from '@repo/design-system/components/ui/menu-item';
 import { remixIcons } from '@repo/design-system/lib/icons-remix';
 import { DrawingAttachmentThumbnail } from './drawing-upload';
@@ -15,7 +17,13 @@ const MoreIcon = remixIcons['more-horizontal'];
 export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing; preview: boolean }>) {
     const [open, setOpen] = useState(false);
     const [renaming, setRenaming] = useState(false);
+    const [infoOpen, setInfoOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const actionsRef = useRef<HTMLButtonElement>(null);
+    const restoreActionsFocus = useCallback((element: HTMLDivElement | null) => {
+        // The menu item unmounts before the dialog; restore its durable trigger after exit.
+        if (!element) requestAnimationFrame(() => actionsRef.current?.focus());
+    }, []);
     const pending = useUnit($$drawings.updateUploadFx.pending);
     const attachment = drawing.attachment;
     const update = async (change: Omit<UpdateDrawingUpload, 'id'>) => {
@@ -44,7 +52,15 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
                 <DropdownMenu open={open} onOpenChange={setOpen}>
                     <DropdownTrigger
                         render={
-                            <Button type="button" variant="ghost" size="icon" className="-mr-2.5" aria-label="Upload actions" disabled={pending || preview}>
+                            <Button
+                                ref={actionsRef}
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="-mr-2.5"
+                                aria-label="Upload actions"
+                                disabled={pending || preview}
+                            >
                                 <MoreIcon />
                             </Button>
                         }
@@ -67,9 +83,55 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
                                 void update({ hiddenFromCanvas: !attachment.hiddenFromCanvas });
                             }}
                         />
+                        <MenuItem
+                            index={2}
+                            label="Info"
+                            onSelect={() => {
+                                setOpen(false);
+                                setInfoOpen(true);
+                            }}
+                        />
                     </DropdownContent>
                 </DropdownMenu>
             </div>
+            <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
+                <DialogContent ref={restoreActionsFocus} size="sm" className="flex max-h-[calc(100dvh-2rem)] flex-col gap-3 p-5">
+                    <DialogHeader className="mb-0 shrink-0">
+                        <DialogTitle className="pr-7">Upload info</DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea
+                        role="region"
+                        aria-label="PPM information"
+                        className="min-h-0"
+                        style={{ maxHeight: 'calc(100dvh - 12rem)' }}
+                        viewportClassName="max-h-[inherit] overscroll-contain"
+                    >
+                        <DialogDescription className="whitespace-pre-wrap break-words">
+                            {drawing.ppm ? (
+                                <>
+                                    {drawing.ppm.value !== undefined && (
+                                        <span className="mb-2 block font-medium text-foreground">PPM: {drawing.ppm.value} px/m</span>
+                                    )}
+                                    {drawing.ppm.message}
+                                </>
+                            ) : drawing.busy && !drawing.error && drawing.status !== 'failed' ? (
+                                'PPM is not available. Drawing processing is in progress.'
+                            ) : (
+                                'PPM information is not available.'
+                            )}
+                        </DialogDescription>
+                    </ScrollArea>
+                    <DialogFooter className="mt-0 shrink-0">
+                        <DialogClose
+                            render={
+                                <Button size="compact" variant="secondary">
+                                    Close
+                                </Button>
+                            }
+                        />
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             {renaming && (
                 <form
                     className="flex flex-col gap-2"
