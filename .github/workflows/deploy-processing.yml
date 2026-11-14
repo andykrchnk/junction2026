@@ -1,0 +1,51 @@
+name: Deploy processing
+on:
+    workflow_dispatch:
+    push:
+        branches: [master, feature/gpu-model-comparison]
+        paths:
+            - packages/processing/**
+            - deploy/processing/**
+            - .github/workflows/deploy-processing.yml
+permissions:
+    contents: read
+concurrency:
+    group: gpu-processing-deployment
+    cancel-in-progress: false
+jobs:
+    deploy:
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/feature/gpu-model-comparison'
+        runs-on: ubuntu-latest
+        timeout-minutes: 45
+        steps:
+            - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+              with:
+                  persist-credentials: false
+            - name: Prepare restricted deployment SSH identity
+              env:
+                  DEPLOY_KEY: ${{ secrets.PROCESSING_DEPLOY_SSH_KEY }}
+                  KNOWN_HOSTS: ${{ secrets.PROCESSING_DEPLOY_KNOWN_HOSTS }}
+              run: |
+                  set -euo pipefail
+                  umask 077
+                  test -n "$DEPLOY_KEY"
+                  test -n "$KNOWN_HOSTS"
+                  printf '%s\n' "$DEPLOY_KEY" > "$RUNNER_TEMP/processing-key"
+                  printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/processing-known-hosts"
+            - name: Transfer immutable release and run Ansible on GPU server
+              env:
+                  DEPLOY_HOST: ${{ vars.PROCESSING_DEPLOY_HOST }}
+                  DEPLOY_USER: ${{ vars.PROCESSING_DEPLOY_USER }}
+              run: |
+                  set -euo pipefail
+                  test -n "$DEPLOY_HOST"
+                  test -n "$DEPLOY_USER"
+                  git archive --format=tar "$GITHUB_SHA" packages/processing deploy/processing |
+                    ssh -T -i "$RUNNER_TEMP/processing-key" \
+                      -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+                      -o UserKnownHostsFile="$RUNNER_TEMP/processing-known-hosts" \
+                      -o ConnectTimeout=20 -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+                      "$DEPLOY_USER@$DEPLOY_HOST" "deploy $GITHUB_SHA"
+            - name: Remove temporary deployment credential
+              if: always()
+              run: rm -f "$RUNNER_TEMP/processing-key" "$RUNNER_TEMP/processing-known-hosts"
