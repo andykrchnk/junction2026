@@ -1,3 +1,5 @@
+import { createCanvasModel } from './canvas/model';
+import { BlueprintLayersPanel } from './blueprint-layers-panel';
 import { SessionChatPanel } from './session-chat-panel';
 import { MAX_FILE_BYTES, type Drawing } from '@repo/types';
 import { useDropzone } from 'react-dropzone';
@@ -23,6 +25,7 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         refetchInterval: (query) =>
             query.state.data?.busy || query.state.data?.blueprints.some((blueprint) => blueprint.status.type === 'processing') ? 2000 : false,
     });
+    const [canvasModel] = useState(() => createCanvasModel(id, `junction:canvas:${userId}:${id}`));
     const [localFile, setLocalFile] = useState<File | null>(null);
     const [localUrl, setLocalUrl] = useState('');
     const [uploadError, setUploadError] = useState('');
@@ -74,7 +77,7 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                 </p>
             }
         >
-            <BlueprintCanvas drawing={drawing} userId={userId} />
+            <BlueprintCanvas drawing={drawing} userId={userId} model={canvasModel} />
         </Suspense>
     );
     const uploadOverlay = !drawing.blueprints.length && (
@@ -108,12 +111,13 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         </div>
     );
     return (
-        <div className="relative isolate flex h-full min-h-0 flex-1 bg-muted/30" {...getRootProps()}>
+        <div className="relative isolate flex h-full min-h-0 flex-1 bg-muted/30" {...getRootProps()} aria-disabled={undefined}>
             <section aria-label="Blueprint canvas" className="absolute inset-0 z-0">
                 {canvas}
             </section>
             <SessionChatPanel drawing={drawing} previewDrawing={previewDrawing} />
             <div className="pointer-events-none relative z-10 min-h-0 min-w-0 flex-1">{uploadOverlay}</div>
+            <BlueprintLayersPanel drawing={drawing} model={canvasModel} preview={!!previewDrawing} />
         </div>
     );
 }

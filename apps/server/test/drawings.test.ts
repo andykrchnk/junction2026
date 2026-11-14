@@ -3,7 +3,9 @@ import * as sdk from '@openai/agents';
 import { Hono } from 'hono';
 import { PDFDocument } from 'pdf-lib';
 import type { TRPCContext } from '../src/shared/trpc';
-import { AnalysisZod, type Analysis } from '@repo/types';
+import { AnswerZod, BlueprintZod, type Drawing } from '@repo/types';
+import mongoose from 'mongoose';
+import { z } from 'zod';
 
 // Opt-in Atlas integration tests: only use a unique disposable database.
 const enabled = Boolean(process.env.MONGODB_URI && process.env.RUN_DRAWING_TESTS);
@@ -13,7 +15,18 @@ if (enabled) {
     process.env.OPENAI_API_KEY = 'test-key';
 }
 let fail = false;
-let response: unknown = { text: '6 + 4 = 10 m² of floor tiling.' };
+const answerOutput = (text: string): z.infer<typeof AnswerZod> => ({
+    text,
+    references: [],
+    status: 'answered',
+    clarificationQuestion: null,
+    userProvidedInformation: [],
+});
+let response: unknown = answerOutput('6 + 4 = 10 m² of floor tiling.');
+if (!enabled) {
+    const connection = mongoose.createConnection();
+    mock.module('../src/db/connection', () => ({ connection }));
+}
 let captured: { input: unknown; instructions: unknown; history: sdk.AgentInputItem[] } | null = null;
 const runMock = mock(async (agent: { instructions: unknown }, input: unknown, options: { session?: sdk.Session } = {}) => {
     captured = { input, instructions: agent.instructions, history: options.session ? await options.session.getItems() : [] };
@@ -32,62 +45,42 @@ const context: TRPCContext = {
         updatedAt: new Date().toISOString(),
     },
 };
-const analysis = {
-    summary: 'Two toilets.',
-    classification: {
-        contentTypes: ['floor_plan'],
-        drawingStyle: 'machine_drawn',
-        captureMode: 'digital_export',
-        layout: 'single_view',
-        readability: { text: 'clear', linework: 'clear', symbols: 'clear' },
-        issues: [],
-        languages: ['English'],
-        units: ['m²'],
+const blueprint = BlueprintZod.parse({
+    id: 'sheet-1',
+    pageNumber: 1,
+    attachment: { id: '222222222222222222222222', name: 'synthetic.pdf', mediaType: 'application/pdf', pageNumber: 1 },
+    raster: { fileId: '333333333333333333333333', width: 100, height: 100 },
+    layout: {
+        revision: 'test-revision',
+        summary: 'Synthetic plan',
+        rooms: [],
+        fixtures: [],
+        limitations: [],
+        source: {
+            prediction: { coordinate_system: 'image_pixels', image: { width: 100, height: 100 }, rooms: [], fixtures: [] },
+            createdAt: new Date().toISOString(),
+            degraded: [],
+        },
     },
-    views: [
-        {
-            page: 1,
-            location: 'Main floor plan',
-            title: null,
-            contentTypes: ['floor_plan'],
-            boundingBox: { left: 0.1, top: 0.1, right: 0.9, bottom: 0.9 },
-            measurementReferences: [{ kind: 'printed_area', text: '6 m²', units: 'm²', location: 'Left toilet' }],
-            measurementLimitations: ['No verified linear calibration.'],
-        },
+    misc: [{ title: 'Units', content: 'Areas are printed in square metres.' }],
+    ppmCandidates: [],
+    ppm: { message: 'No verified calibration.' },
+    comments: [],
+    status: { type: 'ready' },
+});
+const drawingFixture = (): Drawing => ({
+    id: '111111111111111111111111',
+    title: 'Synthetic drawing',
+    updatedAt: new Date().toISOString(),
+    status: 'ready',
+    busy: false,
+    error: null,
+    blueprints: [blueprint],
+    messages: [
+        { id: crypto.randomUUID(), question: 'First question', answer: answerOutput('First reply') },
+        { id: crypto.randomUUID(), question: 'Total floor tiling?', answer: null },
     ],
-    observations: [
-        {
-            page: 1,
-            view: 'Main floor plan',
-            location: 'Left toilet',
-            kind: 'area',
-            label: 'Left toilet floor area',
-            fact: 'Floor area 6 m²',
-            evidence: '6 m² label',
-            assumptions: ['This toilet may share a wall with the right toilet.'],
-            boundingBox: { left: 0.2, top: 0.2, right: 0.4, bottom: 0.4 },
-            recognition: 'clear',
-            visibility: 'complete',
-            constructionState: 'unknown',
-        },
-        {
-            page: 1,
-            view: 'Main floor plan',
-            location: 'Right toilet',
-            kind: 'area',
-            label: 'Right toilet floor area',
-            fact: 'Floor area 4 m²',
-            evidence: '4 m² label',
-            assumptions: [],
-            boundingBox: null,
-            recognition: 'clear',
-            visibility: 'complete',
-            constructionState: 'unknown',
-        },
-    ],
-    missingInformation: ['Provide wall heights to calculate wall tiling.'],
-    limitations: ['No wall heights.'],
-} satisfies Analysis;
+});
 
 let caller: ReturnType<(typeof import('../src/features/drawings/router'))['drawingRouter']['createCaller']>;
 let files: Hono<{ Variables: TRPCContext }>;
@@ -117,63 +110,49 @@ afterAll(async () => {
     await connection.close();
 });
 
-test('chat rehydrates history and only receives saved analysis, never blueprint bytes', async () => {
+test('chat rehydrates history and receives blueprint inventory without image bytes', async () => {
     const { answer } = await import('../src/features/drawings/agent');
-    const drawing = {
-        id: '111111111111111111111111',
-        title: 'Synthetic drawing',
-        updatedAt: new Date().toISOString(),
-        status: 'ready',
-        busy: false,
-        error: null,
-        analysis,
-        attachment: { id: '222222222222222222222222', name: 'private-original.pdf', mediaType: 'application/pdf', pages: 1 },
-        messages: [
-            { id: crypto.randomUUID(), question: 'First question', answer: { text: 'First reply' } },
-            { id: crypto.randomUUID(), question: 'Total floor tiling?', answer: null },
-        ],
-    } satisfies import('@repo/types').Drawing;
-    response = { text: '6 + 4 = 10 m² of floor tiling.' };
-    expect((await answer(drawing, AbortSignal.timeout(1000))).text).toBe('6 + 4 = 10 m² of floor tiling.');
+    response = answerOutput('6 + 4 = 10 m² of floor tiling.');
+    expect((await answer(drawingFixture(), AbortSignal.timeout(1000))).text).toBe('6 + 4 = 10 m² of floor tiling.');
     expect(captured?.input).toBe('Total floor tiling?');
     expect(captured?.history).toHaveLength(2);
     expect(JSON.stringify(captured?.history)).toContain('First reply');
-    const savedAnalysis = AnalysisZod.parse(JSON.parse(String(captured?.instructions).split('SAVED ANALYSIS:\n')[1] ?? 'null'));
-    expect(savedAnalysis).toEqual(analysis);
-    expect(JSON.stringify(captured)).not.toContain('private-original.pdf');
+    expect(String(captured?.instructions)).toContain('Blueprint inventory:');
+    expect(String(captured?.instructions)).toContain(blueprint.id);
+    expect(JSON.stringify(captured)).not.toContain('data:');
+    expect(JSON.stringify(captured)).not.toContain(blueprint.raster?.fileId);
 });
 
-test('initial analysis passes a PDF once and validates page numbers', async () => {
-    const { analyze } = await import('../src/features/drawings/agent');
-    const attachment = {
-        id: '222222222222222222222222',
-        name: 'synthetic.pdf',
-        mediaType: 'application/pdf',
-        pages: 1,
-    } satisfies import('@repo/types').Attachment;
-    response = analysis;
-    expect(await analyze(attachment, Buffer.from('synthetic PDF bytes'), AbortSignal.timeout(1000))).toEqual(analysis);
-    expect(JSON.stringify(captured?.input)).toContain('data:application/pdf;base64,');
-    response = { ...analysis, observations: [{ ...analysis.observations[0], page: 2 }] };
-    await expect(analyze(attachment, Buffer.from('test'), AbortSignal.timeout(1000))).rejects.toThrow('Invalid analysis page');
-    response = { ...analysis, views: [{ ...analysis.views[0], page: 2 }] };
-    await expect(analyze(attachment, Buffer.from('test'), AbortSignal.timeout(1000))).rejects.toThrow('Invalid analysis page');
-    response = { text: '6 + 4 = 10 m² of floor tiling.' };
+test('blueprint inspection sends the canonical raster and validates context output', async () => {
+    const { inspectBlueprint } = await import('../src/features/drawings/blueprint-agent');
+    const contextOutput = { summary: 'Synthetic plan', misc: blueprint.misc ?? [], limitations: [] };
+    response = contextOutput;
+    const bytes = Buffer.from('synthetic raster bytes');
+    expect(await inspectBlueprint(blueprint, bytes, AbortSignal.timeout(1000))).toEqual(contextOutput);
+    expect(JSON.stringify(captured?.input)).toContain(`data:image/png;base64,${bytes.toString('base64')}`);
+    response = { ...contextOutput, misc: [{ title: '', content: 'Invalid title' }] };
+    await expect(inspectBlueprint(blueprint, bytes, AbortSignal.timeout(1000))).rejects.toThrow();
 });
 
-test('initial analysis rejects inverted or empty localization boxes', async () => {
-    const { analyze } = await import('../src/features/drawings/agent');
-    const attachment = {
-        id: '222222222222222222222222',
-        name: 'synthetic.png',
-        mediaType: 'image/png',
-        pages: 1,
-    } satisfies import('@repo/types').Attachment;
-    response = { ...analysis, observations: [{ ...analysis.observations[0], boundingBox: { left: 0.8, top: 0.2, right: 0.4, bottom: 0.6 } }] };
-    await expect(analyze(attachment, Buffer.from('test'), AbortSignal.timeout(1000))).rejects.toThrow('Invalid analysis bounding box');
-    response = { ...analysis, views: [{ ...analysis.views[0], boundingBox: { left: 0.1, top: 0.5, right: 0.9, bottom: 0.5 } }] };
-    await expect(analyze(attachment, Buffer.from('test'), AbortSignal.timeout(1000))).rejects.toThrow('Invalid analysis bounding box');
-    response = { text: '6 + 4 = 10 m² of floor tiling.' };
+test('chat rejects unknown blueprint and entity references', async () => {
+    const { answer } = await import('../src/features/drawings/agent');
+    response = { ...answerOutput('Answer'), references: [{ blueprintId: 'missing-sheet', entityId: null }] };
+    await expect(answer(drawingFixture(), AbortSignal.timeout(1000))).rejects.toThrow('Unknown blueprint reference');
+    response = { ...answerOutput('Answer'), references: [{ blueprintId: blueprint.id, entityId: 'missing-entity' }] };
+    await expect(answer(drawingFixture(), AbortSignal.timeout(1000))).rejects.toThrow('Invalid answer entity reference');
+    response = { ...answerOutput('Answer'), references: [{ blueprintId: blueprint.id, entityId: null }] };
+    expect((await answer(drawingFixture(), AbortSignal.timeout(1000))).references).toHaveLength(1);
+});
+
+test('chat requires a question only for clarification responses', async () => {
+    const { answer } = await import('../src/features/drawings/agent');
+    response = { ...answerOutput('Need dimensions'), status: 'needs_clarification' };
+    await expect(answer(drawingFixture(), AbortSignal.timeout(1000))).rejects.toThrow('Invalid clarification response');
+    response = { ...answerOutput('Answer'), clarificationQuestion: 'Which room?' };
+    await expect(answer(drawingFixture(), AbortSignal.timeout(1000))).rejects.toThrow('Invalid clarification response');
+    response = { ...answerOutput('Need dimensions'), status: 'needs_clarification', clarificationQuestion: 'What is the wall height?' };
+    expect((await answer(drawingFixture(), AbortSignal.timeout(1000))).status).toBe('needs_clarification');
+    response = answerOutput('6 + 4 = 10 m² of floor tiling.');
 });
 
 suite('auth, ownership and analysis gating are enforced on the server', async () => {
@@ -208,19 +187,20 @@ suite('upload validates contents and PDF pages; GridFS preserves the original', 
     expect(new Uint8Array(await downloaded.arrayBuffer())).toEqual(bytes);
     expect((await caller.get({ id: drawingId })).status).toBe('uploaded');
 });
-suite('initial analysis is saved once and reused on subsequent requests', async () => {
-    response = analysis;
+suite('analysis requires inference and reuses completed blueprint context', async () => {
+    await expect(caller.analyze({ id: drawingId })).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+    const { DrawingModel } = await import('../src/db/drawing.schema');
+    await DrawingModel.updateOne({ _id: drawingId }, { $set: { blueprints: [blueprint] } });
+    const count = runMock.mock.calls.length;
     const result = await caller.analyze({ id: drawingId });
     expect(result.status).toBe('ready');
-    expect(result.analysis).toEqual(analysis);
-    const count = runMock.mock.calls.length;
-    expect((await caller.analyze({ id: drawingId })).analysis).toEqual(analysis);
+    expect(result.blueprints).toEqual([blueprint]);
+    expect((await caller.analyze({ id: drawingId })).blueprints).toEqual([blueprint]);
     expect(runMock.mock.calls.length).toBe(count);
-    response = { text: '6 + 4 = 10 m² of floor tiling.' };
 });
 suite('failed chat is durable, retries are idempotent, SDK history is restored', async () => {
     const { DrawingModel } = await import('../src/db/drawing.schema');
-    await DrawingModel.updateOne({ _id: drawingId }, { $set: { analysis } });
+    await DrawingModel.updateOne({ _id: drawingId }, { $set: { blueprints: [blueprint] } });
     const message = { id: crypto.randomUUID(), question: 'How much floor tiling?' };
     fail = true;
     await expect(caller.ask({ id: drawingId, message })).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
@@ -235,7 +215,7 @@ suite('failed chat is durable, retries are idempotent, SDK history is restored',
     const { drawingRouter } = await import('../src/features/drawings/router');
     const fresh = drawingRouter.createCaller(context);
     expect((await fresh.get({ id: drawingId })).messages).toEqual(answered.messages);
-    response = { text: 'Wall heights are missing; wall tiling cannot be determined.' };
+    response = answerOutput('Wall heights are missing; wall tiling cannot be determined.');
     const next = await fresh.ask({ id: drawingId, message: { id: crypto.randomUUID(), question: 'And the walls?' } });
     expect(next.messages).toHaveLength(2);
     expect(captured?.history).toHaveLength(2);
@@ -244,7 +224,7 @@ suite('expired operations recover and active operations reject concurrent reques
     const { DrawingModel } = await import('../src/db/drawing.schema');
     await DrawingModel.updateOne({ _id: drawingId }, { $set: { lease: 'interrupted', leaseUntil: new Date(0) } });
     expect((await caller.get({ id: drawingId })).error).toContain('interrupted');
-    response = { text: 'Still 10 m².' };
+    response = answerOutput('Still 10 m².');
     expect((await caller.ask({ id: drawingId, message: { id: crypto.randomUUID(), question: 'Total again?' } })).busy).toBe(false);
     await DrawingModel.updateOne({ _id: drawingId }, { $set: { lease: 'another-worker', leaseUntil: new Date(Date.now() + 150000) } });
     await expect(caller.ask({ id: drawingId, message: { id: crypto.randomUUID(), question: 'Concurrent?' } })).rejects.toMatchObject({ code: 'CONFLICT' });
@@ -253,10 +233,10 @@ suite('expired operations recover and active operations reject concurrent reques
 suite('an old operation cannot commit after its lease is replaced', async () => {
     const { DrawingModel } = await import('../src/db/drawing.schema');
     const drawing = await caller.create();
-    await DrawingModel.updateOne({ _id: drawing.id }, { $set: { analysis } });
+    await DrawingModel.updateOne({ _id: drawing.id }, { $set: { blueprints: [blueprint] } });
     runMock.mockImplementationOnce(async () => {
         await DrawingModel.updateOne({ _id: drawing.id }, { $set: { lease: 'new-worker', leaseUntil: new Date(Date.now() + 150000) } });
-        return { finalOutput: { text: 'Stale answer' } };
+        return { finalOutput: answerOutput('Stale answer') };
     });
     await expect(caller.ask({ id: drawing.id, message: { id: crypto.randomUUID(), question: 'Stale request' } })).rejects.toMatchObject({ code: 'CONFLICT' });
     const stored = await DrawingModel.findById(drawing.id).lean();

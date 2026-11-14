@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&url';
 import { MAX_FILE_BYTES, type Drawing } from '@repo/types';
@@ -15,12 +15,12 @@ type DrawingUploadParams = Readonly<{
     onUpload: (file: File) => void;
 }>;
 
-function FileDetails({ file, pending }: Readonly<{ file: File; pending: boolean }>) {
+function FileDetails({ file, pending, nameSlot }: Readonly<{ file: File; pending: boolean; nameSlot?: ReactNode }>) {
     return (
         <div className="flex min-w-0 items-center gap-3">
             <FileThumbnail file={file} size={56} />
             <div className="min-w-0 text-sm">
-                <p className="break-words font-medium">{file.name}</p>
+                {nameSlot ?? <p className="break-words font-medium">{file.name}</p>}
                 <p className="text-xs text-muted-foreground">
                     {file.size < 1024 * 1024 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : `${(file.size / (1024 * 1024)).toFixed(1)} MB`}
                     {pending && ' · Uploading…'}
@@ -79,7 +79,7 @@ export function DrawingUpload({ disabled, uploading, onUpload }: DrawingUploadPa
     );
 }
 
-export function DrawingAttachmentThumbnail({ drawing }: Readonly<{ drawing: Drawing }>) {
+export function DrawingAttachmentThumbnail({ drawing, nameSlot }: Readonly<{ drawing: Drawing; nameSlot?: ReactNode }>) {
     const attachment = drawing.blueprints[0]?.attachment;
     const name = attachment?.name;
     const mediaType = attachment?.mediaType;
@@ -99,10 +99,10 @@ export function DrawingAttachmentThumbnail({ drawing }: Readonly<{ drawing: Draw
     return (
         <div aria-label="Uploaded blueprint">
             {file ? (
-                <FileDetails file={file} pending={false} />
+                <FileDetails file={file} pending={false} nameSlot={nameSlot} />
             ) : (
                 <div className="text-sm">
-                    <p className="break-words font-medium">{attachment.name}</p>
+                    {nameSlot ?? <p className="break-words font-medium">{attachment.name}</p>}
                     <p className="text-xs text-muted-foreground" role={isError ? 'alert' : 'status'}>
                         {isError ? 'Could not load the file preview.' : 'Loading file preview…'}
                     </p>

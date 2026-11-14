@@ -11,15 +11,28 @@ import { MenuItem } from '@repo/design-system/components/ui/menu-item';
 import { remixIcons } from '@repo/design-system/lib/icons-remix';
 import { DrawingAttachmentThumbnail } from './drawing-upload';
 import { $$drawings } from './model';
-import { BlueprintContext } from './blueprint-context';
 
 const MoreIcon = remixIcons['more-horizontal'];
 
-export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing; preview: boolean }>) {
+export function DrawingUploads({
+    drawing,
+    preview,
+    expanded,
+    onToggle,
+}: Readonly<{ drawing: Drawing; preview: boolean; expanded?: boolean; onToggle?: () => void }>) {
     const [open, setOpen] = useState(false);
     const [renaming, setRenaming] = useState(false);
     const [infoOpen, setInfoOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const renameRequested = useRef(false);
+    const finishRenameMenu = useCallback((element: HTMLDivElement | null) => {
+        if (!element && renameRequested.current) {
+            renameRequested.current = false;
+            requestAnimationFrame(() => setRenaming(true));
+        }
+    }, []);
+    const cancelRename = useRef(false);
+    const savingRename = useRef(false);
     const actionsRef = useRef<HTMLButtonElement>(null);
     const restoreActionsFocus = useCallback((element: HTMLDivElement | null) => {
         // The menu item unmounts before the dialog; restore its durable trigger after exit.
@@ -40,17 +53,93 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
         defaultValues: { name: '' },
         validators: { onSubmit: ({ value }) => (!value.name.trim() ? 'Enter an upload name.' : undefined) },
         onSubmit: async ({ value }) => {
-            await update({ name: value.name.trim() });
+            if (cancelRename.current || savingRename.current) return;
+            if (value.name.trim() === attachment?.name) {
+                setRenaming(false);
+                return;
+            }
+            savingRename.current = true;
+            try {
+                await update({ name: value.name.trim() });
+            } finally {
+                savingRename.current = false;
+            }
         },
     });
     if (!attachment) return <p className="px-3 py-4 text-sm text-muted-foreground">Your uploaded blueprints will appear here.</p>;
     return (
         <div className="space-y-3 px-3 py-4">
-            <BlueprintContext drawing={drawing} />
             <div className="flex items-center gap-2">
-                <div className="min-w-0 flex-1">
-                    <DrawingAttachmentThumbnail drawing={drawing} />
-                </div>
+                {renaming ? (
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                        {onToggle && (
+                            <span className="inline-flex size-4 shrink-0 items-center justify-center" aria-hidden>
+                                {expanded ? '▾' : '▸'}
+                            </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                            <DrawingAttachmentThumbnail
+                                drawing={drawing}
+                                nameSlot={
+                                    <form
+                                        onSubmit={(event) => {
+                                            event.preventDefault();
+                                            void form.handleSubmit();
+                                        }}
+                                    >
+                                        <form.Field name="name">
+                                            {(field) => (
+                                                <Input
+                                                    autoFocus
+                                                    aria-label="Upload name"
+                                                    value={field.state.value}
+                                                    maxLength={200}
+                                                    className="h-8 min-w-0 px-1 text-sm font-medium"
+                                                    disabled={pending}
+                                                    required
+                                                    onFocus={(event) => event.currentTarget.select()}
+                                                    onChange={(event) => field.handleChange(event.target.value)}
+                                                    onBlur={() => {
+                                                        field.handleBlur();
+                                                        if (!cancelRename.current) void form.handleSubmit();
+                                                    }}
+                                                    onKeyDown={(event) => {
+                                                        if (event.key === 'Escape') {
+                                                            event.preventDefault();
+                                                            cancelRename.current = true;
+                                                            setRenaming(false);
+                                                            setError(null);
+                                                            actionsRef.current?.focus();
+                                                        }
+                                                    }}
+                                                />
+                                            )}
+                                        </form.Field>
+                                    </form>
+                                }
+                            />
+                        </div>
+                    </div>
+                ) : onToggle ? (
+                    <button
+                        type="button"
+                        aria-expanded={expanded}
+                        aria-label={`${expanded ? 'Collapse' : 'Expand'} ${attachment.name}`}
+                        onClick={onToggle}
+                        className="flex min-w-0 flex-1 items-center gap-2 text-left focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                        <span className="inline-flex size-4 shrink-0 items-center justify-center" aria-hidden>
+                            {expanded ? '▾' : '▸'}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <DrawingAttachmentThumbnail drawing={drawing} />
+                        </div>
+                    </button>
+                ) : (
+                    <div className="min-w-0 flex-1">
+                        <DrawingAttachmentThumbnail drawing={drawing} />
+                    </div>
+                )}
                 <DropdownMenu open={open} onOpenChange={setOpen}>
                     <DropdownTrigger
                         render={
@@ -67,13 +156,15 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
                             </Button>
                         }
                     />
-                    <DropdownContent align="end">
+                    <DropdownContent ref={finishRenameMenu} align="end">
                         <MenuItem
                             index={0}
                             label="Rename"
                             onSelect={() => {
+                                cancelRename.current = false;
+                                setError(null);
                                 form.reset({ name: attachment.name });
-                                setRenaming(true);
+                                renameRequested.current = true;
                                 setOpen(false);
                             }}
                         />
@@ -135,45 +226,15 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
                 </DialogContent>
             </Dialog>
             {renaming && (
-                <form
-                    className="flex flex-col gap-2"
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        void form.handleSubmit();
-                    }}
-                >
-                    <form.Field name="name">
-                        {(field) => (
-                            <Input
-                                autoFocus
-                                aria-label="Upload name"
-                                value={field.state.value}
-                                maxLength={200}
-                                onBlur={field.handleBlur}
-                                onChange={(event) => field.handleChange(event.target.value)}
-                                disabled={pending}
-                                required
-                            />
-                        )}
-                    </form.Field>
-                    <form.Subscribe selector={(state) => state.errorMap.onSubmit}>
-                        {(message) =>
-                            message ? (
-                                <p role="alert" className="text-sm text-destructive">
-                                    {message}
-                                </p>
-                            ) : null
-                        }
-                    </form.Subscribe>
-                    <div className="flex gap-2">
-                        <Button type="submit" disabled={pending}>
-                            Save
-                        </Button>
-                        <Button type="button" variant="ghost" onClick={() => setRenaming(false)}>
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
+                <form.Subscribe selector={(state) => state.errorMap.onSubmit}>
+                    {(message) =>
+                        message ? (
+                            <p role="alert" className="text-xs text-destructive">
+                                {message}
+                            </p>
+                        ) : null
+                    }
+                </form.Subscribe>
             )}
             {attachment.hiddenFromCanvas && <p className="text-xs text-muted-foreground">Removed from canvas. The upload and analysis are saved.</p>}
             {error && (

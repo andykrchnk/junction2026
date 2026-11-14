@@ -8,6 +8,8 @@ const MAX_RASTER_BYTES = 25 * 1024 * 1024;
 const PDF_MAX_DIMENSION = 2400;
 const RenderResultZod = z.object({ promise: z.custom<Promise<unknown>>((value) => value instanceof Promise) });
 
+export class RasterPreparationError extends Error {}
+
 export type Raster = { bytes: Buffer; width: number; height: number };
 type PrepareRasterParams = { bytes: Buffer; mediaType: string; page: number; signal: AbortSignal };
 
@@ -74,7 +76,7 @@ export async function prepareRaster(params: PrepareRasterParams): Promise<Raster
         }
         return raster;
     } catch (cause) {
-        if (params.signal.aborted) throw new Error('Image preparation was interrupted or timed out.');
-        throw new Error('Could not prepare this page for detection. Use a readable image or PDF within the inference limits.', { cause });
+        if (params.signal.aborted) throw new RasterPreparationError('PDF or image preparation was interrupted or timed out. Retry detection.', { cause });
+        throw new RasterPreparationError('Could not render this page for detection. Retry detection or upload a PNG or JPG of the page.', { cause });
     }
 }

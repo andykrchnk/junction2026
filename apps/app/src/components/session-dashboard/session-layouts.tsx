@@ -153,7 +153,7 @@ export function SessionLayouts({
                     <p role="status" className="text-muted-foreground">
                         Loading sessions…
                     </p>
-                ) : !ordered.length ? (
+                ) : !ordered.length && error ? null : !ordered.length ? (
                     <div className="sl-empty">
                         <FileText size={24} />
                         <h2>No sessions yet</h2>

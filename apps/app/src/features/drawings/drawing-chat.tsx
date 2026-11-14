@@ -1,5 +1,5 @@
 import { layoutPages } from './layout';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { AnimatePresence, MotionConfig } from 'motion/react';
@@ -10,9 +10,6 @@ import { InputMessage } from '@repo/design-system/components/ui/input-message';
 import { ChatMessage } from '@repo/design-system/components/ui/chat-message';
 import { trpc } from '@/shared/trpc';
 import { $$drawings } from './model';
-import { DrawingUploads } from './drawing-uploads';
-import { remixIcons, FileStack } from '@repo/design-system/lib/icons-remix';
-import { Tabs, TabsItem } from '@repo/design-system/components/ui/tabs';
 import { DrawingActivity } from './drawing-activity';
 import { DrawingProgress } from './drawing-progress';
 
@@ -40,7 +37,6 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                 ? 2000
                 : false,
     });
-    const [tab, setTab] = useState(0);
     const endRef = useRef<HTMLDivElement>(null);
     const submissionsRef = useRef(new Set<string>());
     useEffect(() => {
@@ -85,14 +81,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
     return (
         <MotionConfig reducedMotion="user">
             <section aria-label="Drawing chat" className="flex h-full min-h-0 flex-col">
-                <Tabs selectedIndex={tab} onSelect={setTab} className="z-10 m-0 max-w-full shrink-0 border-b bg-card p-0">
-                    <TabsItem index={0} label="Chat" icon={remixIcons['message-circle']} className="h-10 w-20 items-center justify-center px-3 py-2" />
-                    <TabsItem index={1} label="Uploads" icon={FileStack} className="h-10 items-center justify-center px-3 py-2" />
-                </Tabs>
-                <div hidden={tab !== 1} className="min-h-0 flex-1 overflow-y-auto">
-                    <DrawingUploads drawing={drawing} preview={!!previewDrawing} />
-                </div>
-                <div hidden={tab !== 0} className="min-h-0 flex-1 flex-col overflow-hidden" style={{ display: tab === 0 ? 'flex' : 'none' }}>
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                     <div role="log" aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto p-4">
                         <div className="flex min-h-full flex-col justify-end gap-5">
                             <DrawingProgress
