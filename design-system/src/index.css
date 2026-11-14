@@ -999,7 +999,7 @@ b, strong { font-weight: var(--weight-semibold); font-variation-settings: 'wght'
   --primary-active: #E53600;
   --primary-muted: #FFF0EB;
   --primary-disabled: oklch(0.9095 0.0069 250);
-  --fg-on-primary: #171717;
+  --fg-on-primary: #ffffff;
   --fg-primary-disabled: #AC6955;
   --selection: var(--primary);
   --selection-hover: var(--primary-hover);
@@ -1132,7 +1132,7 @@ b, strong { font-weight: var(--weight-semibold); font-variation-settings: 'wght'
   --primary-active: #FF7043;
   --primary-muted: #38180F;
   --primary-disabled: oklch(0.3131 0.0069 250);
-  --fg-on-primary: #171717;
+  --fg-on-primary: #ffffff;
   --fg-primary-disabled: #965642;
   --selection: var(--primary);
   --selection-hover: var(--primary-hover);

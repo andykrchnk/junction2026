@@ -487,9 +487,6 @@
     font-size: var(--fs-caption);
 }
 
-.sl-new-session {
-    --primary-foreground: #fff;
-}
 .sl-icon-uploading {
     animation: session-upload 1.4s ease-in-out infinite;
 }

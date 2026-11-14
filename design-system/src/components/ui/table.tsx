@@ -274,7 +274,7 @@ const Table = forwardRef<HTMLTableElement, TableProps>(
               // sticky cell paints over the dividers scrolling under it
               // (collapsed borders paint over every cell).
               "w-full border-separate border-spacing-0",
-              sizeClasses.variant === "compact" ? "[--table-cell-py:5px]" : "[--table-cell-py:--spacing(2)]",
+              sizeClasses.variant === "compact" ? "[--table-cell-py:5px] [--table-row-height:44px]" : "[--table-cell-py:--spacing(2)] [--table-row-height:64px]",
               sizeClasses.text,
               className
             )}
@@ -356,7 +356,7 @@ const TableRow = forwardRef<HTMLTableRowElement, TableRowProps>(
           "group/row relative z-10 *:border-b *:transition-[border-color] *:duration-80",
           hideBorder
             ? "*:border-transparent"
-            : "*:border-accent/40 data-[under-highlight]:*:border-transparent data-[under-highlight]:*:duration-0",
+            : "*:border-border data-[under-highlight]:*:border-transparent data-[under-highlight]:*:duration-0",
           lit && "is-active",
           className
         )}
@@ -398,10 +398,10 @@ const TableHead = forwardRef<HTMLTableCellElement, TableHeadProps>(({ hoverIndex
       }}
       data-head-hover={hoverIndex !== undefined || undefined}
       className={cn(
-        "text-left text-foreground",
+        "text-left text-muted-foreground bg-muted",
         // py + line box lands the row on the ladder (36px / 28px).
         "py-(--table-cell-py)",
-        sizeClasses.variant === "compact" ? "px-2.5" : "px-3",
+        sizeClasses.variant === "compact" ? "px-3 h-8" : "px-4 h-10",
         className
       )}
       {...props}
@@ -424,9 +424,9 @@ const TableCell = forwardRef<
       // Muted at rest, foreground on the lit row, on the same 80ms as the
       // border fade. Same padding as TableHead so every row shares a height.
       className={cn(
-        "text-muted-foreground transition-colors duration-80 group-[.is-active]/row:text-foreground",
+        "text-foreground transition-colors duration-80 h-(--table-row-height)",
         "py-(--table-cell-py)",
-        sizeClasses.variant === "compact" ? "px-2.5" : "px-3",
+        sizeClasses.variant === "compact" ? "px-3" : "px-4",
         className
       )}
       {...props}
@@ -466,7 +466,7 @@ const TableEmpty = forwardRef<HTMLTableRowElement, TableEmptyProps>(
             // Pinned to the visible box: sticky at its left edge and as wide
             // as the scroll box (--table-view-w, which DataTable sets), so the
             // message centers on what's in view, not on a table wider than it.
-            className="sticky left-0 flex w-(--table-view-w,100%) min-h-[calc(var(--table-empty-rows)*(1lh+2*var(--table-cell-py)+1px))] flex-col items-center justify-center gap-1 px-3 py-4 text-center"
+            className="sticky left-0 flex w-(--table-view-w,100%) min-h-[calc(var(--table-empty-rows)*var(--table-row-height))] flex-col items-center justify-center gap-1 px-3 py-4 text-center"
             style={{ "--table-empty-rows": rows } as CSSProperties}
           >
             {title && (
