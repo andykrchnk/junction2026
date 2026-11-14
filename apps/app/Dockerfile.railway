@@ -9,6 +9,8 @@ RUN pnpm install --frozen-lockfile
 RUN npm --prefix design-system ci
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
+ARG VITE_TLDRAW_LICENSE_KEY
+ENV VITE_TLDRAW_LICENSE_KEY=$VITE_TLDRAW_LICENSE_KEY
 RUN pnpm --filter @repo/app build
 
 FROM nginx:1.28-alpine AS runner

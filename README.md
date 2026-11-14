@@ -42,6 +42,30 @@ Uploads are limited to 20 MB and PDFs to 10 pages. A new drawing requires a new 
 
 The Agents SDK session is reconstructed from saved MongoDB question/answer turns for every request. Only initial analysis receives the blueprint. Subsequent answers use only saved analysis and history, identifying evidence by page and descriptive location. Missing facts trigger a structured clarification when the user can supply them. Clarification questions and user replies are saved in the conversation and rehydrated after refresh or redeployment. The assistant may calculate from explicit user-supplied inputs, labels those inputs separately, and keeps the original drawing analysis unchanged. If the task cannot be resolved, it returns cannot_determine rather than inventing an answer. This is a rough visual-analysis prototype, not a reliable quantity takeoff system. The first analysis includes classification, view-specific printed measurement references and selected object boxes. The preview overlays those boxes on images or PDF pages, filters them by kind and shows their evidence and assumptions. Recognition is labelled clear or uncertain, not presented as a probability. Boxes are approximate visual pointers, not room boundaries or scale calibration. Existing saved sessions remain readable without invented metadata. Corrections, file replacement and deletion controls are not implemented. A small analyzer function can later be replaced without changing the chat contract.
 
+## Canvas workspace
+
+Drawings open in a tldraw viewer on the left and the existing chat on the right,
+starting at a 70/30 split. The divider supports pointer and keyboard resizing;
+small screens switch between Canvas and Chat. The viewer exposes pan, zoom,
+fit and PDF page navigation. Drawing, media insertion and editing tools are
+disabled. Blueprint backgrounds are locked; no neural-network integration or
+geometry overlays are included.
+
+Canvas documents are stored separately from analysis/chat fields on the drawing
+in MongoDB. Protected tRPC procedures enforce ownership and compare revisions
+before saving; conflicting writes retain a local recovery draft instead of
+overwriting the server. Saves debounce for one second, with a five-second flush
+while changes continue. Zoom, pan, current page and divider position stay in
+browser storage scoped to user and drawing. Failed saves expose retry and retain
+a browser recovery copy when storage is available. Undo history is not persisted.
+
+Set `VITE_TLDRAW_LICENSE_KEY` in `apps/app/.env` for local builds or in the Railway
+app service variables before a production build. This is a public SDK license
+key, not an API secret; the SDK requires an appropriate license for production.
+The Docker build and Railway IaC pass it through at build time. PDFs are rasterized
+client-side using the existing PDF.js renderer and stored as page references,
+not embedded image bytes or expiring blob URLs in the saved document.
+
 ## Verification
 
 ```sh

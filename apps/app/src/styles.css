@@ -2,3 +2,15 @@
 @import '../../../design-system/src/index.css';
 @import '../../../design-system/src/tokens.css';
 @source '../../../design-system/src';
+
+@media (width < 48rem) {
+    .workspace-divider,
+    .workspace-show-canvas > #chat,
+    .workspace-show-chat > #canvas {
+        display: none !important;
+    }
+    .workspace-show-canvas > #canvas,
+    .workspace-show-chat > #chat {
+        flex: 1 1 100% !important;
+    }
+}
