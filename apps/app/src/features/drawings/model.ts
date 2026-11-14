@@ -74,7 +74,9 @@ const inferFx = createEffect(async (id: string) => {
             await refresh(id);
         }
     }
-    return trpcClient.drawings.get.query({ id });
+    const detected = await trpcClient.drawings.get.query({ id });
+    // A cover retry reuses saved geometries rather than invoking inference again.
+    return detected.detection?.status === 'ready' && !detected.covers ? trpcClient.drawings.detect.mutate({ id, page: 1 }) : detected;
 });
 const analyzeFx = createEffect(async (id: string) => {
     try {

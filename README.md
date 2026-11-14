@@ -54,6 +54,8 @@ The backend normalizes image EXIF orientation and rasterizes each PDF page to PN
 
 To draw these geometries, fetch the matching authenticated `GET /api/drawings/:id/predictions/:page/image` and use the saved page width/height. Do not overlay pixel coordinates directly on a differently oriented or sized source image. The existing OpenAI observation overlay is separate; the NN property list is exposed for frontend integration, not silently converted to OpenAI observations. Chat receives detected counts and bounded candidate metadata, attributes them as predictions and reports incomplete page coverage. Full geometries and raw responses remain in MongoDB. Detection context is capped to leave room within MongoDB’s document limit.
 
+After all geometry pages are saved, the server renders two 1200×800 PNG session covers directly from recognized room Polygon/MultiPolygon outlines, including holes. The light cover has a pure white background; the dark cover has a pure black background. Both use stable class colors and contain no drawing raster, labels, fixtures or room fills. Multi-page plans are arranged in a grid. PNGs live in Atlas GridFS; `drawing.covers` stores `lightFileId` and `darkFileId`. Session cards load the matching theme through the owner-authenticated `GET /api/drawings/:id/covers/:theme` route. Legacy scans without covers remain readable. Retrying detection for a completed page can create missing covers from saved geometry without calling inference again; existing covers are reused. Cover failures preserve successful detection results.
+
 ## Canvas workspace
 
 Drawings open in a tldraw viewer on the left and the existing chat on the right,

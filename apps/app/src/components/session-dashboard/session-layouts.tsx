@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Plus, ChevronDown, FileText, Upload, ScanLine, GridIcon, Check, ArrowUpRight } from '@repo/design-system/lib/icons-remix';
 import { Button } from '@repo/design-system/components/ui/button';
 import { AppHeader } from '@/components/app-header';
@@ -19,6 +19,7 @@ type PreviewSession = {
     createdAt?: string;
     documentCount?: number;
     uploadProgress?: number;
+    cover?: ReactNode;
 };
 const sortLabels = ['Recently added', 'Name A–Z', 'Name Z–A', 'Document count'];
 export const layoutDirections = [
@@ -208,7 +209,7 @@ export function SessionLayouts({
                         {ordered.map((s, i) => (
                             <button className="sl-card" key={s.id} onClick={() => onOpen(s)}>
                                 <div className="sl-image">
-                                    {sample ? <Thumbnail index={i} /> : <FileText size={48} aria-label="Drawing document" />}
+                                    {sample ? <Thumbnail index={i} /> : (s.cover ?? <FileText size={48} aria-label="Drawing document" />)}
                                     {variant === 3 && <span className="sl-sheet-number">A / {String(i + 1).padStart(2, '0')}</span>}
                                 </div>
                                 <div className="sl-card-copy">
