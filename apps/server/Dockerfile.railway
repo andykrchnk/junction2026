@@ -10,9 +10,12 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @repo/server build
 
 FROM oven/bun:1.2.22 AS runner
-WORKDIR /app
+WORKDIR /app/apps/server
 ENV NODE_ENV=production
-COPY --from=builder --chown=bun:bun /app/apps/server/dist/index.js ./index.js
+# Keep external native modules, PDF.js worker/fonts and pnpm symlink targets at their build-time paths.
+COPY --from=builder --chown=bun:bun /app/node_modules /app/node_modules
+COPY --from=builder --chown=bun:bun /app/apps/server/node_modules /app/apps/server/node_modules
+COPY --from=builder --chown=bun:bun /app/apps/server/dist/index.js ./dist/index.js
 USER bun
 EXPOSE 8080
-CMD ["bun", "index.js"]
+CMD ["bun", "dist/index.js"]

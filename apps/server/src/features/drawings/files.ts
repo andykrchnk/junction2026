@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { bodyLimit } from 'hono/body-limit';
 import { GridFSBucket, ObjectId } from 'mongodb';
 import { fileTypeFromBuffer } from 'file-type';
@@ -76,6 +77,22 @@ drawingFiles.get('/:id/file', async (c) => {
     for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(attachment.id))) chunks.push(Buffer.from(chunk));
     c.header('Content-Type', attachment.mediaType);
     c.header('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(attachment.name)}`);
+    c.header('Cache-Control', 'private, no-store');
+    return c.body(Buffer.concat(chunks));
+});
+
+// Geometry coordinates refer to this exact oriented/rasterized image, not the source file's raw pixels.
+drawingFiles.get('/:id/predictions/:page/image', async (c) => {
+    const id = MongoIdZod.safeParse(c.req.param('id'));
+    const page = z.coerce.number().int().positive().safeParse(c.req.param('page'));
+    if (!id.success || !page.success) return c.json({ message: 'Prediction page not found.' }, 404);
+    const doc = await db.drawing.DrawingModel.findOne({ _id: id.data, ownerId: c.get('user')?.id }).lean();
+    if (!doc) return c.json({ message: 'Prediction page not found.' }, 404);
+    const raster = db.drawing.DrawingDto(doc).detection?.pages.find((item) => item.page === page.data);
+    if (!raster) return c.json({ message: 'Prediction page not found.' }, 404);
+    const chunks: Buffer[] = [];
+    for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(raster.rasterFileId))) chunks.push(Buffer.from(chunk));
+    c.header('Content-Type', 'image/png');
     c.header('Cache-Control', 'private, no-store');
     return c.body(Buffer.concat(chunks));
 });
