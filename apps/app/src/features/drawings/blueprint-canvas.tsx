@@ -1,3 +1,4 @@
+import { layoutPages } from './layout';
 import { useEffect, useState, useId, useRef } from 'react';
 import { useUnit } from 'effector-react';
 import { useTheme } from 'next-themes';
@@ -70,7 +71,7 @@ async function preparePages(drawing: Drawing): Promise<BlueprintPage[]> {
     const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/file`);
     if (!response.ok) throw new Error('Could not load the blueprint. Try opening it again.');
     const blob = await response.blob();
-    if (drawing.attachment?.mediaType !== 'application/pdf') {
+    if (drawing.blueprints[0]?.attachment.mediaType !== 'application/pdf') {
         const bitmap = await createImageBitmap(blob);
         const page = { src: URL.createObjectURL(blob), width: bitmap.width, height: bitmap.height };
         bitmap.close();
@@ -248,7 +249,7 @@ function CanvasEditor({
                 editor.updatePage({ id: firstPage, name: 'Blueprint' });
                 let offset = 0;
                 pages.forEach((page, index) => {
-                    const assetId = AssetRecordType.createId(`blueprint-${drawing.attachment?.id}-${index + 1}`);
+                    const assetId = AssetRecordType.createId(`blueprint-${drawing.blueprints[0]?.attachment.id}-${index + 1}`);
                     editor.createAssets([
                         {
                             id: assetId,
@@ -383,7 +384,7 @@ function CanvasEditor({
                             element &&
                             Number.isInteger(index) &&
                             index >= 0 &&
-                            drawing.detection?.pages.find((item) => item.page === page)?.detectedProperties[index]
+                            layoutPages(drawing.blueprints).find((item) => item.page === page)?.detectedProperties[index]
                                 ? { page, index }
                                 : null;
                         selectionGesture.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false, object };
@@ -392,7 +393,8 @@ function CanvasEditor({
                     event.preventDefault();
                     event.stopPropagation();
                     const point = activeEditor.screenToPage({ x: event.clientX, y: event.clientY });
-                    const hit = Array.from({ length: drawing.attachment?.pages ?? 0 }, (_, index) => index + 1)
+                    const hit = drawing.blueprints
+                        .map((blueprint) => blueprint.pageNumber)
                         .flatMap((page) => {
                             const shape = activeEditor.getShape(createShapeId(`blueprint-${page}`));
                             if (!shape || shape.type !== 'image') return [];
@@ -520,9 +522,9 @@ function EmptyBlueprintCanvas({ locked }: Readonly<{ locked: boolean }>) {
 }
 
 export default function BlueprintCanvas(props: Readonly<{ drawing: Drawing; userId: string }>) {
-    return props.drawing.attachment && !props.drawing.attachment.hiddenFromCanvas ? (
+    return props.drawing.blueprints.some((blueprint) => !blueprint.attachment.hiddenFromCanvas) ? (
         <SavedBlueprintCanvas {...props} />
     ) : (
-        <EmptyBlueprintCanvas locked={!props.drawing.attachment} />
+        <EmptyBlueprintCanvas locked={!props.drawing.blueprints.length} />
     );
 }

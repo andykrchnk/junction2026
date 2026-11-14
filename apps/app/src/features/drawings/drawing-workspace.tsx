@@ -20,7 +20,8 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         ...trpc.drawings.get.queryOptions({ id }),
         enabled: !previewDrawing,
         initialData: previewDrawing,
-        refetchInterval: (query) => (query.state.data?.detection?.status === 'processing' ? 2000 : false),
+        refetchInterval: (query) =>
+            query.state.data?.busy || query.state.data?.blueprints.some((blueprint) => blueprint.status.type === 'processing') ? 2000 : false,
     });
     const [localFile, setLocalFile] = useState<File | null>(null);
     const [localUrl, setLocalUrl] = useState('');
@@ -45,7 +46,7 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         multiple: false,
         minSize: 1,
         maxSize: MAX_FILE_BYTES,
-        disabled: uploading || Boolean(drawing?.attachment),
+        disabled: uploading || Boolean(drawing?.blueprints.length),
         noClick: true,
         noKeyboard: true,
         onDropAccepted: (files) => {
@@ -76,7 +77,7 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
             <BlueprintCanvas drawing={drawing} userId={userId} />
         </Suspense>
     );
-    const uploadOverlay = !drawing.attachment && (
+    const uploadOverlay = !drawing.blueprints.length && (
         <div className="pointer-events-none flex h-full items-center justify-center p-8 text-center">
             {localUrl ? (
                 <div className="pointer-events-auto flex h-full w-full flex-col gap-3">

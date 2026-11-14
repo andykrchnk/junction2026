@@ -1,11 +1,12 @@
 import { Agent, run, setTracingDisabled, user } from '@openai/agents';
-import { PpmCandidatesZod, type Drawing, type PpmCandidates } from '@repo/types';
+import { PpmCandidatesZod, type Blueprint, type PpmCandidates } from '@repo/types';
 import { z } from 'zod';
 import { config } from '../../shared/config';
+import { layoutProperties } from '../../db/drawing.schema';
 
 type EstimatePpmParams = {
     pages: ReadonlyArray<Readonly<{ page: number; width: number; height: number; bytes: Buffer }>>;
-    detection: Drawing['detection'];
+    blueprint: Blueprint;
     signal: AbortSignal;
 };
 
@@ -18,11 +19,12 @@ setTracingDisabled(true);
 export async function estimatePpm(params: EstimatePpmParams): Promise<PpmCandidates> {
     if (params.pages.length === 0) return [];
     const detectorContext = {
-        status: params.detection?.status ?? null,
+        layoutAvailable: params.blueprint.layout !== null,
         suppliedPages: params.pages.map((page) => {
-            const detected = params.detection?.pages.find((candidate) => candidate.page === page.page);
-            const matchesRaster = detected?.width === page.width && detected.height === page.height;
-            const rooms = matchesRaster ? (detected?.detectedProperties.filter((property) => property.type === 'room') ?? []) : [];
+            const raster = params.blueprint.raster;
+            const matchesRaster = params.blueprint.pageNumber === page.page && raster?.width === page.width && raster.height === page.height;
+            const rooms =
+                matchesRaster && params.blueprint.layout ? layoutProperties(params.blueprint.layout).filter((property) => property.type === 'room') : [];
             return {
                 page: page.page,
                 width: page.width,

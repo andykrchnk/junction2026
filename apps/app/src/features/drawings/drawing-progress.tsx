@@ -1,6 +1,7 @@
 import type { Drawing } from '@repo/types';
 import { useState } from 'react';
 import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
+import { Button } from '@repo/design-system/components/ui/button';
 import {
     Trace,
     TraceLine,
@@ -11,56 +12,70 @@ import {
     TraceCollapsibleContent,
 } from '@repo/design-system/components/ui/trace';
 
-export function DrawingProgress({ drawing, busy, stage }: Readonly<{ drawing: Drawing; busy: boolean; stage?: string }>) {
+const stageLabels = {
+    inference: 'Detecting rooms and fixtures',
+    misc: 'Reading drawing notes',
+    entities: 'Describing rooms and fixtures',
+    ppm: 'Estimating scale',
+};
+
+export function DrawingProgress({ drawing, busy, stage, onRetry }: Readonly<{ drawing: Drawing; busy: boolean; stage?: string; onRetry?: () => void }>) {
     const [open, setOpen] = useState<boolean>();
-    const uploaded = Boolean(drawing.attachment);
-    const analyzed = Boolean(drawing.analysis);
-    const detection = drawing.detection;
-    const detected = detection?.status === 'ready';
-    const detecting = !detected && !analyzed && detection?.status === 'processing';
-    const reviewing = busy && uploaded && !analyzed && detected;
-    const detectionNotice =
-        detection?.status === 'failed'
-            ? `Object detection failed. Blueprint review is paused. ${detection.error ?? 'Retry detection to continue.'}`
-            : detection?.status === 'not_configured'
-              ? 'Object detection is unavailable. Blueprint review is paused until detection is configured.'
-              : detection?.status === 'partial'
-                ? `Only some pages have detection results. Blueprint review is paused. ${detection.error ?? 'Retry detection to cover all pages.'}`
-                : analyzed && !detected
-                  ? 'Complete object detection results were not saved for this analysis.'
-                  : null;
-
-    if (!uploaded && !busy) return null;
-
+    const blueprints = drawing.blueprints;
+    const ready = blueprints.length > 0 && blueprints.every((blueprint) => blueprint.status.type === 'ready');
+    if (!drawing.blueprints.length && !busy) return null;
     return (
         <div className="space-y-2" aria-label="Blueprint preparation progress">
             <Trace>
-                <TraceCollapsible open={open ?? (busy && !analyzed)} onOpenChange={setOpen}>
+                <TraceCollapsible open={open ?? (busy && !ready)} onOpenChange={setOpen}>
                     <TraceCollapsibleTrigger>
-                        <TraceLine status={busy && !analyzed ? 'running' : undefined}>
+                        <TraceLine status={busy && !ready ? 'running' : undefined}>
                             <TraceIcon>
                                 <BrandLogo iconOnly className="!h-4" />
                             </TraceIcon>
-                            <TraceTitle>{analyzed ? 'Blueprint analysis saved' : busy ? (stage ?? 'Preparing your blueprint') : 'Analysis paused'}</TraceTitle>
+                            <TraceTitle>{ready ? 'Blueprint context saved' : busy ? (stage ?? 'Preparing your blueprint') : 'Analysis paused'}</TraceTitle>
                         </TraceLine>
                     </TraceCollapsibleTrigger>
-                    <TraceCollapsibleContent className="space-y-2 text-sm">
-                        <TraceLine status={uploaded ? undefined : busy ? 'running' : 'pending'}>
-                            <TraceTitle>{uploaded ? 'Blueprint uploaded' : 'Uploading blueprint'}</TraceTitle>
-                        </TraceLine>
-                        <TraceLine status={detected ? undefined : detecting && busy ? 'running' : 'pending'}>
-                            <TraceTitle>{detected ? 'Rooms and objects detected' : 'Detecting rooms and objects'}</TraceTitle>
-                        </TraceLine>
-                        {detectionNotice && <p className="px-2 py-1 text-xs text-muted-foreground">{detectionNotice}</p>}
-                        <TraceLine status={analyzed ? undefined : reviewing ? 'running' : 'pending'}>
-                            <TraceTitle>{analyzed ? 'Blueprint review saved' : 'Reviewing blueprint'}</TraceTitle>
-                        </TraceLine>
-                        {!busy && !analyzed && (
-                            <p className="px-2 py-1 text-xs text-muted-foreground">Analysis is paused. Start or retry analysis to continue.</p>
-                        )}
+                    <TraceCollapsibleContent className="space-y-3 text-sm">
+                        {blueprints.map((blueprint) => {
+                            const entities = [...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? [])];
+                            const complete = entities.filter((entity) => entity.enrichment.type === 'complete').length;
+                            const error = blueprint.status.type === 'partial' || blueprint.status.type === 'failed' ? blueprint.status.error : null;
+                            return (
+                                <div key={blueprint.id} className="space-y-1">
+                                    <TraceLine
+                                        status={blueprint.status.type === 'ready' ? undefined : blueprint.status.type === 'processing' ? 'running' : 'pending'}
+                                    >
+                                        <TraceTitle>
+                                            Sheet {blueprint.pageNumber} ·{' '}
+                                            {blueprint.status.type === 'ready'
+                                                ? 'Context saved'
+                                                : blueprint.status.type === 'uploaded'
+                                                  ? 'Waiting for analysis'
+                                                  : blueprint.status.type === 'not_configured'
+                                                    ? 'Inference unavailable'
+                                                    : stageLabels[blueprint.status.stage]}
+                                        </TraceTitle>
+                                    </TraceLine>
+                                    <p className="px-2 text-xs text-muted-foreground">
+                                        {blueprint.layout
+                                            ? `${complete} / ${entities.length} detected objects described`
+                                            : 'Waiting for room and fixture detection'}{' '}
+                                        · {blueprint.misc === null ? 'General notes pending' : 'General notes saved'} ·{' '}
+                                        {blueprint.ppm === null ? 'Scale pending' : blueprint.ppm.value ? 'Scale estimated' : 'Scale unresolved'}
+                                    </p>
+                                    {error && <p className="px-2 text-xs text-destructive">{error}</p>}
+                                </div>
+                            );
+                        })}
                     </TraceCollapsibleContent>
                 </TraceCollapsible>
             </Trace>
+            {!busy && !ready && onRetry && (
+                <Button size="sm" variant="ghost" onClick={onRetry}>
+                    Resume analysis
+                </Button>
+            )}
         </div>
     );
 }

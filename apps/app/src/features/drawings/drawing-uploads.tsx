@@ -11,6 +11,7 @@ import { MenuItem } from '@repo/design-system/components/ui/menu-item';
 import { remixIcons } from '@repo/design-system/lib/icons-remix';
 import { DrawingAttachmentThumbnail } from './drawing-upload';
 import { $$drawings } from './model';
+import { BlueprintContext } from './blueprint-context';
 
 const MoreIcon = remixIcons['more-horizontal'];
 
@@ -25,7 +26,7 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
         if (!element) requestAnimationFrame(() => actionsRef.current?.focus());
     }, []);
     const pending = useUnit($$drawings.updateUploadFx.pending);
-    const attachment = drawing.attachment;
+    const attachment = drawing.blueprints[0]?.attachment;
     const update = async (change: Omit<UpdateDrawingUpload, 'id'>) => {
         setError(null);
         try {
@@ -45,6 +46,7 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
     if (!attachment) return <p className="px-3 py-4 text-sm text-muted-foreground">Your uploaded blueprints will appear here.</p>;
     return (
         <div className="space-y-3 px-3 py-4">
+            <BlueprintContext drawing={drawing} />
             <div className="flex items-center gap-2">
                 <div className="min-w-0 flex-1">
                     <DrawingAttachmentThumbnail drawing={drawing} />
@@ -107,12 +109,12 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
                         viewportClassName="max-h-[inherit] overscroll-contain"
                     >
                         <DialogDescription className="whitespace-pre-wrap break-words">
-                            {drawing.ppm ? (
+                            {drawing.blueprints[0]?.ppm ? (
                                 <>
-                                    {drawing.ppm.value !== undefined && (
-                                        <span className="mb-2 block font-medium text-foreground">PPM: {drawing.ppm.value} px/m</span>
+                                    {drawing.blueprints[0]?.ppm.value !== undefined && (
+                                        <span className="mb-2 block font-medium text-foreground">PPM: {drawing.blueprints[0]?.ppm.value} px/m</span>
                                     )}
-                                    {drawing.ppm.message}
+                                    {drawing.blueprints[0]?.ppm.message}
                                 </>
                             ) : drawing.busy && !drawing.error && drawing.status !== 'failed' ? (
                                 'PPM is not available. Drawing processing is in progress.'

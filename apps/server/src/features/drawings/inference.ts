@@ -1,7 +1,8 @@
 import { setTimeout as delay } from 'node:timers/promises';
-import { ProcessingPredictionZod, DetectedPropertyZod } from '@repo/types';
+import { ProcessingPredictionZod } from '@repo/types';
 import type { ProcessingPrediction, DetectedProperty } from '@repo/types';
 import { Env } from '../../shared/env';
+import { layoutProperties } from '../../db/drawing.schema';
 import type { Raster } from './raster';
 import { z } from 'zod';
 
@@ -12,42 +13,6 @@ const ProviderErrorZod = z.object({ code: z.string().optional() });
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 const MAX_BUSY_RETRIES = 2;
 type PredictRasterParams = { raster: Raster; signal: AbortSignal };
-
-function properties(raw: ProcessingPrediction): DetectedProperty[] {
-    return [
-        ...raw.rooms.map((room) => ({ type: 'room' as const, object: room })),
-        ...raw.fixtures.map((fixture) => ({ type: 'icon' as const, object: fixture })),
-    ].map(({ type, object }) => {
-        const polygons = object.geometry.type === 'Polygon' ? [object.geometry.coordinates] : object.geometry.coordinates;
-        const points = polygons.flat(2);
-        const bbox = points.reduce<[number, number, number, number]>(
-            (bounds, [x, y]) => [Math.min(bounds[0], x), Math.min(bounds[1], y), Math.max(bounds[2], x), Math.max(bounds[3], y)],
-            [Infinity, Infinity, -Infinity, -Infinity],
-        );
-        const areaPixels = polygons.reduce(
-            (total, polygon) =>
-                total +
-                polygon.reduce((area, ring, index) => {
-                    const signed = ring.reduce((sum, [x, y], pointIndex) => {
-                        const next = ring[(pointIndex + 1) % ring.length];
-                        return sum + x * next[1] - next[0] * y;
-                    }, 0);
-                    return area + (index === 0 ? 1 : -1) * Math.abs(signed / 2);
-                }, 0),
-            0,
-        );
-        return DetectedPropertyZod.parse({
-            type,
-            label: object.class,
-            geometry: object.geometry,
-            bbox,
-            centroid: null,
-            areaPixels,
-            confidence: object.confidence,
-            scoreMeaning: 'processing_confidence',
-        });
-    });
-}
 
 async function readPrediction(response: Response): Promise<ProcessingPrediction> {
     if (!response.body) throw new Error('The inference service returned an empty response.');
@@ -64,7 +29,9 @@ async function readPrediction(response: Response): Promise<ProcessingPrediction>
     return parsed.data;
 }
 
-export async function predictRaster(params: PredictRasterParams): Promise<{ raw: ProcessingPrediction; detectedProperties: DetectedProperty[] }> {
+export async function predictRaster(
+    params: PredictRasterParams,
+): Promise<{ raw: ProcessingPrediction; detectedProperties: DetectedProperty[]; degraded: string[] }> {
     if (!Env.INFERENCE_BASE_URL || !Env.INFERENCE_API_KEY) throw new Error('The inference service is not configured.');
     const signal = AbortSignal.any([params.signal, AbortSignal.timeout(Env.INFERENCE_TIMEOUT_MS)]);
     const url = new URL('/v1/process', Env.INFERENCE_BASE_URL);
@@ -92,7 +59,11 @@ export async function predictRaster(params: PredictRasterParams): Promise<{ raw:
             if (raw.image.width !== params.raster.width || raw.image.height !== params.raster.height) {
                 throw new Error('The inference response dimensions do not match the uploaded page.');
             }
-            return { raw, detectedProperties: properties(raw) };
+            const degraded = (response.headers.get('X-Processing-Degraded') ?? '')
+                .split(',')
+                .map((stage) => stage.trim())
+                .filter((stage) => ['ocr', 'gemini', 'verification_limit'].includes(stage));
+            return { raw, detectedProperties: layoutProperties(raw), degraded };
         }
         throw new Error('The inference service is busy. Retry detection shortly.');
     } catch (cause) {

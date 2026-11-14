@@ -1,3 +1,4 @@
+import { layoutPages } from './layout';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
@@ -34,14 +35,17 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
         ...trpc.drawings.get.queryOptions({ id }),
         enabled: !previewDrawing,
         initialData: previewDrawing,
-        refetchInterval: (query) => (query.state.data?.busy || query.state.data?.detection?.status === 'processing' || (activity[id] ?? 0) > 0 ? 2000 : false),
+        refetchInterval: (query) =>
+            query.state.data?.busy || query.state.data?.blueprints.some((blueprint) => blueprint.status.type === 'processing') || (activity[id] ?? 0) > 0
+                ? 2000
+                : false,
     });
     const [tab, setTab] = useState(0);
     const endRef = useRef<HTMLDivElement>(null);
     const submissionsRef = useRef(new Set<string>());
     useEffect(() => {
         endRef.current?.scrollIntoView({ block: 'nearest' });
-    }, [drawing?.messages.length, drawing?.messages.at(-1)?.answer, drawing?.analysis, outgoing[id]]);
+    }, [drawing?.messages.length, drawing?.messages.at(-1)?.answer, drawing?.blueprints, outgoing[id]]);
     if (isPending)
         return (
             <p role="status" className="p-4 text-sm text-muted-foreground">
@@ -65,7 +69,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
     const clarificationId = latestMessage?.id ?? 'clarification';
     const visibleError = error?.id === id ? error.message : drawing.error;
     const ask = (message: Drawing['messages'][number]) => {
-        if (!drawing.attachment || busy || asking || submissionsRef.current.has(id)) return;
+        if (!drawing.blueprints.length || busy || asking || submissionsRef.current.has(id)) return;
         submissionsRef.current.add(id);
         void $$drawings
             .askFx({ id, message })
@@ -91,10 +95,24 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                 <div hidden={tab !== 0} className="min-h-0 flex-1 flex-col overflow-hidden" style={{ display: tab === 0 ? 'flex' : 'none' }}>
                     <div role="log" aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto p-4">
                         <div className="flex min-h-full flex-col justify-end gap-5">
-                            <DrawingProgress drawing={drawing} busy={busy} stage={stages[id]} />
-                            {drawing.analysis && (
+                            <DrawingProgress
+                                drawing={drawing}
+                                busy={busy}
+                                stage={stages[id]}
+                                onRetry={
+                                    previewDrawing
+                                        ? undefined
+                                        : () => {
+                                              void $$drawings.analyzeFx(id).catch(() => {});
+                                          }
+                                }
+                            />
+                            {drawing.blueprints.some((blueprint) => blueprint.layout?.summary) && (
                                 <ChatMessage from="assistant" className="w-full max-w-full">
-                                    {drawing.analysis.summary}
+                                    {drawing.blueprints
+                                        .map((blueprint) => blueprint.layout?.summary)
+                                        .filter(Boolean)
+                                        .join('\n')}
                                 </ChatMessage>
                             )}
                             <AnimatePresence initial={false}>
@@ -108,6 +126,35 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                                                 <p className="text-muted-foreground mb-2 text-xs font-medium">Cannot determine from available information</p>
                                             )}
                                             {message.answer.text}
+                                            {!!message.answer.references?.length && (
+                                                <div className="mt-3 flex flex-wrap gap-2" aria-label="Supporting drawing objects">
+                                                    {message.answer.references.map((reference, index) => {
+                                                        const blueprint = drawing.blueprints.find((item) => item.id === reference.blueprintId);
+                                                        const page = layoutPages(drawing.blueprints).find((item) => item.page === blueprint?.pageNumber);
+                                                        const propertyIndex =
+                                                            page?.detectedProperties.findIndex((item) => item.id === reference.entityId) ?? -1;
+                                                        if (!blueprint) return null;
+                                                        if (!page || propertyIndex < 0)
+                                                            return (
+                                                                <span key={index} className="text-xs text-muted-foreground">
+                                                                    Sheet {blueprint.pageNumber}
+                                                                </span>
+                                                            );
+                                                        return (
+                                                            <Button
+                                                                key={index}
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() =>
+                                                                    $$drawings.canvasSelectionRequested({ id, page: page.page, index: propertyIndex })
+                                                                }
+                                                            >
+                                                                Sheet {blueprint.pageNumber} · {page.detectedProperties[propertyIndex].label}
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                             {message.answer.status === 'needs_clarification' &&
                                                 message.answer.clarificationQuestion &&
                                                 message.id !== (clarification ? latestMessage?.id : null) && (
@@ -130,7 +177,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                                     ) : null,
                                 ])}
                             </AnimatePresence>
-                            {busy && drawing.analysis && <DrawingActivity label={stages[id] ?? 'Reviewing your question'} />}
+                            {busy && drawing.blueprints.length > 0 && <DrawingActivity label={stages[id] ?? 'Reviewing your question'} />}
                             {visibleError && (
                                 <p role="alert" className="text-sm text-destructive">
                                     {visibleError}
@@ -182,7 +229,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                                 sendLabel="Send message"
                                 minRows={1}
                                 maxRows={6}
-                                disabled={!drawing.attachment || busy || !!pending || asking}
+                                disabled={!drawing.blueprints.length || busy || !!pending || asking}
                                 textareaProps={{ 'aria-label': 'Message', maxLength: questionLimit, autoComplete: 'off' }}
                             />
                         )}
