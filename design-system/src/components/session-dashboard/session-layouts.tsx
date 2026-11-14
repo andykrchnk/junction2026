@@ -20,6 +20,23 @@ export const layoutDirections = [
     { name: 'Drawing sheets', short: 'Sheets', note: 'Portrait drawing previews with an architectural caption.' },
     { name: 'Wide library', short: 'Wide', note: 'Two wide previews with room for session context.' },
 ];
+function SessionDate({ value }: Readonly<{ value?: string }>) {
+    return value ? (
+        <time dateTime={value}>
+            {new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(value))}
+        </time>
+    ) : (
+        <>—</>
+    );
+}
+function SessionStatus({ status }: Readonly<{ status: string }>) {
+    return (
+        <div className="sl-status-cell">
+            <span className={`sl-table-status ${status === 'Ready' ? 'is-ready' : 'needs-review'}`}>{status}</span>
+            {(status === 'Uploading' || status === 'Analyzing') && <Progress value={null} aria-label={status} className="sl-status-progress" />}
+        </div>
+    );
+}
 function Thumbnail({ index }: Readonly<{ index: number }>) {
     const shift = index % 3;
     return (
@@ -167,26 +184,10 @@ export function SessionLayouts({
                                             </button>
                                         </TableCell>
                                         <TableCell>
-                                            {s.createdAt ? (
-                                                <time dateTime={s.createdAt}>
-                                                    {new Intl.DateTimeFormat('en-GB', {
-                                                        day: 'numeric',
-                                                        month: 'short',
-                                                        year: 'numeric',
-                                                        timeZone: 'UTC',
-                                                    }).format(new Date(s.createdAt))}
-                                                </time>
-                                            ) : (
-                                                '—'
-                                            )}
+                                            <SessionDate value={s.createdAt} />
                                         </TableCell>
                                         <TableCell>
-                                            <div className="sl-status-cell">
-                                                <span className={`sl-table-status ${s.status === 'Ready' ? 'is-ready' : 'needs-review'}`}>{s.status}</span>
-                                                {(s.status === 'Uploading' || s.status === 'Analyzing') && (
-                                                    <Progress value={null} aria-label={s.status} className="sl-status-progress" />
-                                                )}
-                                            </div>
+                                            <SessionStatus status={s.status} />
                                         </TableCell>
                                         <TableCell>{s.documentCount ?? '—'}</TableCell>
                                     </TableRow>
@@ -207,13 +208,14 @@ export function SessionLayouts({
                                         <h2>{s.name}</h2>
                                         <ArrowUpRight size={15} />
                                     </div>
-                                    <p>{s.file}</p>
+                                    <p>
+                                        Created <SessionDate value={s.createdAt} />
+                                    </p>
                                     <div className="sl-card-meta">
-                                        <span>
-                                            <i className={s.status === 'Ready' ? '' : 'sl-review-dot'} />
-                                            {s.status}
+                                        <SessionStatus status={s.status} />
+                                        <span className="sl-document-count">
+                                            {s.documentCount ?? '—'} {s.documentCount === 1 ? 'document' : 'documents'}
                                         </span>
-                                        {s.rooms !== undefined && <span>{s.rooms} rooms</span>}
                                     </div>
                                 </div>
                             </button>
