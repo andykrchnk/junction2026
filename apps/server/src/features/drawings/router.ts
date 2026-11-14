@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { ObjectId } from 'mongodb';
-import { AskDrawingZod, DrawingIdZod, DrawingSummaryZod, DrawingZod } from '@repo/types';
+import { AskDrawingZod, DrawingIdZod, DrawingSummaryZod, DrawingZod, CanvasStateZod, SaveCanvasZod } from '@repo/types';
 import type { Drawing } from '@repo/types';
 import { db } from '../../db';
 import { protectedProcedure, t } from '../../shared/trpc';
@@ -10,7 +10,7 @@ import { blueprintFiles } from './files';
 import { analyze, answer } from './agent';
 
 export async function getDrawing(id: string, ownerId: string) {
-    const doc = await db.drawing.DrawingModel.findOne({ _id: id, ownerId }).lean();
+    const doc = await db.drawing.DrawingModel.findOne({ _id: id, ownerId }).select('-canvasDocument -canvasRevision').lean();
     if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Drawing not found.' });
     return db.drawing.DrawingDto(doc);
 }
@@ -51,8 +51,40 @@ async function processDrawing(
 }
 
 export const drawingRouter = t.router({
+    getCanvas: protectedProcedure
+        .input(DrawingIdZod)
+        .output(CanvasStateZod)
+        .query(async ({ input, ctx }) => {
+            const doc = await db.drawing.DrawingModel.findOne({ _id: input.id, ownerId: ctx.user.id }).select('canvasDocument canvasRevision').lean();
+            if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Drawing not found.' });
+            return CanvasStateZod.parse({ document: doc.canvasDocument ?? null, revision: doc.canvasRevision ?? 0 });
+        }),
+    saveCanvas: protectedProcedure
+        .input(SaveCanvasZod)
+        .output(CanvasStateZod)
+        .mutation(async ({ input, ctx }) => {
+            const doc = await db.drawing.DrawingModel.findOneAndUpdate(
+                {
+                    _id: input.id,
+                    ownerId: ctx.user.id,
+                    ...(input.revision === 0 ? { $or: [{ canvasRevision: 0 }, { canvasRevision: { $exists: false } }] } : { canvasRevision: input.revision }),
+                },
+                { $set: { canvasDocument: input.document }, $inc: { canvasRevision: 1 } },
+                { returnDocument: 'after' },
+            )
+                .select('canvasDocument canvasRevision')
+                .lean();
+            if (!doc) {
+                await getDrawing(input.id, ctx.user.id);
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'This canvas was updated in another tab. Your local recovery copy is retained. Reopen the drawing to load the latest version.',
+                });
+            }
+            return CanvasStateZod.parse({ document: doc.canvasDocument, revision: doc.canvasRevision });
+        }),
     list: protectedProcedure.output(z.array(DrawingSummaryZod)).query(async ({ ctx }) => {
-        const docs = await db.drawing.DrawingModel.find({ ownerId: ctx.user.id }).sort({ updatedAt: -1 }).lean();
+        const docs = await db.drawing.DrawingModel.find({ ownerId: ctx.user.id }).select('-canvasDocument -canvasRevision').sort({ updatedAt: -1 }).lean();
         return docs.map(db.drawing.DrawingDto);
     }),
     create: protectedProcedure.output(DrawingZod).mutation(async ({ ctx }) => {

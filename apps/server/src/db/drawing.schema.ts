@@ -13,6 +13,8 @@ const schema = new mongoose.Schema(
         lease: { type: String, default: null },
         leaseUntil: { type: Date, default: null },
         error: { type: String, default: null },
+        canvasDocument: { type: String, default: null },
+        canvasRevision: { type: Number, default: 0 },
     },
     { timestamps: true, versionKey: false, bufferCommands: false },
 );
