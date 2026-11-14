@@ -1,8 +1,8 @@
 import type { Drawing } from '@repo/types';
-import { ThinkingIndicator } from '@repo/design-system/components/ui/thinking-indicator';
+import { DrawingActivity } from './drawing-activity';
 import { ThinkingStep, ThinkingSteps, ThinkingStepsContent, ThinkingStepsHeader } from '@repo/design-system/components/ui/thinking-steps';
 
-export function DrawingProgress({ drawing, busy }: Readonly<{ drawing: Drawing; busy: boolean }>) {
+export function DrawingProgress({ drawing, busy, stage }: Readonly<{ drawing: Drawing; busy: boolean; stage?: string }>) {
     const uploaded = Boolean(drawing.attachment);
     const analyzed = Boolean(drawing.analysis);
     const detection = drawing.detection;
@@ -24,7 +24,7 @@ export function DrawingProgress({ drawing, busy }: Readonly<{ drawing: Drawing; 
 
     return (
         <div className="space-y-2" aria-label="Blueprint preparation progress">
-            {busy && !analyzed && <ThinkingIndicator aria-label="Processing blueprint" />}
+            {busy && !analyzed && <DrawingActivity label={stage ?? (uploaded ? 'Analyzing blueprint' : 'Uploading blueprint')} />}
             <ThinkingSteps className="w-full" defaultOpen={!analyzed}>
                 <ThinkingStepsHeader>{analyzed ? 'Blueprint analysis saved' : busy ? 'Preparing your blueprint' : 'Analysis paused'}</ThinkingStepsHeader>
                 <ThinkingStepsContent>

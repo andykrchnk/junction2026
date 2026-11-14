@@ -88,7 +88,7 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                     )}
                 </div>
             ) : (
-                <div className="pointer-events-auto max-w-sm">
+                <div className="pointer-events-auto w-full max-w-sm border bg-card p-8 text-card-foreground">
                     <FileText size={48} className="mx-auto mb-6 text-muted-foreground" aria-hidden />
                     <h2 className="text-xl font-medium">Upload your first blueprint</h2>
                     <p className="mt-3 text-sm text-muted-foreground">Drop a floor plan here, or choose a file to get started.</p>

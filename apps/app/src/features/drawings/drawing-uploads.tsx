@@ -27,9 +27,9 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
             setError(cause instanceof Error ? cause.message : 'Could not update upload.');
         }
     };
-    if (!attachment) return <p className="p-4 text-sm text-muted-foreground">Your uploaded blueprints will appear here.</p>;
+    if (!attachment) return <p className="px-3 py-4 text-sm text-muted-foreground">Your uploaded blueprints will appear here.</p>;
     return (
-        <div className="space-y-3 p-4">
+        <div className="space-y-3 px-3 py-4">
             <div className="flex items-center gap-2">
                 <div className="min-w-0 flex-1">
                     <DrawingAttachmentThumbnail drawing={drawing} />
@@ -37,7 +37,7 @@ export function DrawingUploads({ drawing, preview }: Readonly<{ drawing: Drawing
                 <DropdownMenu open={open} onOpenChange={setOpen}>
                     <DropdownTrigger
                         render={
-                            <Button variant="ghost" size="icon" aria-label="Upload actions" disabled={pending || preview}>
+                            <Button variant="ghost" size="icon" className="-mr-2.5" aria-label="Upload actions" disabled={pending || preview}>
                                 <MoreIcon />
                             </Button>
                         }

@@ -12,13 +12,15 @@ import { $$drawings } from './model';
 import { DrawingUploads } from './drawing-uploads';
 import { remixIcons, FileStack } from '@repo/design-system/lib/icons-remix';
 import { Tabs, TabsItem } from '@repo/design-system/components/ui/tabs';
-import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
+import { DrawingActivity } from './drawing-activity';
 import { DrawingProgress } from './drawing-progress';
 
 const questionLimit = 4000;
 
 export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previewDrawing?: Drawing }>) {
-    const { draft, error, activity, asking } = useUnit({
+    const { draft, error, activity, asking, outgoing, stages } = useUnit({
+        outgoing: $$drawings.$outgoing,
+        stages: $$drawings.$stages,
         draft: $$drawings.$draft,
         error: $$drawings.$error,
         activity: $$drawings.$activity,
@@ -39,7 +41,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
     const submissionsRef = useRef(new Set<string>());
     useEffect(() => {
         endRef.current?.scrollIntoView({ block: 'nearest' });
-    }, [drawing?.messages.length, drawing?.messages.at(-1)?.answer, drawing?.analysis]);
+    }, [drawing?.messages.length, drawing?.messages.at(-1)?.answer, drawing?.analysis, outgoing[id]]);
     if (isPending)
         return (
             <p role="status" className="p-4 text-sm text-muted-foreground">
@@ -54,8 +56,10 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
         );
 
     const busy = drawing.busy || (activity[id] ?? 0) > 0;
-    const pending = drawing.messages.find((message) => !message.answer);
-    const latestMessage = drawing.messages.at(-1);
+    const optimistic = outgoing[id];
+    const messages = optimistic && !drawing.messages.some((message) => message.id === optimistic.id) ? [...drawing.messages, optimistic] : drawing.messages;
+    const pending = messages.find((message) => !message.answer);
+    const latestMessage = messages.at(-1);
     const answer = latestMessage?.answer;
     const clarification = !pending && answer?.status === 'needs_clarification' ? answer.clarificationQuestion : null;
     const clarificationId = latestMessage?.id ?? 'clarification';
@@ -77,24 +81,24 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
     return (
         <MotionConfig reducedMotion="user">
             <section aria-label="Drawing chat" className="flex h-full min-h-0 flex-col">
-                <Tabs selectedIndex={tab} onSelect={setTab} className="shrink-0 border-b p-0">
-                    <TabsItem index={0} label="Chat" icon={remixIcons['message-circle']} />
-                    <TabsItem index={1} label="Uploads" icon={FileStack} />
+                <Tabs selectedIndex={tab} onSelect={setTab} className="z-10 m-0 max-w-full shrink-0 border-b bg-card p-0">
+                    <TabsItem index={0} label="Chat" icon={remixIcons['message-circle']} className="h-10 w-20 items-center justify-center px-3 py-2" />
+                    <TabsItem index={1} label="Uploads" icon={FileStack} className="h-10 items-center justify-center px-3 py-2" />
                 </Tabs>
                 <div hidden={tab !== 1} className="min-h-0 flex-1 overflow-y-auto">
                     <DrawingUploads drawing={drawing} preview={!!previewDrawing} />
                 </div>
-                <div hidden={tab !== 0} className="min-h-0 flex-1 flex-col" style={{ display: tab === 0 ? 'flex' : 'none' }}>
+                <div hidden={tab !== 0} className="min-h-0 flex-1 flex-col overflow-hidden" style={{ display: tab === 0 ? 'flex' : 'none' }}>
                     <div role="log" aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto p-4">
                         <div className="flex min-h-full flex-col justify-end gap-5">
-                            <DrawingProgress drawing={drawing} busy={busy} />
+                            <DrawingProgress drawing={drawing} busy={busy} stage={stages[id]} />
                             {drawing.analysis && (
                                 <ChatMessage from="assistant" className="w-full max-w-full">
                                     {drawing.analysis.summary}
                                 </ChatMessage>
                             )}
                             <AnimatePresence initial={false}>
-                                {drawing.messages.flatMap((message) => [
+                                {messages.flatMap((message) => [
                                     <ChatMessage key={`${message.id}-user`} from="user">
                                         {message.question}
                                     </ChatMessage>,
@@ -126,12 +130,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                                     ) : null,
                                 ])}
                             </AnimatePresence>
-                            {busy && (
-                                <div role="status" className="flex items-center gap-2">
-                                    <BrandLogo iconOnly className="!h-5 motion-safe:animate-pulse" />
-                                    <span className="text-sm text-muted-foreground">Pirto is thinking…</span>
-                                </div>
-                            )}
+                            {busy && drawing.analysis && <DrawingActivity label={stages[id] ?? 'Reviewing your question'} />}
                             {visibleError && (
                                 <p role="alert" className="text-sm text-destructive">
                                     {visibleError}
@@ -151,13 +150,14 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                                 <legend className="text-primary mb-2 text-xs font-medium">More information needed</legend>
                                 <AskUserQuestions
                                     key={clarificationId}
+                                    className="chat-clarification-input bg-[var(--chat-input-background)]"
                                     aria-label="Reply to the clarification"
                                     questions={[
                                         {
                                             id: clarificationId,
                                             title: clarification,
                                             freeText: true,
-                                            freeTextPlaceholder: 'Provide the missing detail, or ask another question…',
+                                            freeTextPlaceholder: 'Type your reply…',
                                             freeTextValidate: (value) => (value.length > questionLimit ? 'Use up to 4,000 characters.' : null),
                                             skippable: false,
                                             nextLabel: 'Send reply',
@@ -171,7 +171,6 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                             </fieldset>
                         ) : (
                             <InputMessage
-                                style={{ backgroundColor: 'light-dark(#f4f4f4, #303030)' }}
                                 value={draft}
                                 onValueChange={$$drawings.draftChanged}
                                 onSend={(question, files) => {

@@ -442,7 +442,7 @@ function SavedBlueprintCanvas({ drawing, userId }: Readonly<{ drawing: Drawing; 
     return <CanvasEditor key={drawing.id} drawing={drawing} model={model} storageKey={storageKey} {...preparation} />;
 }
 
-function EmptyBlueprintCanvas() {
+function EmptyBlueprintCanvas({ locked }: Readonly<{ locked: boolean }>) {
     const { resolvedTheme } = useTheme();
     const [editor, setEditor] = useState<Editor | null>(null);
     useEffect(() => {
@@ -454,7 +454,7 @@ function EmptyBlueprintCanvas() {
             components={{ Grid: SquareGrid, Background: CanvasBackground }}
             initialState="hand"
             licenseKey={config.TLDRAW_LICENSE_KEY}
-            options={{ maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
+            options={{ maxPages: 1, camera: { isLocked: locked, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
             onMount={(instance) => {
                 instance.updateInstanceState({ isReadonly: true, isGridMode: true });
                 instance.user.updateUserPreferences({ colorScheme: resolvedTheme === 'dark' ? 'dark' : 'light' });
@@ -467,5 +467,9 @@ function EmptyBlueprintCanvas() {
 }
 
 export default function BlueprintCanvas(props: Readonly<{ drawing: Drawing; userId: string }>) {
-    return props.drawing.attachment && !props.drawing.attachment.hiddenFromCanvas ? <SavedBlueprintCanvas {...props} /> : <EmptyBlueprintCanvas />;
+    return props.drawing.attachment && !props.drawing.attachment.hiddenFromCanvas ? (
+        <SavedBlueprintCanvas {...props} />
+    ) : (
+        <EmptyBlueprintCanvas locked={!props.drawing.attachment} />
+    );
 }
