@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, ChevronDown, ArrowUpRight, FileText } from '@/lib/icons-remix';
+import { Plus, ChevronDown, ArrowUpRight, FileText, LogOut } from '@/lib/icons-remix';
 import { Button } from '../ui/button';
 import { BrandLogo } from '../ui/brand-logo';
 import { DropdownMenu, DropdownTrigger, DropdownContent } from '../ui/dropdown';
@@ -78,7 +78,9 @@ export function SessionLayouts({
                             </Button>
                         }
                     />
-                    <DropdownContent align="end">{onSignOut && <MenuItem index={0} label="Log out" onSelect={onSignOut} />}</DropdownContent>
+                    <DropdownContent align="end">
+                        {onSignOut && <MenuItem index={0} label="Log out" trailingIcon={LogOut} onSelect={onSignOut} />}
+                    </DropdownContent>
                 </DropdownMenu>
             </header>
             <main className="sl-main">

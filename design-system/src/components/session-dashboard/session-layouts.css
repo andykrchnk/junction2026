@@ -15,13 +15,14 @@
     color: var(--foreground) !important;
 }
 .sl-avatar {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--card);
-    font-size: 11px;
+    background: color-mix(in srgb, var(--primary) 50%, transparent);
+    font-size: 14px;
+    font-weight: var(--weight-medium);
     margin-right: 8px;
 }
 .sl-main {

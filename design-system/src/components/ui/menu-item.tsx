@@ -124,6 +124,8 @@ export interface MenuItemProps extends HTMLAttributes<HTMLDivElement> {
   /** Optional leading icon. When omitted, the row renders text-only with no
    *  reserved icon column. */
   icon?: IconComponent;
+  /** Optional icon aligned to the trailing edge of an action. */
+  trailingIcon?: IconComponent;
   label: string;
   index: number;
   /** When a boolean, the item is a radio-style option (role="menuitemradio"
@@ -147,6 +149,7 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
   (
     {
       icon: Icon,
+      trailingIcon: TrailingIcon,
       label,
       index,
       checked,
@@ -266,6 +269,7 @@ const MenuItem = forwardRef<HTMLDivElement, MenuItemProps>(
             {label}
           </span>
         </span>
+        {TrailingIcon && <TrailingIcon size={sizeClasses.icon} className="shrink-0 text-muted-foreground" />}
         {/* initial={false}: a row checked at mount shows the finished
             check instead of drawing it, so default selections don't
             animate on page load. */}
