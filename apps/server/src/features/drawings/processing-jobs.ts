@@ -150,17 +150,21 @@ async function processDrawingStage(data: z.infer<typeof JobDataZod>, signal: Abo
     } finally {
         if (!signal.aborted) {
             const cursor = job.cursor + (advance ? 1 : 0);
-            await db.drawing.DrawingModel.updateOne(owned, [
-                {
-                    $set: {
-                        'processingJob.status': { $cond: [{ $gte: [cursor, { $size: '$processingJob.pages' }] }, 'completed', 'queued'] },
-                        'processingJob.cursor': cursor,
-                        'processingJob.attempts': backpressure ? Math.max(0, job.attempts - 1) : advance || !failed ? 0 : job.attempts,
-                        'processingJob.availableAt': new Date(Date.now() + (backpressure ? 30_000 : failed && !advance ? 5000 * job.attempts : 0)),
-                        'processingJob.lease': null,
+            await db.drawing.DrawingModel.updateOne(
+                owned,
+                [
+                    {
+                        $set: {
+                            'processingJob.status': { $cond: [{ $gte: [cursor, { $size: '$processingJob.pages' }] }, 'completed', 'queued'] },
+                            'processingJob.cursor': cursor,
+                            'processingJob.attempts': backpressure ? Math.max(0, job.attempts - 1) : advance || !failed ? 0 : job.attempts,
+                            'processingJob.availableAt': new Date(Date.now() + (backpressure ? 30_000 : failed && !advance ? 5000 * job.attempts : 0)),
+                            'processingJob.lease': null,
+                        },
                     },
-                },
-            ]);
+                ],
+                { updatePipeline: true },
+            );
         }
     }
 }

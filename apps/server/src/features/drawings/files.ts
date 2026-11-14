@@ -23,8 +23,6 @@ drawingFiles.post('/:id/file', async (c) => {
     const doc = await db.drawing.DrawingModel.findOne({ _id: id.data, ownerId }).lean();
     if (!doc) return c.json({ message: 'Drawing not found.' }, 404);
     const existing = db.drawing.DrawingDto(doc).blueprints;
-    const job = doc.processingJob ? db.drawing.StoredJobZod.parse(doc.processingJob) : null;
-    const activeJob = job && job.status !== 'completed' ? job : null;
     const body = await c.req.parseBody();
     const file = body.file;
     if (!(file instanceof File) || file.size === 0 || file.size > MAX_FILE_BYTES) return c.json({ message: 'Choose a file between 1 byte and 20 MB.' }, 400);
@@ -49,31 +47,30 @@ drawingFiles.post('/:id/file', async (c) => {
             upload.once('error', reject);
             upload.end(bytes);
         });
+        const appendedPages = Array.from({ length: pages }, (_, index) => existing.length + index + 1);
+        const blueprints = db.drawing
+            .createBlueprints({ id: upload.id.toHexString(), name, mediaType: mediaType.data, pages })
+            .map((blueprint, index) => ({ ...blueprint, pageNumber: existing.length + index + 1 }));
+        // Decide from the current job in the same write as attachment insertion. A worker
+        // may finish during upload; never replace an active run or append to a completed one.
         const result = await db.drawing.DrawingModel.updateOne(
-            {
-                _id: id.data,
-                ownerId,
-                blueprints: { $size: existing.length },
-                ...(activeJob
-                    ? { 'processingJob.id': activeJob.id, 'processingJob.status': { $in: ['queued', 'running'] } }
-                    : { 'processingJob.status': { $nin: ['queued', 'running'] } }),
-            },
-            {
-                $set: {
-                    ...(!existing.length ? { title: name } : {}),
-                    ...(!activeJob
-                        ? { processingJob: db.drawing.createProcessingJob(Array.from({ length: pages }, (_, index) => existing.length + index + 1)) }
-                        : {}),
-                },
-                $push: {
-                    ...(activeJob ? { 'processingJob.pages': { $each: Array.from({ length: pages }, (_, index) => existing.length + index + 1) } } : {}),
-                    blueprints: {
-                        $each: db.drawing
-                            .createBlueprints({ id: upload.id.toHexString(), name, mediaType: mediaType.data, pages })
-                            .map((blueprint, index) => ({ ...blueprint, pageNumber: existing.length + index + 1 })),
+            { _id: id.data, ownerId, blueprints: { $size: existing.length } },
+            [
+                {
+                    $set: {
+                        ...(!existing.length ? { title: { $literal: name } } : {}),
+                        blueprints: { $concatArrays: ['$blueprints', { $literal: blueprints }] },
+                        processingJob: {
+                            $cond: [
+                                { $in: ['$processingJob.status', ['queued', 'running']] },
+                                { $mergeObjects: ['$processingJob', { pages: { $concatArrays: ['$processingJob.pages', { $literal: appendedPages }] } }] },
+                                { $literal: db.drawing.createProcessingJob(appendedPages) },
+                            ],
+                        },
                     },
                 },
-            },
+            ],
+            { updatePipeline: true },
         );
         if (!result.modifiedCount) {
             await blueprintFiles.delete(upload.id);
