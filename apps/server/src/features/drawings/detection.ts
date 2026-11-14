@@ -6,7 +6,7 @@ import { db } from '../../db';
 import { Env } from '../../shared/env';
 import { blueprintFiles } from './files';
 import { prepareRaster } from './raster';
-import { predictRaster } from './inference';
+import { InferenceError, predictRaster } from './inference';
 
 type DetectDrawingParams = { id: string; ownerId: string; page: number };
 
@@ -112,7 +112,7 @@ export async function detectDrawing(params: DetectDrawingParams) {
             throw cause;
         }
     } catch (cause) {
-        const message = cause instanceof TRPCError ? cause.message : 'Detection failed or timed out. Please retry.';
+        const message = cause instanceof TRPCError || cause instanceof InferenceError ? cause.message : 'Detection failed or timed out. Please retry.';
         await db.drawing.DrawingModel.updateOne(ownedLease, {
             $set: {
                 detection: { status: drawing.detection?.pages.length ? 'partial' : 'failed', pages: drawing.detection?.pages ?? [], error: message },
