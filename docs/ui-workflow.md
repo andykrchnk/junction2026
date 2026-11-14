@@ -52,3 +52,9 @@ Platform pages stay in `apps/app/src/pages` and features stay in their existing 
 Use the registry from `design-system`, not `apps/app`, to prevent a second component copy. Preserve deliberate local changes when importing updates.
 
 The local platform URL explicitly uses IPv4 to avoid another localhost service bound only to IPv6. Configure the API APP_ORIGIN to match the platform URL when testing authentication.
+
+## Session dashboard prototypes
+
+Open `/ui-preview` on the platform dev server, or `Prototypes / Session dashboards` in Storybook. The local prototype login is `demo@pirto.local` / `Preview2026!` (prefilled). It grants access only to in-memory mock screens, not to the platform API or a real account; the route redirects to login in production.
+
+Use the five direction buttons to compare layouts and the sample-session toggle to compare empty/populated states. Each direction shares a local upload → simulated scan → confidence review → session flow. A built-in sample blueprint is available. Uploaded documents stay in browser memory and are released on exit; detections and chat responses are explicitly illustrative. Adding a missed item creates a review note from the provided room/icon classes; geometric editing and actual analysis remain future integration work. Sessions reset on refresh.
