@@ -5,6 +5,7 @@ Read only the patterns relevant to the affected decisions, then inspect their ex
 - [Feature-slice boundaries](feature-slices.md)
 - [Effector models](effector-models.md)
 - [Request ownership](request-ownership.md)
+- [Forms](forms.md)
 - [React](react.md)
 - [Design and shadcn components](design-system.md)
 - [Type ownership](type-ownership.md)

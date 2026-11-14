@@ -1,7 +1,17 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { ObjectId } from 'mongodb';
-import { RenameDrawingZod, AskDrawingZod, DetectDrawingZod, DrawingIdZod, DrawingSummaryZod, DrawingZod, CanvasStateZod, SaveCanvasZod } from '@repo/types';
+import {
+    UpdateDrawingUploadZod,
+    RenameDrawingZod,
+    AskDrawingZod,
+    DetectDrawingZod,
+    DrawingIdZod,
+    DrawingSummaryZod,
+    DrawingZod,
+    CanvasStateZod,
+    SaveCanvasZod,
+} from '@repo/types';
 import type { Drawing } from '@repo/types';
 import { db } from '../../db';
 import { protectedProcedure, t } from '../../shared/trpc';
@@ -57,6 +67,23 @@ async function processDrawing(
 
 export const drawingRouter = t.router({
     comments: scanCommentsRouter,
+    updateUpload: protectedProcedure
+        .input(UpdateDrawingUploadZod)
+        .output(DrawingZod)
+        .mutation(async ({ input, ctx }) => {
+            const doc = await db.drawing.DrawingModel.findOneAndUpdate(
+                { _id: input.id, ownerId: ctx.user.id, 'attachment.id': { $exists: true } },
+                {
+                    $set: {
+                        ...(input.name !== undefined ? { 'attachment.name': input.name } : {}),
+                        ...(input.hiddenFromCanvas !== undefined ? { 'attachment.hiddenFromCanvas': input.hiddenFromCanvas } : {}),
+                    },
+                },
+                { new: true },
+            ).lean();
+            if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Upload not found.' });
+            return db.drawing.DrawingDto(doc);
+        }),
     rename: protectedProcedure
         .input(RenameDrawingZod)
         .output(DrawingZod)

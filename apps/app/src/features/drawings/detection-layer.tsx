@@ -3,9 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { createShapeId, useEditor, useValue } from 'tldraw';
 import type { DetectedProperty, Drawing, PredictionPage } from '@repo/types';
-import { Button } from '@repo/design-system/components/ui/button';
 import { Checkbox } from '@repo/design-system/components/ui/checkbox';
-import { X } from '@repo/design-system/lib/icons-remix';
+import { DetectedElementCard } from './detected-element-card';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import type { CanvasModel } from './canvas/model';
@@ -113,6 +112,23 @@ function DetectionSheet({ page, drawingId, model }: Readonly<{ page: PredictionP
     );
 }
 
+function SheetName({ page, name, multiple }: Readonly<{ page: number; name: string; multiple: boolean }>) {
+    const editor = useEditor();
+    const shape = useValue('sheet label position', () => editor.getShape(createShapeId(`blueprint-${page}`)), [editor, page]);
+    const zoom = useValue('sheet label zoom', () => editor.getZoomLevel(), [editor]);
+    if (!shape || shape.type !== 'image') return null;
+    const transform = editor.getShapePageTransform(shape);
+    const label = multiple ? `${name} · Sheet ${page}` : name;
+    return (
+        <g transform={`matrix(${transform.a} ${transform.b} ${transform.c} ${transform.d} ${transform.e} ${transform.f})`}>
+            <text x={0} y={-12 / zoom} fill="var(--muted-foreground)" fontSize={14 / zoom} fontWeight={400}>
+                <title>{label}</title>
+                {label.length > 60 ? `${label.slice(0, 57)}…` : label}
+            </text>
+        </g>
+    );
+}
+
 export function DetectionCanvasLayer() {
     const context = useContext(DetectionContext);
     if (!context) return null;
@@ -121,6 +137,14 @@ export function DetectionCanvasLayer() {
             aria-label="Detected geometry"
             style={{ position: 'absolute', top: 0, left: 0, width: 1, height: 1, overflow: 'visible', pointerEvents: 'none', zIndex: 100000 }}
         >
+            {Array.from({ length: context.drawing.attachment?.pages ?? 0 }, (_, index) => (
+                <SheetName
+                    key={index}
+                    page={index + 1}
+                    name={context.drawing.attachment?.name ?? 'Blueprint'}
+                    multiple={(context.drawing.attachment?.pages ?? 0) > 1}
+                />
+            ))}
             {context.drawing.detection?.pages.map((page) => (
                 <DetectionSheet key={page.rasterFileId} page={page} drawingId={context.drawing.id} model={context.model} />
             ))}
@@ -149,29 +173,9 @@ export function DetectionControls({ drawing, model }: Readonly<{ drawing: Drawin
                 ))}
             </div>
             {property && (
-                <section
-                    aria-label="Detected element properties"
-                    className="absolute bottom-3 left-3 z-[300] max-w-[calc(100%-1.5rem)] rounded border bg-card p-3 text-xs shadow-sm"
-                >
-                    <div className="flex items-center justify-between gap-5">
-                        <span className="font-medium">
-                            {property.label} · Sheet {selected?.page}
-                        </span>
-                        <Button
-                            size="icon-compact"
-                            variant="ghost"
-                            leadingIcon={X}
-                            aria-label="Close element properties"
-                            onClick={() => model.selected(null)}
-                        />
-                    </div>
-                    <p>
-                        Model score: {Math.round(property.confidence * 100)}% ·{' '}
-                        {property.scoreMeaning === 'component_mean_softmax' ? 'mean class score' : 'junction peak score'}
-                    </p>
-                    {property.areaPixels !== null && <p className="mt-1">Area: {Math.round(property.areaPixels).toLocaleString()} px²</p>}
-                    <p className="mt-1 text-muted-foreground">Uncalibrated prediction · not a verified measurement</p>
-                </section>
+                <div className="absolute top-3 right-3 z-[300] max-w-[calc(100%-1.5rem)]">
+                    <DetectedElementCard property={property} page={selected?.page ?? 1} onClose={() => model.selected(null)} />
+                </div>
             )}
         </>
     );

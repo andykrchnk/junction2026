@@ -1,15 +1,19 @@
 import { createEffect, createEvent, createStore, sample } from 'effector';
 import { readonly } from 'patronum';
-import { MAX_FILE_BYTES, UploadErrorZod, type Drawing } from '@repo/types';
+import { MAX_FILE_BYTES, UploadErrorZod, type Drawing, type UpdateDrawingUpload } from '@repo/types';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import { queryClient, trpc, trpcClient } from '@/shared/trpc';
+
+const stageChanged = createEvent<{ id: string; label: string }>();
 
 const opened = createEvent<string | null>();
 const draftChanged = createEvent<string>();
 const analysisRequested = createEvent<string>();
 const operationStarted = createEvent<string>();
 const operationFinished = createEvent<string>();
+const $stages = createStore<Record<string, string>>({});
+const $outgoing = createStore<Record<string, Drawing['messages'][number] | undefined>>({});
 const $id = createStore<string | null>(null);
 const $draft = createStore('');
 const $activity = createStore<Record<string, number>>({});
@@ -22,6 +26,11 @@ const refresh = async (id?: string) => {
         ...(id ? [queryClient.invalidateQueries(trpc.drawings.get.queryFilter({ id }))] : []),
     ]);
 };
+const updateUploadFx = createEffect(async (input: UpdateDrawingUpload) => {
+    const drawing = await trpcClient.drawings.updateUpload.mutate(input);
+    await refresh(input.id);
+    return drawing;
+});
 const renameFx = createEffect(async (input: { id: string; title: string }) => {
     const drawing = await trpcClient.drawings.rename.mutate(input);
     await refresh(input.id);
@@ -82,6 +91,7 @@ const analyzeFx = createEffect(async (id: string) => {
                       : (detected.detection?.error ?? 'Object detection has not finished. Retry analysis to resume the remaining pages.');
             throw new Error(message);
         }
+        stageChanged({ id, label: 'Reviewing blueprint' });
         return await trpcClient.drawings.analyze.mutate({ id });
     } finally {
         await refresh(id);
@@ -91,12 +101,19 @@ const askFx = createEffect(async (input: { id: string; message: Drawing['message
     try {
         const drawing = await trpcClient.drawings.get.query({ id: input.id });
         if (!drawing.analysis || drawing.ppmCandidates == null || drawing.ppm == null) await analyzeFx(input.id);
+        stageChanged({ id: input.id, label: 'Reviewing blueprint evidence' });
         return await trpcClient.drawings.ask.mutate({ id: input.id, message: { id: input.message.id, question: input.message.question } });
     } finally {
         await refresh(input.id);
     }
 });
 
+sample({ clock: stageChanged, source: $stages, fn: (stages, { id, label }) => ({ ...stages, [id]: label }), target: $stages });
+sample({ clock: uploadFx, fn: ({ id }) => ({ id, label: 'Uploading blueprint' }), target: stageChanged });
+sample({ clock: inferFx, fn: (id) => ({ id, label: 'Detecting rooms and objects' }), target: stageChanged });
+sample({ clock: askFx, source: $outgoing, fn: (outgoing, { id, message }) => ({ ...outgoing, [id]: message }), target: $outgoing });
+sample({ clock: askFx.done, source: $outgoing, fn: (outgoing, { params }) => ({ ...outgoing, [params.id]: undefined }), target: $outgoing });
+sample({ clock: askFx, source: $id, filter: (id, params) => id === params.id, fn: () => '', target: $draft });
 sample({ clock: uploadFx, fn: ({ id }) => id, target: operationStarted });
 sample({ clock: analyzeFx, target: operationStarted });
 sample({ clock: askFx, fn: ({ id }) => id, target: operationStarted });
@@ -125,12 +142,15 @@ sample({ clock: analysisRequested, source: $analysisRunning, filter: (running, i
 export const $$drawings = {
     opened,
     renameFx,
+    updateUploadFx,
     draftChanged,
     createFx,
     uploadFx,
     analyzeFx,
     inferFx,
     askFx,
+    $outgoing: readonly($outgoing),
+    $stages: readonly($stages),
     $draft: readonly($draft),
     $error: readonly($error),
     $inferenceError: readonly($inferenceError),

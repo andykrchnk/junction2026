@@ -1087,7 +1087,7 @@ const InputMessage = forwardRef<HTMLDivElement, InputMessageProps>(
           disabled && "opacity-50 pointer-events-none",
           className
         )}
-        style={edgeShadow ? { boxShadow: edgeShadow, ...style } : style}
+        style={{ backgroundColor: "var(--chat-input-background)", ...(edgeShadow ? { boxShadow: edgeShadow } : {}), ...style }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         {...props}

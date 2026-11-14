@@ -1230,7 +1230,9 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
             // The card's outer padding drops a notch at compact. px-3.5 is the
             // floor: the option rows bleed by -mx-3, so anything tighter puts
             // their hover background flush against the card edge.
-            compact
+            isFreeText
+              ? "px-4 pt-4 pb-2 text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]"
+              : compact
               ? "px-3.5 sm:px-4 pt-2.5 sm:pt-3 pb-1.5 text-[length:var(--fs-caption-compact,11px)] leading-[var(--lh-caption-compact,14px)]"
               : "px-4 sm:px-5 pt-3.5 sm:pt-4 pb-2 text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)]"
           )}
@@ -1266,15 +1268,17 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
             <div
               ref={contentMeasureRef}
               className={cn(
-                compact ? "px-3.5 sm:px-4" : "px-4 sm:px-5",
-                showFooter
+                isFreeText ? "px-4" : compact ? "px-3.5 sm:px-4" : "px-4 sm:px-5",
+                isFreeText
+                  ? "pb-0"
+                  : showFooter
                   ? "pb-1"
                   : compact
                     ? "pb-2 sm:pb-2.5"
                     : "pb-2.5 sm:pb-3"
               )}
             >
-              <div key={qId} className="flex flex-col gap-2">
+              <div key={qId} className={cn("flex flex-col", isFreeText ? "gap-3" : "gap-2")}>
               {/* Question title */}
               <h3
                 id={`${reactId}-${qId}-title`}
@@ -1305,17 +1309,7 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
                     // width as the hover/selected backgrounds) while the text
                     // starts at the content edge, aligned with the option
                     // titles and the question heading.
-                    "relative mt-1 cursor-text transition-colors",
-                    compact ? "-mx-2.5 py-2" : "-mx-3 py-2.5",
-                    sizeClasses.px,
-                    // Resting height: a few lines for multi-line, one row for
-                    // single-line. The textarea still auto-resizes above this
-                    // floor as content wraps.
-                    isFreeTextMultiline
-                      ? "min-h-[76px]"
-                      : compact
-                      ? "min-h-8"
-                      : "min-h-10",
+                    "relative cursor-text transition-colors p-0 min-h-16",
                     shape.bg,
                     // Mirror the "Something else" field instead of a blue focus
                     // ring. Empty + at rest: no border, fully quiet. Hover
@@ -1407,11 +1401,10 @@ const AskUserQuestions = forwardRef<HTMLDivElement, AskUserQuestionsProps>(
           {showFooter && (
             <div
               className={cn(
-                "pt-1",
-                compact ? "px-3.5 sm:px-4 pb-1.5" : "px-4 sm:px-5 pb-2"
+                isFreeText ? "p-4" : compact ? "pt-1 px-3.5 sm:px-4 pb-1.5" : "pt-1 px-4 sm:px-5 pb-2"
               )}
             >
-              <div className="flex items-center justify-between gap-2 -mx-2 sm:-mx-3">
+              <div className={cn("flex items-center justify-between gap-2", !isFreeText && "-mx-2 sm:-mx-3")}>
                 {/* Each button is wrapped in a motion.div so it fades + scales
                     when it appears/disappears (e.g. Continue on multi-select).
                     popLayout pops the exiting button out of flow so its

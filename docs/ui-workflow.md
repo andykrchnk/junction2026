@@ -60,3 +60,9 @@ Open `/ui-preview` on the platform dev server, or `Prototypes / Session dashboar
 Use the five direction buttons to compare layouts and the sample-session toggle to compare empty/populated states. Each direction shares a local upload → simulated scan → confidence review → session flow. A built-in sample blueprint is available. Uploaded documents stay in browser memory and are released on exit; detections and chat responses are explicitly illustrative. Adding a missed item creates a review note from the provided room/icon classes; geometric editing and actual analysis remain future integration work. Sessions reset on refresh.
 
 Product-specific session layouts, prototypes, and stories live in apps/app/src. Storybook discovers those stories alongside the primitive package stories. Install shared primitives with `pnpm dlx shadcn@latest add <component> --cwd packages/design-system`; both components.json files target @repo/design-system.
+
+### Canvas upload actions — PR review note
+
+The canvas redesign adds **Remove from canvas** to the Uploads menu. This is an owner-scoped, persisted, reversible visibility change (`attachment.hiddenFromCanvas`), not file deletion. **Restore to canvas** restores the saved canvas and detection overlays. File storage, analysis and conversation remain available; chat can still use that analysis while the plan is hidden. Rename changes the upload label, not the session title. Highlight these semantics when opening the PR.
+
+Uploads currently lists the single attachment supported by each session. Multiple uploads per session remain a separate data-model change.
