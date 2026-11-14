@@ -2,6 +2,7 @@ import json
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from clients.workers import predict, WorkerFailure
 from clients.gemini import Gemini, VerificationFailure
 from stages.prepare import targets, context, image_part, room_fixtures
@@ -11,20 +12,39 @@ from stages.normalize import normalize
 
 
 def process(image, image_bytes, settings):
+    started_at = time.monotonic()
     directory = settings.artifact_dir / uuid.uuid4().hex
     directory.mkdir(parents=True, mode=0o700)
+    timings = {}
+
+    @contextmanager
+    def timed(stage):
+        stage_started_at = time.monotonic()
+        try:
+            yield
+        finally:
+            timings[stage] = round(time.monotonic() - stage_started_at, 3)
+            (directory / "timings.json").write_text(
+                json.dumps({
+                    "seconds": timings,
+                    "elapsed_seconds": round(time.monotonic() - started_at, 3),
+                })
+            )
+
     degraded = set()
-    geometry = predict(
-        settings.geometry_url, settings.api_key, image_bytes, "cubicasa-detail"
-    )
-    if (geometry.image.width, geometry.image.height) != image.size:
-        raise WorkerFailure("Geometry coordinate system mismatch")
+    with timed("geometry"):
+        geometry = predict(
+            settings.geometry_url, settings.api_key, image_bytes, "cubicasa-detail"
+        )
+        if (geometry.image.width, geometry.image.height) != image.size:
+            raise WorkerFailure("Geometry coordinate system mismatch")
     try:
-        ocr = predict(settings.ocr_url, settings.api_key, image_bytes, "paddleocr")
-        if (ocr.image.width, ocr.image.height) != image.size:
-            raise WorkerFailure("OCR coordinate system mismatch")
-        tokens = ocr.ocr or []
-        (directory / "ocr.json").write_text(ocr.model_dump_json(by_alias=True))
+        with timed("ocr"):
+            ocr = predict(settings.ocr_url, settings.api_key, image_bytes, "paddleocr")
+            if (ocr.image.width, ocr.image.height) != image.size:
+                raise WorkerFailure("OCR coordinate system mismatch")
+            tokens = ocr.ocr or []
+            (directory / "ocr.json").write_text(ocr.model_dump_json(by_alias=True))
     except WorkerFailure:
         degraded.add("ocr")
         tokens = []
@@ -54,11 +74,13 @@ def process(image, image_bytes, settings):
         with ThreadPoolExecutor(max_workers=settings.gemini_workers) as pool:
             # Keep the original target budget and wait for all fixture decisions.
             for kind in ("fixture", "room"):
-                batch = [(i, t) for i, t in enumerate(proposals) if t["kind"] == kind]
-                degraded.update(result for result in pool.map(evaluate, batch) if result)
+                with timed(f"verify_{kind}"):
+                    batch = [(i, t) for i, t in enumerate(proposals) if t["kind"] == kind]
+                    degraded.update(result for result in pool.map(evaluate, batch) if result)
     finally:
         verifier.close()
-    result = normalize(image, proposals)
+    with timed("normalize"):
+        result = normalize(image, proposals)
     (directory / "predictions.json").write_text(result.model_dump_json(by_alias=True))
     (directory / "decisions.json").write_text(
         json.dumps([{k: v for k, v in t.items() if k != "geometry"} for t in proposals])

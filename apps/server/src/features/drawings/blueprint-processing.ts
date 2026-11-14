@@ -3,7 +3,8 @@ import { TRPCError } from '@trpc/server';
 import { hasDetailedEntityDescription, blueprintNeedsAnalysis, type Drawing, type LayoutRoom, type LayoutFixture, type ScanComments } from '@repo/types';
 import { db } from '../../db';
 import { blueprintFiles } from './files';
-import { inspectBlueprint, enrichEntity } from './blueprint-agent';
+import { inspectBlueprint, enrichEntity, prepareEntityOverview } from './blueprint-agent';
+import { Env } from '../../shared/env';
 import { estimatePpm } from './ppm-agent';
 import { resolvePpm } from './ppm-resolution-agent';
 import { createPpmComments } from './ppm-comments';
@@ -75,8 +76,12 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
             : [...blueprint.layout.rooms, ...blueprint.layout.fixtures].some((entity) => !hasDetailedEntityDescription(entity))
               ? 'entities'
               : 'ppm';
-    await save({ status: { type: 'processing', stage } });
+    const startedAt = performance.now();
+    let succeeded = false;
+    let attemptedEntities = 0;
+    let completedEntities = 0;
     try {
+        await save({ status: { type: 'processing', stage } });
         const chunks: Buffer[] = [];
         for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(blueprint.raster.fileId))) {
             signal.throwIfAborted();
@@ -91,6 +96,7 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
                 'layout.limitations': [...blueprint.layout.limitations, ...context.limitations],
                 status: { type: 'pending', stage: 'entities' },
             });
+            succeeded = true;
             return;
         }
         if (stage === 'entities') {
@@ -106,7 +112,8 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
             )
                 ? rooms
                 : fixtures;
-            const batch = pending.filter(({ entity }) => !hasDetailedEntityDescription(entity)).slice(0, 3);
+            const batch = pending.filter(({ entity }) => !hasDetailedEntityDescription(entity)).slice(0, Env.DRAWING_ENTITY_CONCURRENCY);
+            const overview = await prepareEntityOverview(bytes);
             await save(
                 Object.fromEntries(
                     batch.map(({ collection, index, entity }) => [
@@ -117,9 +124,11 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
             );
             const outcomes = await Promise.allSettled(
                 batch.map(async ({ kind, collection, entity, index }) => {
+                    attemptedEntities += 1;
                     try {
-                        const enrichment = await enrichEntity({ blueprint, entity, kind, bytes, signal });
+                        const enrichment = await enrichEntity({ blueprint, entity, kind, bytes, overview, signal });
                         await save({ [`layout.${collection}.${index}.enrichment`]: enrichment });
+                        completedEntities += 1;
                     } catch (cause) {
                         if (!signal.aborted)
                             // Do not replace a completed checkpoint when its write acknowledgement was lost.
@@ -144,6 +153,7 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Some entity analyses failed. Completed results are saved; retry to resume.' });
             }
             await save({ status: { type: 'pending', stage: 'entities' } });
+            succeeded = true;
             return;
         }
         const pages = [{ page: blueprint.pageNumber, width: blueprint.raster.width, height: blueprint.raster.height, bytes }];
@@ -153,6 +163,7 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
                 { ppmCandidates: candidates, status: { type: 'pending', stage: 'ppm' } },
                 createPpmComments({ candidates, createdAt: new Date().toISOString() }),
             );
+            succeeded = true;
             return;
         }
         if (blueprint.ppm === null) {
@@ -161,6 +172,7 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
         } else {
             await save({ status: { type: 'ready' } });
         }
+        succeeded = true;
     } catch (cause) {
         // Even an expired/aborted call must leave a retryable checkpoint, without changing completed entities.
         const error = cause instanceof TRPCError ? cause.message : 'Blueprint analysis failed or timed out. Retry to resume.';
@@ -169,5 +181,14 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
             { $set: { [`${root}.status`]: { type: 'partial', stage, error } } },
         );
         throw new TRPCError({ code: cause instanceof TRPCError ? cause.code : 'INTERNAL_SERVER_ERROR', message: error, cause });
+    } finally {
+        console.info('Blueprint analysis stage', {
+            stage,
+            elapsedMs: Math.round(performance.now() - startedAt),
+            outcome: succeeded ? 'completed' : signal.aborted ? 'aborted' : 'failed',
+            attemptedEntities,
+            completedEntities,
+            entityConcurrency: Env.DRAWING_ENTITY_CONCURRENCY,
+        });
     }
 }

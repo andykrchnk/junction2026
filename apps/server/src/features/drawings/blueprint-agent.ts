@@ -24,6 +24,10 @@ const ContextOutputZod = z.object({
 const EntityOutputZod = z.object({ entityId: z.string(), result: EntityStructuredDescriptionZod });
 const imageInput = (bytes: Buffer) => ({ type: 'input_image' as const, image: `data:image/png;base64,${bytes.toString('base64')}`, detail: 'high' as const });
 
+export function prepareEntityOverview(bytes: Buffer) {
+    return sharp(bytes).resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+}
+
 export async function inspectBlueprint(blueprint: Blueprint, bytes: Buffer, signal: AbortSignal) {
     const agent = new Agent({
         name: 'Blueprint context analyst',
@@ -56,10 +60,11 @@ export async function enrichEntity(
         entity: LayoutRoom | LayoutFixture;
         kind: 'room' | 'fixture';
         bytes: Buffer;
+        overview: Buffer;
         signal: AbortSignal;
     }>,
 ) {
-    const { blueprint, entity, kind, bytes, signal } = params;
+    const { blueprint, entity, kind, bytes, overview, signal } = params;
     if (!blueprint.raster || !blueprint.layout || blueprint.misc === null) throw new Error('Blueprint context is not ready.');
     const points = entity.geometry.type === 'Polygon' ? entity.geometry.coordinates.flat() : entity.geometry.coordinates.flat(2);
     const bounds = points.reduce<[number, number, number, number]>(
@@ -71,14 +76,11 @@ export async function enrichEntity(
     const top = Math.max(0, Math.floor(bounds[1] - padding));
     const width = Math.min(blueprint.raster.width, Math.ceil(bounds[2] + padding)) - left;
     const height = Math.min(blueprint.raster.height, Math.ceil(bounds[3] + padding)) - top;
-    const [overview, crop] = await Promise.all([
-        sharp(bytes).resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).png().toBuffer(),
-        sharp(bytes)
-            .extract({ left, top, width, height })
-            .resize({ width: Math.min(1800, width * 4), height: Math.min(1800, height * 4), fit: 'inside', kernel: 'nearest' })
-            .png()
-            .toBuffer(),
-    ]);
+    const crop = await sharp(bytes)
+        .extract({ left, top, width, height })
+        .resize({ width: Math.min(1800, width * 4), height: Math.min(1800, height * 4), fit: 'inside', kernel: 'nearest' })
+        .png()
+        .toBuffer();
     const candidate = {
         id: entity.id,
         class: entity.class,

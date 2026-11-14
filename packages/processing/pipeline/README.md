@@ -113,6 +113,14 @@ A successful partial result includes `X-Processing-Degraded` with `ocr`, `gemini
 
 Private per-request worker predictions, Gemini responses, decisions and final output
 are stored in `.local/processing-pipeline/artifacts`, outside the public API and Git.
+Private `timings.json` records seconds spent in geometry, OCR, fixture/room
+verification and normalization, including elapsed time when a timed stage fails.
+`PIPELINE_GEMINI_WORKERS` controls independent verification requests (default 8,
+integer 1–16, validated at startup). Set it on this service; use 4 for the previous
+parallelism. Each request still handles one target, fixtures finish before rooms,
+and the original evidence, acceptance rules, target budget and deadline remain
+unchanged. Tune concurrency against provider quotas; this is independent of the
+server's drawing/entity concurrency limits.
 The detail worker's optional `CUBICASA_DOOR_CONTRAST=true` mode supplies additional
 doors through the existing review-only contract. These proposals start removed
 and require the same original-source Decisions checks as other recovered doors.
