@@ -15,14 +15,15 @@ const CommentBaseZod = z.object({
     page: z.number().int().positive(),
     text: z.string().min(1).max(6000),
     source: z.enum(['user', 'ppm']),
+    type: z.enum(['annotation', 'comment']),
     createdAt: z.string(),
     deletedAt: z.string().nullable().optional(),
 });
 
-export const ScanCommentZod = z.discriminatedUnion('type', [
-    CommentBaseZod.extend({ type: z.literal('point'), x: NormalizedCoordinateZod, y: NormalizedCoordinateZod }),
-    CommentBaseZod.extend({ type: z.literal('area'), boundaries: CommentBoundariesZod }),
-    CommentBaseZod.extend({ type: z.literal('entity'), roomId: z.string().min(1).nullable(), fixtureId: z.string().min(1).nullable() }).refine(
+export const ScanCommentZod = z.discriminatedUnion('application', [
+    CommentBaseZod.extend({ application: z.literal('point'), x: NormalizedCoordinateZod, y: NormalizedCoordinateZod }),
+    CommentBaseZod.extend({ application: z.literal('area'), boundaries: CommentBoundariesZod }),
+    CommentBaseZod.extend({ application: z.literal('entity'), roomId: z.string().min(1).nullable(), fixtureId: z.string().min(1).nullable() }).refine(
         (comment) => (comment.roomId !== null) !== (comment.fixtureId !== null),
         { message: 'An entity comment must reference exactly one room or fixture.' },
     ),

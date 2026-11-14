@@ -1,14 +1,16 @@
-import { ScanCommentZod, ScanCommentsZod, PpmCandidatesZod, type PpmCandidates } from '@repo/types';
+import { ScanCommentZod, PpmCandidatesZod, type PpmCandidates } from '@repo/types';
 import { z } from 'zod';
 import { db } from '../../db';
+import { StoredScanCommentsZod } from '../../db/drawing.schema';
 
 export function createPpmComments(params: Readonly<{ candidates: PpmCandidates; createdAt: string }>) {
     return params.candidates.map((candidate, index) =>
         ScanCommentZod.parse({
             id: `ppm:${candidate.page}:${index}`,
             page: candidate.page,
-            type: 'area',
+            application: 'area',
             source: 'ppm',
+            type: 'annotation',
             createdAt: params.createdAt,
             boundaries: candidate.boundingBox ?? { left: 0, top: 0, right: 1, bottom: 1 },
             text: [
@@ -29,7 +31,7 @@ export function createPpmComments(params: Readonly<{ candidates: PpmCandidates; 
 export async function ensurePpmComments(params: Readonly<{ drawingId: string; ownerId: string }>) {
     const doc = await db.drawing.DrawingModel.findOne({ _id: params.drawingId, ownerId: params.ownerId }).select('ppmCandidates comments').lean();
     if (!doc) return;
-    const snapshot = z.object({ ppmCandidates: PpmCandidatesZod.nullable().default(null), comments: ScanCommentsZod.default([]) }).parse(doc);
+    const snapshot = z.object({ ppmCandidates: PpmCandidatesZod.nullable().default(null), comments: StoredScanCommentsZod }).parse(doc);
     if (!snapshot.ppmCandidates?.length) return;
     const existing = new Set(snapshot.comments.map((comment) => comment.id));
     const missing = createPpmComments({ candidates: snapshot.ppmCandidates, createdAt: new Date().toISOString() }).filter(

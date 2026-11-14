@@ -12,11 +12,12 @@ import {
     type ScanComment,
 } from '@repo/types';
 import { db } from '../../db';
+import { StoredScanCommentsZod } from '../../db/drawing.schema';
 import { protectedProcedure, t } from '../../shared/trpc';
 import { ensurePpmComments } from './ppm-comments';
 
 const MAX_COMMENTS = 500;
-const CommentSnapshotZod = z.object({ attachment: AttachmentZod.nullable(), comments: ScanCommentsZod.default([]) });
+const CommentSnapshotZod = z.object({ attachment: AttachmentZod.nullable(), comments: StoredScanCommentsZod });
 
 async function getSnapshot(params: Readonly<{ drawingId: string; ownerId: string }>) {
     const doc = await db.drawing.DrawingModel.findOne({ _id: params.drawingId, ownerId: params.ownerId }).select('attachment comments').lean();
@@ -30,7 +31,8 @@ function existingComment(params: Readonly<{ comments: ScanComment[]; input: Comm
         existing &&
         (existing.deletedAt != null ||
             existing.source !== 'user' ||
-            existing.type !== 'point' ||
+            existing.type !== 'comment' ||
+            existing.application !== 'point' ||
             existing.page !== params.input.page ||
             existing.text !== params.input.text ||
             existing.x !== params.input.x ||
@@ -58,14 +60,25 @@ export const scanCommentsRouter = t.router({
                 {
                     _id: input.drawingId,
                     ownerId: ctx.user.id,
-                    comments: { $elemMatch: { id: input.id, deletedAt: null } },
+                    comments: {
+                        $elemMatch: {
+                            id: input.id,
+                            deletedAt: null,
+                            source: 'user',
+                            $or: [{ type: 'comment' }, { type: { $exists: false } }, { type: { $in: ['point', 'area', 'entity'] } }],
+                        },
+                    },
                 },
                 { $set: { 'comments.$.deletedAt': new Date().toISOString() } },
             );
             if (!saved.matchedCount) {
                 const snapshot = await getSnapshot({ drawingId: input.drawingId, ownerId: ctx.user.id });
-                if (!snapshot.comments.some((comment) => comment.id === input.id)) {
+                const existing = snapshot.comments.find((comment) => comment.id === input.id);
+                if (!existing) {
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Comment not found.' });
+                }
+                if (existing.type !== 'comment' || existing.source !== 'user') {
+                    throw new TRPCError({ code: 'FORBIDDEN', message: 'Annotations cannot be deleted.' });
                 }
             }
             return { id: input.id };
@@ -86,8 +99,9 @@ export const scanCommentsRouter = t.router({
                 page: input.page,
                 text: input.text,
                 source: 'user',
+                type: 'comment',
                 createdAt: new Date().toISOString(),
-                type: 'point',
+                application: 'point',
                 x: input.x,
                 y: input.y,
             });

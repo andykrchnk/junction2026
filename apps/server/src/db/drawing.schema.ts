@@ -29,6 +29,28 @@ type StoredDrawing = mongoose.InferSchemaType<typeof schema>;
 export const DrawingModel = connection.modelNames().includes('Drawing')
     ? connection.model<StoredDrawing>('Drawing')
     : connection.model<StoredDrawing>('Drawing', schema, 'drawings');
+// Read both legacy geometry discriminators and comments missing classification during migration.
+export const StoredScanCommentsZod = z
+    .array(z.record(z.string(), z.unknown()))
+    .transform((comments) =>
+        comments.map((comment) => {
+            const legacyApplication = comment.type === 'point' || comment.type === 'area' || comment.type === 'entity';
+            return {
+                ...comment,
+                application: comment.application === undefined && legacyApplication ? comment.type : comment.application,
+                type:
+                    comment.type === undefined || legacyApplication
+                        ? comment.source === 'ppm'
+                            ? 'annotation'
+                            : comment.source === 'user'
+                              ? 'comment'
+                              : undefined
+                        : comment.type,
+            };
+        }),
+    )
+    .pipe(ScanCommentsZod)
+    .default([]);
 const StoredDrawingZod = z.object({
     _id: z.instanceof(mongoose.Types.ObjectId),
     title: z.string(),
@@ -39,7 +61,7 @@ const StoredDrawingZod = z.object({
     detection: DetectionZod.nullable().default(null),
     ppmCandidates: PpmCandidatesZod.nullable().default(null),
     ppm: StoredPpmResultZod.nullable().default(null),
-    comments: ScanCommentsZod.default([]),
+    comments: StoredScanCommentsZod,
     inferenceLease: z.string().nullable().default(null),
     inferenceLeaseUntil: z.date().nullable().default(null),
     messages: z.array(MessageZod),

@@ -25,8 +25,8 @@ function isolatePopoverWheel(element: HTMLElement | null) {
 
 function commentPoint(params: { comment: ScanComment; drawing: Drawing }) {
     const { comment, drawing } = params;
-    if (comment.type === 'point') return { x: comment.x, y: comment.y };
-    if (comment.type === 'area') {
+    if (comment.application === 'point') return { x: comment.x, y: comment.y };
+    if (comment.application === 'area') {
         return { x: (comment.boundaries.left + comment.boundaries.right) / 2, y: (comment.boundaries.top + comment.boundaries.bottom) / 2 };
     }
     const page = drawing.detection?.pages.find((candidate) => candidate.page === comment.page);
@@ -78,7 +78,7 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
         () => {
             const markers: ScanComment[] = [
                 ...comments.filter((comment) => comment.id !== draft?.id && !comment.deletedAt),
-                ...(draft ? [{ ...draft, source: 'user' as const, createdAt: '', type: 'point' as const }] : []),
+                ...(draft ? [{ ...draft, source: 'user' as const, createdAt: '', application: 'point' as const, type: 'comment' as const }] : []),
             ];
             return markers.flatMap((comment) => {
                 const point = commentPoint({ comment, drawing });
@@ -106,6 +106,7 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
             {entries.map(({ comment, x, y, screen }) => {
                 const isOpen = openId === comment.id;
                 const isDraft = draft?.id === comment.id;
+                const isAnnotation = comment.type === 'annotation';
                 const width = Math.min(288, Math.max(180, viewport.w - 24));
                 const maxHeight = Math.min(360, Math.max(120, viewport.h - 24));
                 const flipLeft = screen.x + 16 + width > viewport.x + viewport.w;
@@ -125,7 +126,7 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                     >
                         <button
                             type="button"
-                            aria-label={`${isDraft ? 'New comment' : comment.source === 'ppm' ? 'Scale estimate' : 'Comment'}, sheet ${comment.page}`}
+                            aria-label={`${isDraft ? 'New comment' : isAnnotation ? 'Annotation' : 'Comment'}, sheet ${comment.page}`}
                             aria-expanded={isOpen}
                             onClick={() => model.openChanged(comment.id)}
                             className="group absolute -left-3 -top-3 flex size-6 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -134,7 +135,7 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                                 width={8}
                                 height={8}
                                 viewBox="0 0 8 8"
-                                className="text-green-600 transition-transform duration-150 group-hover:scale-200 motion-reduce:transition-none"
+                                className={`${isAnnotation ? 'text-yellow-600' : 'text-green-600'} transition-transform duration-150 group-hover:scale-200 motion-reduce:transition-none`}
                                 aria-hidden="true"
                             >
                                 <circle cx={4} cy={4} r={4} fill="currentColor" />
@@ -145,7 +146,7 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                                 <section
                                     ref={isolatePopoverWheel}
                                     role="dialog"
-                                    aria-label={isDraft ? 'New comment' : comment.source === 'ppm' ? 'Scale estimate comment' : 'Comment'}
+                                    aria-label={isDraft ? 'New comment' : isAnnotation ? 'Annotation' : 'Comment'}
                                     className={`${surfaceClasses(2)} absolute flex flex-col gap-3 overflow-hidden rounded p-3 text-sm text-foreground`}
                                     style={{
                                         left: flipLeft ? -width - 16 : 16,
@@ -157,20 +158,28 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                                 >
                                     <div className="flex shrink-0 items-center justify-between gap-3">
                                         <p className="text-xs font-medium">
-                                            {isDraft ? 'New comment' : comment.source === 'ppm' ? 'Unverified scale estimate' : 'Comment'} · Sheet{' '}
-                                            {comment.page}
+                                            {isDraft
+                                                ? 'New comment'
+                                                : isAnnotation
+                                                  ? comment.source === 'ppm'
+                                                      ? 'Unverified scale estimate'
+                                                      : 'Annotation'
+                                                  : 'Comment'}{' '}
+                                            · Sheet {comment.page}
                                         </p>
                                         <div className="flex shrink-0 items-center gap-1">
-                                            <Button
-                                                size="icon-compact"
-                                                variant="ghost"
-                                                aria-label="Delete comment"
-                                                disabled={creating || deleting}
-                                                loading={deleting}
-                                                onClick={() => model.deleteRequested(comment.id)}
-                                            >
-                                                <Trash2 />
-                                            </Button>
+                                            {comment.type === 'comment' && (
+                                                <Button
+                                                    size="icon-compact"
+                                                    variant="ghost"
+                                                    aria-label="Delete comment"
+                                                    disabled={creating || deleting}
+                                                    loading={deleting}
+                                                    onClick={() => model.deleteRequested(comment.id)}
+                                                >
+                                                    <Trash2 />
+                                                </Button>
+                                            )}
                                             <Button size="icon-compact" variant="ghost" aria-label="Close comment" onClick={() => model.openChanged(null)}>
                                                 <X />
                                             </Button>
