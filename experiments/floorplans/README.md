@@ -8,7 +8,7 @@ performed. CubiCasa remains the default; there is no frontend model selector.
 ## Reproduce
 
 ```bash
-# Official source revisions, checkpoint URLs and SHA256s are in sources.lock.json.
+# Historical source pins and checksums are in the original checkout; see ARCHIVE.md.
 # Reuse existing data first; strip the archive's junction-dataset/ prefix on extraction.
 bash packages/processing/experiments/setup.sh
 
