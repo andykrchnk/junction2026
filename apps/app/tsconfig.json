@@ -15,11 +15,7 @@
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
         "paths": {
-            "@/*": ["./src/*"],
-            "@/components/ui/*": ["../../design-system/src/components/ui/*"],
-            "@/lib/*": ["../../design-system/src/lib/*"],
-            "@/hooks/*": ["../../design-system/src/hooks/*"],
-            "@/components/fluid-hover-highlight": ["../../design-system/src/components/fluid-hover-highlight.tsx"]
+            "@/*": ["./src/*"]
         }
     },
     "include": ["src", "vite.config.ts"]

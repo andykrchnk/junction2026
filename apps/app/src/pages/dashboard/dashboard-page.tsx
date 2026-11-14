@@ -1,10 +1,11 @@
-import { BrandLogo } from '@/components/ui/brand-logo';
+import { SessionLayouts } from '@/components/session-dashboard/session-layouts';
+import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, Link, useSearch } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
-import { LogOut, Plus, FileStack } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { LogOut, Plus, FileStack } from '@repo/design-system/lib/icons-remix';
+import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { $$drawings } from '@/features/drawings/model';
 import { DrawingWorkspace } from '@/features/drawings/drawing-workspace';
@@ -13,8 +14,9 @@ import { trpc } from '@/shared/trpc';
 export function DashboardPage() {
     const { drawing: id } = useSearch({ from: '/' });
     const navigate = useNavigate();
-    const { authError, signingOut, creating, error } = useUnit({
+    const { authError, signingOut, creating, error, user } = useUnit({
         authError: $$user.$error,
+        user: $$user.$user,
         signingOut: $$user.$isPending,
         creating: $$drawings.$creating,
         error: $$drawings.$error,
@@ -40,6 +42,35 @@ export function DashboardPage() {
             /* The auth model owns the error. */
         }
     };
+    if (!id)
+        return (
+            <SessionLayouts
+                variant={0}
+                accountName={user?.email ?? 'Account'}
+                onSignOut={() => {
+                    if (!signingOut) void signOut();
+                }}
+                pending={creating}
+                loading={isPending}
+                sample={false}
+                error={authError ?? (error?.id === null ? error.message : undefined) ?? listError?.message}
+                sessions={(drawings ?? []).map((drawing, index, all) => ({
+                    id: all.length - index,
+                    name: drawing.title,
+                    createdAt: drawing.createdAt,
+                    documentCount: drawing.documentCount,
+                    file: `Updated ${new Date(drawing.updatedAt).toLocaleDateString()}`,
+                    status: { empty: 'New', uploaded: 'Uploaded', analyzing: 'Analyzing', ready: 'Ready', failed: 'Needs attention' }[drawing.status],
+                }))}
+                onNew={() => {
+                    void create();
+                }}
+                onOpen={(session) => {
+                    const drawing = drawings?.[(drawings?.length ?? 0) - session.id];
+                    if (drawing) void navigate({ to: '/', search: { drawing: drawing.id } });
+                }}
+            />
+        );
     return (
         <div className="flex min-h-svh flex-col md:flex-row">
             <aside className="bg-card flex flex-col border-b p-5 md:sticky md:top-0 md:h-svh md:w-64 md:shrink-0 md:border-r md:border-b-0">

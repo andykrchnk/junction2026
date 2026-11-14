@@ -2,14 +2,14 @@ import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { AnimatePresence, MotionConfig } from 'motion/react';
-import { ArrowUp, FileUp, FileText, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ChatMessage } from '@/components/ui/chat-message';
+import { ArrowUp, FileUp, FileText, RefreshCw } from '@repo/design-system/lib/icons-remix';
+import { Button } from '@repo/design-system/components/ui/button';
+import { Input } from '@repo/design-system/components/ui/input';
+import { ChatMessage } from '@repo/design-system/components/ui/chat-message';
 import { trpc } from '@/shared/trpc';
-import { $$drawings } from './model';
-import { BlueprintPreview } from './blueprint-preview';
-import { AnalysisMetadata } from './analysis-metadata';
+import { $$drawings } from '@/features/drawings/model';
+import { BlueprintPreview } from '@/features/drawings/blueprint-preview';
+import { AnalysisMetadata } from '@/features/drawings/analysis-metadata';
 
 export function DrawingWorkspace({ id }: Readonly<{ id: string }>) {
     const {

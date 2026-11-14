@@ -1,14 +1,14 @@
-import { AuthHero } from './auth-hero';
-import { BrandLogo } from '@/components/ui/brand-logo';
+import { AuthHero } from '@/features/authentication/auth-hero';
+import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
 import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
 import { useEffect } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight } from '@repo/design-system/lib/icons-remix';
 import { SignInInputZod, SignUpInputZod } from '@repo/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@repo/design-system/components/ui/button';
+import { Input } from '@repo/design-system/components/ui/input';
+import { Label } from '@repo/design-system/components/ui/label';
 import { $$user } from '@/entities/user/model';
 
 type AuthFormProps = { mode: 'sign-in' | 'register' };

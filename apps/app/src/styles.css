@@ -1,4 +1,4 @@
 @import '@fontsource-variable/geist';
-@import '../../../design-system/src/index.css';
-@import '../../../design-system/src/tokens.css';
-@source '../../../design-system/src';
+@import '@repo/design-system/styles.css';
+@import '@repo/design-system/tokens.css';
+@source '../../../packages/design-system/src';
