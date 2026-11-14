@@ -51,7 +51,7 @@ export function ComponentPreview({ component }: { component?: string }) {
  ['ChatMessage',<><ChatMessage from="user">Show me the component library.</ChatMessage><ChatMessage from="assistant">Here are the Fluid components.</ChatMessage></>],
  ['Checkbox',<label className="flex gap-2"><Checkbox/> Enable updates</label>],
  ['CheckboxGroup',<CheckboxGroup checkedIndices={checks}>{['Design','Engineering','Product'].map((label,index)=><CheckboxItem key={label} label={label} index={index} checked={checks.has(index)} onToggle={()=>setChecks(prev=>{const next=new Set(prev);if(next.has(index))next.delete(index);else next.add(index);return next})}/>)}</CheckboxGroup>],
- ['ColorPicker',<ColorPicker defaultValue="#00A63E"/>],
+ ['ColorPicker',<ColorPicker defaultValue="#FF3C00"/>],
  ['Combobox',<Combobox items={['Design','Engineering','Product']}><ComboboxInput placeholder="Choose a team"/><ComboboxContent><ComboboxList>{item=><ComboboxItem value={typeof item==='string'?item:item.value}>{typeof item==='string'?item:item.label}</ComboboxItem>}</ComboboxList></ComboboxContent></Combobox>],
  ['CommandMenu',<CommandMenu items={commands}><CommandMenuInput placeholder="Search actions"/><CommandMenuList/></CommandMenu>],
  ['DatePicker',<DatePicker/>],
