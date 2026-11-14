@@ -1,8 +1,18 @@
 import type { Drawing } from '@repo/types';
-import { DrawingActivity } from './drawing-activity';
-import { ThinkingStep, ThinkingSteps, ThinkingStepsContent, ThinkingStepsHeader } from '@repo/design-system/components/ui/thinking-steps';
+import { useState } from 'react';
+import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
+import {
+    Trace,
+    TraceLine,
+    TraceTitle,
+    TraceIcon,
+    TraceCollapsible,
+    TraceCollapsibleTrigger,
+    TraceCollapsibleContent,
+} from '@repo/design-system/components/ui/trace';
 
 export function DrawingProgress({ drawing, busy, stage }: Readonly<{ drawing: Drawing; busy: boolean; stage?: string }>) {
+    const [open, setOpen] = useState<boolean>();
     const uploaded = Boolean(drawing.attachment);
     const analyzed = Boolean(drawing.analysis);
     const detection = drawing.detection;
@@ -24,31 +34,33 @@ export function DrawingProgress({ drawing, busy, stage }: Readonly<{ drawing: Dr
 
     return (
         <div className="space-y-2" aria-label="Blueprint preparation progress">
-            {busy && !analyzed && <DrawingActivity label={stage ?? (uploaded ? 'Analyzing blueprint' : 'Uploading blueprint')} />}
-            <ThinkingSteps className="w-full" defaultOpen={!analyzed}>
-                <ThinkingStepsHeader>{analyzed ? 'Blueprint analysis saved' : busy ? 'Preparing your blueprint' : 'Analysis paused'}</ThinkingStepsHeader>
-                <ThinkingStepsContent>
-                    <ThinkingStep
-                        label={uploaded ? 'Blueprint uploaded' : 'Uploading blueprint'}
-                        status={uploaded ? 'complete' : busy ? 'active' : 'pending'}
-                        delay={0}
-                    />
-                    <ThinkingStep
-                        label={detected ? 'Rooms and objects detected' : 'Detecting rooms and objects'}
-                        status={detected ? 'complete' : detecting && busy ? 'active' : 'pending'}
-                        delay={0}
-                    />
-                    {detectionNotice && <p className="px-2 py-1 text-xs text-muted-foreground">{detectionNotice}</p>}
-                    <ThinkingStep
-                        label={analyzed ? 'Blueprint review saved' : 'Reviewing blueprint'}
-                        status={analyzed ? 'complete' : reviewing ? 'active' : 'pending'}
-                        description={analyzed ? 'The chat can use the saved analysis.' : undefined}
-                        delay={0}
-                        isLast
-                    />
-                    {!busy && !analyzed && <p className="px-2 py-1 text-xs text-muted-foreground">Analysis is paused. Start or retry analysis to continue.</p>}
-                </ThinkingStepsContent>
-            </ThinkingSteps>
+            <Trace>
+                <TraceCollapsible open={open ?? (busy && !analyzed)} onOpenChange={setOpen}>
+                    <TraceCollapsibleTrigger>
+                        <TraceLine status={busy && !analyzed ? 'running' : undefined}>
+                            <TraceIcon>
+                                <BrandLogo iconOnly className="!h-4" />
+                            </TraceIcon>
+                            <TraceTitle>{analyzed ? 'Blueprint analysis saved' : busy ? (stage ?? 'Preparing your blueprint') : 'Analysis paused'}</TraceTitle>
+                        </TraceLine>
+                    </TraceCollapsibleTrigger>
+                    <TraceCollapsibleContent className="space-y-2 text-sm">
+                        <TraceLine status={uploaded ? undefined : busy ? 'running' : 'pending'}>
+                            <TraceTitle>{uploaded ? 'Blueprint uploaded' : 'Uploading blueprint'}</TraceTitle>
+                        </TraceLine>
+                        <TraceLine status={detected ? undefined : detecting && busy ? 'running' : 'pending'}>
+                            <TraceTitle>{detected ? 'Rooms and objects detected' : 'Detecting rooms and objects'}</TraceTitle>
+                        </TraceLine>
+                        {detectionNotice && <p className="px-2 py-1 text-xs text-muted-foreground">{detectionNotice}</p>}
+                        <TraceLine status={analyzed ? undefined : reviewing ? 'running' : 'pending'}>
+                            <TraceTitle>{analyzed ? 'Blueprint review saved' : 'Reviewing blueprint'}</TraceTitle>
+                        </TraceLine>
+                        {!busy && !analyzed && (
+                            <p className="px-2 py-1 text-xs text-muted-foreground">Analysis is paused. Start or retry analysis to continue.</p>
+                        )}
+                    </TraceCollapsibleContent>
+                </TraceCollapsible>
+            </Trace>
         </div>
     );
 }
