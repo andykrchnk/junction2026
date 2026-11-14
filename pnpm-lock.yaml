@@ -150,6 +150,9 @@ importers:
       '@hono/trpc-server':
         specifier: 0.4.2
         version: 0.4.2(@trpc/server@11.28.0(@types/ws@8.18.2)(@typescript/typescript6@6.0.2)(next@16.4.6(@babel/core@7.29.13(supports-color@7.2.0))(@types/node@24.19.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)))(hono@4.13.18)
+      '@napi-rs/canvas':
+        specifier: ^1.1.1
+        version: 1.1.1
       '@openai/agents':
         specifier: ^0.22.0
         version: 0.22.0(supports-color@7.2.0)(ws@8.23.0)(zod@4.6.7)
@@ -177,6 +180,12 @@ importers:
       pdf-lib:
         specifier: ^1.17.1
         version: 1.17.1
+      pdfjs-dist:
+        specifier: ^6.5.438
+        version: 6.5.438
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5(@types/node@24.19.2)
       zod:
         specifier: ^4.3.6
         version: 4.6.7
@@ -5109,8 +5118,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@img/colour@1.1.0':
-    optional: true
+  '@img/colour@1.1.0': {}
 
   '@img/sharp-darwin-arm64@0.35.5':
     optionalDependencies:
@@ -5327,7 +5335,6 @@ snapshots:
       '@napi-rs/canvas-linux-x64-musl': 1.1.1
       '@napi-rs/canvas-win32-arm64-msvc': 1.1.1
       '@napi-rs/canvas-win32-x64-msvc': 1.1.1
-    optional: true
 
   '@napi-rs/wasm-runtime@1.2.6(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0)':
     dependencies:
@@ -8433,7 +8440,6 @@ snapshots:
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
       '@types/node': 24.19.2
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MongoIdZod } from './mongo-id';
+import { DetectionZod } from './prediction';
 
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;
 export const MAX_PDF_PAGES = 10;
@@ -130,6 +131,7 @@ export const DrawingSummaryZod = z.object({
 export const DrawingZod = DrawingSummaryZod.extend({
     attachment: AttachmentZod.nullable(),
     analysis: AnalysisZod.nullable(),
+    detection: DetectionZod.nullable().optional(),
     messages: z.array(MessageZod),
     busy: z.boolean(),
     error: z.string().nullable(),

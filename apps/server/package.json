@@ -10,13 +10,14 @@
     "scripts": {
         "dev": "bun --env-file=../../.env --hot src/app/index.ts",
         "start": "bun dist/index.js",
-        "build": "bun build src/app/index.ts --target=bun --outfile=dist/index.js",
+        "build": "bun build src/app/index.ts --target=bun --outfile=dist/index.js --external sharp --external @napi-rs/canvas --external pdfjs-dist",
         "check-types": "tsc --noEmit",
         "lint": "eslint src"
     },
     "dependencies": {
         "@better-auth/mongo-adapter": "1.7.23",
         "@hono/trpc-server": "0.4.2",
+        "@napi-rs/canvas": "^1.1.1",
         "@openai/agents": "^0.22.0",
         "@repo/types": "workspace:*",
         "@trpc/server": "11.28.0",
@@ -26,6 +27,8 @@
         "mongodb": "7.8.0",
         "mongoose": "^9.12.1",
         "pdf-lib": "^1.17.1",
+        "pdfjs-dist": "^6.5.438",
+        "sharp": "^0.35.5",
         "zod": "^4.3.6"
     },
     "devDependencies": {

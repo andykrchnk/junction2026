@@ -49,3 +49,6 @@ artifacts/
 .local/
 
 .pnpm-store/
+/datasets/stoa-dataset/data
+
+*/.venv/
