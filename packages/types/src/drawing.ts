@@ -137,6 +137,7 @@ export const DrawingZod = DrawingSummaryZod.extend({
     error: z.string().nullable(),
 });
 export const DrawingIdZod = z.object({ id: MongoIdZod });
+export const RenameDrawingZod = DrawingIdZod.extend({ title: z.string().trim().min(1).max(200) });
 export const AskDrawingZod = DrawingIdZod.extend({ message: MessageZod.omit({ answer: true }) });
 export type Drawing = z.infer<typeof DrawingZod>;
 export type Analysis = z.infer<typeof AnalysisZod>;

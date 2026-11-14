@@ -1,26 +1,15 @@
+import { SessionChatPanel } from './session-chat-panel';
 import type { Drawing } from '@repo/types';
 import { lazy, Suspense, useEffect, useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
-import { Sidebar, SidebarProvider, SidebarTrigger, useSidebar } from '@repo/design-system/components/ui/sidebar';
 import { FileText, Upload } from '@repo/design-system/lib/icons-remix';
 import { $$drawings } from './model';
 import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { trpc } from '@/shared/trpc';
-import { DrawingChat } from './drawing-chat';
 
 const BlueprintCanvas = lazy(() => import('./blueprint-canvas'));
-function ExpandChat() {
-    const { open, isMobile } = useSidebar();
-    if (open && !isMobile) return null;
-    return (
-        <div className="absolute left-3 top-3 z-10">
-            <SidebarTrigger />
-        </div>
-    );
-}
-
 export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: string; userId: string; previewDrawing?: Drawing }>) {
     const {
         data: drawing,
@@ -104,7 +93,6 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                         Upload floor plan
                     </Button>
                     <p className="mt-4 text-xs text-muted-foreground">PDF, PNG or JPG · Up to 20 MB</p>
-                    {previewDrawing && <p className="mt-2 text-xs text-muted-foreground">Local preview · Files stay in this browser.</p>}
                 </div>
             )}
             <input
@@ -128,15 +116,12 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         </div>
     );
     return (
-        <SidebarProvider width="360px" peek="hover" persist={false} className="!min-h-0 h-full flex-1 bg-muted/30">
-            <Sidebar variant="floating" className="!h-full">
-                <DrawingChat id={id} previewDrawing={previewDrawing} />
-            </Sidebar>
+        <div className="relative flex h-full min-h-0 flex-1 bg-muted/30">
+            <SessionChatPanel drawing={drawing} previewDrawing={previewDrawing} />
             <section aria-label="Blueprint canvas" className="relative min-h-0 min-w-0 flex-1">
-                <ExpandChat />
                 {canvas}
             </section>
-        </SidebarProvider>
+        </div>
     );
 }
 

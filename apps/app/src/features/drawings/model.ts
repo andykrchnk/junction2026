@@ -22,6 +22,11 @@ const refresh = async (id?: string) => {
         ...(id ? [queryClient.invalidateQueries(trpc.drawings.get.queryFilter({ id }))] : []),
     ]);
 };
+const renameFx = createEffect(async (input: { id: string; title: string }) => {
+    const drawing = await trpcClient.drawings.rename.mutate(input);
+    await refresh(input.id);
+    return drawing;
+});
 const createFx = createEffect(async () => {
     const drawing = await trpcClient.drawings.create.mutate();
     await refresh();
@@ -119,6 +124,7 @@ sample({ clock: analysisRequested, source: $analysisRunning, filter: (running, i
 
 export const $$drawings = {
     opened,
+    renameFx,
     draftChanged,
     createFx,
     uploadFx,

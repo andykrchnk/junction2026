@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { ObjectId } from 'mongodb';
-import { AskDrawingZod, DetectDrawingZod, DrawingIdZod, DrawingSummaryZod, DrawingZod, CanvasStateZod, SaveCanvasZod } from '@repo/types';
+import { RenameDrawingZod, AskDrawingZod, DetectDrawingZod, DrawingIdZod, DrawingSummaryZod, DrawingZod, CanvasStateZod, SaveCanvasZod } from '@repo/types';
 import type { Drawing } from '@repo/types';
 import { db } from '../../db';
 import { protectedProcedure, t } from '../../shared/trpc';
@@ -52,6 +52,18 @@ async function processDrawing(
 }
 
 export const drawingRouter = t.router({
+    rename: protectedProcedure
+        .input(RenameDrawingZod)
+        .output(DrawingZod)
+        .mutation(async ({ input, ctx }) => {
+            const doc = await db.drawing.DrawingModel.findOneAndUpdate(
+                { _id: input.id, ownerId: ctx.user.id },
+                { $set: { title: input.title } },
+                { new: true },
+            ).lean();
+            if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Drawing not found.' });
+            return db.drawing.DrawingDto(doc);
+        }),
     getCanvas: protectedProcedure
         .input(DrawingIdZod)
         .output(CanvasStateZod)
