@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { MongoIdZod } from './mongo-id';
 import { DetectionZod } from './prediction';
+import { ScanCommentsZod } from './comment';
 
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;
 export const MAX_PDF_PAGES = 10;
@@ -32,6 +33,18 @@ export const BoundingBoxZod = z
         bottom: z.number().min(0).max(1),
     })
     .describe('Approximate box in the full displayed page, with top-left origin and coordinates from 0 to 1. Not measurement geometry.');
+export const PpmCandidateZod = z.object({
+    type: z.enum(['written_dimension', 'scale_bar', 'printed_scale_ratio', 'known_area', 'known_product', 'calibrated_drawing']),
+    page: z.number().int().positive(),
+    description: z.string(),
+    evidence: z.string(),
+    boundingBox: BoundingBoxZod.nullable(),
+    estimatedPpm: z.number().positive().nullable(),
+    calculation: z.string().nullable(),
+});
+export const PpmCandidatesZod = z.array(PpmCandidateZod);
+export type PpmCandidate = z.infer<typeof PpmCandidateZod>;
+export type PpmCandidates = z.infer<typeof PpmCandidatesZod>;
 export const ClassificationZod = z.object({
     contentTypes: z.array(ContentTypeZod),
     drawingStyle: z.enum(['manual', 'machine_drawn', 'mixed', 'unknown']),
@@ -132,6 +145,8 @@ export const DrawingZod = DrawingSummaryZod.extend({
     attachment: AttachmentZod.nullable(),
     analysis: AnalysisZod.nullable(),
     detection: DetectionZod.nullable().optional(),
+    ppmCandidates: PpmCandidatesZod.nullable().optional(),
+    comments: ScanCommentsZod.optional(),
     messages: z.array(MessageZod),
     busy: z.boolean(),
     error: z.string().nullable(),

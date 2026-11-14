@@ -107,6 +107,9 @@ importers:
       react-dropzone:
         specifier: ^20.2.0
         version: 20.2.0(@types/react@19.3.0)(react@19.3.1)
+      react-hotkeys-hook:
+        specifier: ^5.4.0
+        version: 5.4.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react-resizable-panels:
         specifier: ^4.22.0
         version: 4.22.0(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -4552,6 +4555,12 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  react-hotkeys-hook@5.4.0:
+    resolution: {integrity: sha512-bxbbIOUTiEGzzH65VYuBor2hv1lYYbE5u1+Tv5oMkgUE0WHSTR71Co6OBOBT1/MSj0bMrAPiibWcUVTucLOKGg==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
 
   react-intl@12.1.7:
     resolution: {integrity: sha512-DKPrDYGQfQpyW8g8dbEPd6abvinwHPw85LcAT6nmd8+kzexea5egLQu6KZTEGDgP+3ap8dn+sX3JTuS7v0xD4g==}
@@ -9055,6 +9064,11 @@ snapshots:
       react: 19.3.1
     optionalDependencies:
       '@types/react': 19.3.0
+
+  react-hotkeys-hook@5.4.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+    dependencies:
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
 
   react-intl@12.1.7(@types/react@19.3.0)(react@19.3.1):
     dependencies:

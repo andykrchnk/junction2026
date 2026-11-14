@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { z } from 'zod';
-import { StoredAnalysisZod, DetectionZod, AttachmentZod, DrawingZod, MessageZod } from '@repo/types';
+import { StoredAnalysisZod, DetectionZod, AttachmentZod, DrawingZod, MessageZod, PpmCandidatesZod, ScanCommentsZod } from '@repo/types';
 import { connection } from './connection';
 
 const schema = new mongoose.Schema(
@@ -10,6 +10,8 @@ const schema = new mongoose.Schema(
         attachment: { type: mongoose.Schema.Types.Mixed, default: null },
         analysis: { type: mongoose.Schema.Types.Mixed, default: null },
         detection: { type: mongoose.Schema.Types.Mixed, default: null },
+        ppmCandidates: { type: [mongoose.Schema.Types.Mixed], default: null },
+        comments: { type: [mongoose.Schema.Types.Mixed], default: [] },
         inferenceLease: { type: String, default: null },
         inferenceLeaseUntil: { type: Date, default: null },
         messages: { type: [mongoose.Schema.Types.Mixed], default: [] },
@@ -34,6 +36,8 @@ const StoredDrawingZod = z.object({
     attachment: AttachmentZod.nullable(),
     analysis: StoredAnalysisZod.nullable(),
     detection: DetectionZod.nullable().default(null),
+    ppmCandidates: PpmCandidatesZod.nullable().default(null),
+    comments: ScanCommentsZod.default([]),
     inferenceLease: z.string().nullable().default(null),
     inferenceLeaseUntil: z.date().nullable().default(null),
     messages: z.array(MessageZod),
@@ -59,6 +63,8 @@ export function DrawingDto(data: unknown) {
         attachment: doc.attachment,
         analysis: doc.analysis,
         detection,
+        ppmCandidates: doc.ppmCandidates,
+        comments: doc.comments.filter((comment) => comment.deletedAt == null),
         messages: doc.messages,
         busy,
         error,

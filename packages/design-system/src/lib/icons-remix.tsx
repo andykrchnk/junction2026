@@ -18,6 +18,7 @@ import {
     RiCircleLine,
     RiCloseLine,
     RiComputerLine,
+    RiDeleteBinLine,
     RiCornerDownLeftLine,
     RiCornerDownRightLine,
     RiDragMove2Line,
@@ -170,6 +171,7 @@ export const ArrowRight = remix(RiArrowRightLine);
 export const Upload = remix(RiUpload2Line);
 export const Check = remix(RiCheckLine);
 export const X = remix(RiCloseLine);
+export const Trash2 = remix(RiDeleteBinLine);
 export const ScanLine = remix(RiScan2Line);
 export const LogOut = remix(RiLogoutBoxRLine);
 export const FileStack = remix(RiFileList2Line);
