@@ -64,7 +64,7 @@ def process(image, image_bytes, settings):
         json.dumps(
             {
                 "degraded": sorted(degraded),
-                "policy": "room-resolution-v2",
+                "policy": "room-recovery-v3",
                 "model": settings.model,
             }
         )

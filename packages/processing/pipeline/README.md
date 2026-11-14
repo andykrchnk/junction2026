@@ -137,3 +137,16 @@ Resolution, basis, and geometry diagnostics remain in private decision artifacts
 The public response is unchanged. A relabelled room uses the verifier's selected-
 class score, which remains uncalibrated and is not geometry confidence. There are
 no translation dictionaries or label-matching rules.
+
+## Unspecified rooms and recovered openings
+
+Decisions can select the actual CubiCasa `Undefined` class for a clearly identified
+room whose functional use is not established. This differs from an `ambiguous`
+verification result, which retains the original. The original class is supplied
+for independent review; Garage requires vehicle-access or other clear garage
+evidence. A selected Undefined class carries its own verifier class score.
+
+Recovered opening candidates are excluded from the public response unless fixture
+verification accepts a Door with existence and swing evidence. Failures retain
+the exclusion. They do not become geometry barriers before verification. Exact
+duplicate class/geometry targets are removed before verification.
