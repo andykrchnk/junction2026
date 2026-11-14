@@ -1271,3 +1271,31 @@ b, strong { font-weight: var(--weight-semibold); font-variation-settings: 'wght'
 }
 [data-button-variant]:not(.button-study):not(.button-prototype):disabled::after { opacity: .4; }
 
+
+/* Shared background for chat composers and clarification inputs. */
+:root { --chat-input-background: #f4f4f4; }
+.dark { --chat-input-background: #2a2a2c; }
+
+:root { --chat-user-background: color-mix(in srgb, var(--primary) 80%, black); }
+
+/* Keep the editable answer distinct from the surrounding question card. */
+.chat-clarification-input textarea {
+  min-height: 64px;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--foreground) 30%, transparent);
+  transition: border-color 120ms ease;
+}
+.chat-clarification-input textarea::placeholder {
+  color: var(--muted-foreground);
+  opacity: 1;
+}
+.chat-clarification-input textarea:focus {
+  border-color: color-mix(in srgb, var(--primary) 60%, var(--border));
+  outline: none;
+  box-shadow: none;
+}
+.chat-clarification-input div:has(> textarea) {
+  background: transparent;
+  box-shadow: none;
+}
