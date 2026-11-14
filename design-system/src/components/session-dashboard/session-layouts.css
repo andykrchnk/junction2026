@@ -470,7 +470,7 @@
 }
 
 .sl-card-meta .sl-status-cell {
-    min-height: 32px;
+    min-height: 0;
     justify-content: flex-start;
 }
 
@@ -513,5 +513,35 @@
     .sl-icon-uploading,
     .sl-icon-analyzing {
         animation: none;
+    }
+}
+
+.sl-session-open {
+    font-weight: var(--weight-semibold, 600);
+    font-variation-settings: 'wght' 600;
+}
+.sl-table th:nth-child(4),
+.sl-table td:nth-child(4) {
+    text-align: center;
+}
+.sl-count-cell {
+    position: relative;
+}
+.sl-row-arrow {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+}
+.sl-session-row:hover .sl-row-arrow,
+.sl-session-row:focus-within .sl-row-arrow {
+    opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sl-row-arrow {
+        transition: none;
     }
 }

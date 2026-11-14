@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, ChevronDown, FileText, LogOut, Upload, ScanLine, GridIcon, Check } from '@/lib/icons-remix';
+import { Plus, ChevronDown, FileText, LogOut, Upload, ScanLine, GridIcon, Check, ArrowUpRight } from '@/lib/icons-remix';
 import { Button } from '../ui/button';
 import { BrandLogo } from '../ui/brand-logo';
 import { DropdownMenu, DropdownTrigger, DropdownContent } from '../ui/dropdown';
@@ -210,7 +210,10 @@ export function SessionLayouts({
                                         <TableCell>
                                             <SessionStatus status={s.status} rooms={s.rooms} uploadProgress={s.uploadProgress} />
                                         </TableCell>
-                                        <TableCell>{s.documentCount ?? '—'}</TableCell>
+                                        <TableCell className="sl-count-cell">
+                                            {s.documentCount ?? '—'}
+                                            <ArrowUpRight size={16} className="sl-row-arrow" />
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
