@@ -1,0 +1,11 @@
+FROM python:3.10-slim-bookworm@sha256:5be5aaecb962a41567bc8041f1e9e3432cb085b037fe057f9a562630b2e4b370
+ENV PYTHONUNBUFFERED=1 OMP_NUM_THREADS=4
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 libgl1 libglib2.0-0 && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir paddlepaddle-gpu==2.6.2 paddleocr==2.9.1 numpy==1.26.4 shapely==2.0.7 fastapi==0.115.12 uvicorn==0.34.2 python-multipart==0.0.20
+RUN pip install --no-cache-dir nvidia-cudnn-cu11==8.9.6.50 nvidia-cublas-cu11==11.11.3.6 nvidia-cuda-runtime-cu11==11.8.89 nvidia-curand-cu11==10.3.0.86 nvidia-cusolver-cu11==11.4.1.48 nvidia-cusparse-cu11==11.7.5.86
+# Paddle 2.6 looks up unversioned CUDA library names; NVIDIA wheels ship versioned sonames.
+RUN python -c "from pathlib import Path; [(p.parent / (p.name.split('.so.')[0] + '.so')).symlink_to(p.name) for p in Path('/usr/local/lib/python3.10/site-packages/nvidia').rglob('*.so.*') if not (p.parent / (p.name.split('.so.')[0] + '.so')).exists()]"
+ENV LD_LIBRARY_PATH=/usr/local/lib/python3.10/site-packages/nvidia/cudnn/lib:/usr/local/lib/python3.10/site-packages/nvidia/cublas/lib:/usr/local/lib/python3.10/site-packages/nvidia/cuda_runtime/lib:/usr/local/lib/python3.10/site-packages/nvidia/curand/lib:/usr/local/lib/python3.10/site-packages/nvidia/cusolver/lib:/usr/local/lib/python3.10/site-packages/nvidia/cusparse/lib
+WORKDIR /app
+COPY cubicasa/service.py cubicasa/adapters.py ./
+CMD ["uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1"]

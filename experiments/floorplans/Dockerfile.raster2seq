@@ -1,0 +1,12 @@
+FROM pytorch/pytorch:2.3.1-cuda11.8-cudnn8-devel@sha256:5c2e1d0bbe0f000b12aef0dfba9980790c1240d40498a9f67d01bd2bfc131461
+ENV DEBIAN_FRONTEND=noninteractive TORCH_CUDA_ARCH_LIST=8.0 MAX_JOBS=4 PYTHONUNBUFFERED=1 MPLBACKEND=Agg
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential ninja-build libgl1 libglib2.0-0 && rm -rf /var/lib/apt/lists/*
+WORKDIR /upstream
+COPY .local/gpu-comparison/upstream/raster2seq-src/ ./
+RUN pip install --no-cache-dir numpy==1.26.4 scipy==1.11.4 matplotlib==3.6.2 opencv-python-headless==4.10.0.84 imageio==2.31.6 wandb==0.12.19 fvcore==0.1.5.post20221221 cloudpickle==2.1.0 omegaconf==2.2.2 fairscale==0.4.6 timm==0.5.4 shapely==1.8.5.post1 tqdm==4.64.0 huggingface_hub==0.29.3 pycocotools==2.0.8 descartes==1.1.0 webcolors==1.13 drawsvg==2.4.0 cairosvg==2.7.1 plyfile==1.1 scikit-image==0.22.0 svgpathtools==1.6.1 svgwrite==1.4.3 fastapi==0.115.12 uvicorn==0.34.2 python-multipart==0.0.20
+RUN sed -i "s/torch.cuda.is_available() and CUDA_HOME is not None/CUDA_HOME is not None/" models/ops/setup.py && cd models/ops && python setup.py build install
+RUN pip install --no-cache-dir plotly==5.24.1
+RUN sed -i "s/pretrained=True/pretrained=False/" models/backbone.py
+ENV PYTHONPATH=/app:/upstream
+WORKDIR /app
+CMD ["uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1"]

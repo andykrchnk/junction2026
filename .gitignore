@@ -52,3 +52,7 @@ artifacts/
 /datasets/stoa-dataset/data
 
 */.venv/
+
+# Python interpreter caches
+__pycache__/
+*.py[cod]

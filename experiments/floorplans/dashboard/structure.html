@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>V4 · Wall reconstruction</title>
+        <link rel="stylesheet" href="dashboard.css" />
+        <style>
+            main {
+                padding-top: 24px;
+            }
+            .viewport {
+                height: 650px;
+            }
+            .toolbar select {
+                max-width: 100%;
+            }
+            .status {
+                margin: 16px 0;
+            }
+            table {
+                font-size: 12px;
+            }
+            @media (max-width: 700px) {
+                .viewport {
+                    height: 420px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div>
+                <span class="eyebrow">GEOMETRY EXPERIMENT</span>
+                <h1>V4 · Reconstruct the walls</h1>
+                <p>Check wall placement, missing dividers and unsupported notches.</p>
+            </div>
+            <a class="button" href="report.html">← Main dashboard</a>
+        </header>
+        <main>
+            <div id="status" role="status">Loading saved evidence…</div>
+            <div id="loaded" hidden>
+                <div class="callout warn">
+                    Mixed results: some CAD matches improve, one drawing loses a match, and the example’s large notch remains. Keep v3 for visualization while
+                    reviewing these experimental proposals. Room naming is handled separately.
+                </div>
+                <div class="toolbar">
+                    <label
+                        >Drawing
+                        <select id="drawing"></select></label
+                    ><label
+                        >Earlier
+                        <select id="before">
+                            <option value="separated">Separated outlines · v2</option>
+                            <option value="wall-aligned">Wall-aligned outlines · v3</option>
+                        </select></label
+                    ><label
+                        >Experiment
+                        <select id="variant">
+                            <option value="wall-evidence">Wall evidence only</option>
+                            <option value="wall-and-notches" selected>Wall evidence + notch repair</option>
+                            <option value="source-faces">Image-based wall faces</option>
+                        </select></label
+                    ><button id="minus">−</button><button id="plus">+</button><button id="fit">Fit drawing</button
+                    ><label><input id="source" type="checkbox" /> Original only</label>
+                </div>
+                <div class="metrics" id="metrics"></div>
+                <div class="panels">
+                    <section>
+                        <div class="pane-heading"><strong id="lefttitle">Previous</strong></div>
+                        <div id="left" class="viewport"></div>
+                    </section>
+                    <section>
+                        <div class="pane-heading"><strong id="righttitle">V4 experiment</strong></div>
+                        <div id="right" class="viewport"></div>
+                    </section>
+                </div>
+                <p class="legend">Blue: earlier proposals · dashed orange: v4 proposals requiring review · drag to pan both views</p>
+                <p id="changes" class="status"></p>
+                <p>
+                    <a id="download">Download selected geometry</a> · <a href="structure-comparison.json">All measurements</a> ·
+                    <a href="structure-reproduction.txt">Reproduce experiment</a>
+                </p>
+                <details>
+                    <summary>Measured results on the three CAD drawings</summary>
+                    <div class="tablewrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Drawing / version</th>
+                                    <th>CAD matches</th>
+                                    <th>Merged proposals</th>
+                                    <th>Footprint IoU</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table"></tbody>
+                        </table>
+                    </div>
+                    <p>
+                        All proposals included, with the same reference area filter. Matching requires polygon IoU ≥ 0.5; CAD zones can include open-plan
+                        subdivisions. The selected drawings are exploratory, not a held-out benchmark. CubiCasa training overlap is possible.
+                    </p>
+                </details>
+                <details>
+                    <summary>How to interpret this experiment</summary>
+                    <p>
+                        Wall evidence combines the saved model wall/railing head with source ink and short supported gap bridges. The notch variant adds small
+                        low-wall-evidence areas near the existing footprint, capped at 3% expansion. The image-face variant rebuilds walls from source strokes
+                        near model wall evidence and high-probability wall cores; it can enter areas covered by v2 wall polygons.
+                    </p>
+                    <p>
+                        These are heuristics, not reliable classifiers for furniture, stairs or text. V4 can lose walls or create extra splits. All shapes
+                        require review. Region IDs are new; parent v2 IDs remain in the downloads. Names and confidence values are not inferred. Earlier
+                        predictions, the Decisions API work and the inference service are preserved.
+                    </p>
+                </details>
+            </div>
+        </main>
+        <script>
+            const $ = (id) => document.getElementById(id),
+                esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+            let base,
+                report,
+                profiles,
+                box,
+                zoom = 1;
+            function drawing() {
+                return base.drawings[$('drawing').value];
+            }
+            function reset() {
+                let d = drawing();
+                box = [0, 0, d.width, d.height];
+                zoom = 1;
+                render();
+            }
+            function render() {
+                const id = $('drawing').value,
+                    d = drawing(),
+                    variant = $('variant').value,
+                    row = report.drawings.find((r) => r.id === id),
+                    m = row.variants[variant],
+                    prior = $('before').value === 'separated' ? row.v2_cad : d.alignment?.variants['wall-aligned'].cad_all;
+                for (const side of ['left', 'right']) {
+                    const features = (side === 'left' ? d.profiles[$('before').value] : profiles[id][variant]).features.filter((f) => f.kind === 'rooms');
+                    let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${box.join(' ')}" role="img" aria-label="${side === 'left' ? 'Earlier' : 'V4'} geometry"><image href="${d.image}" width="${d.width}" height="${d.height}"/>`;
+                    if (!$('source').checked)
+                        for (const f of features)
+                            s += `<path d="${f.d}" fill="none" stroke="${side === 'left' ? '#0784b7' : '#bd751c'}" stroke-width="1.5" ${side === 'right' ? 'stroke-dasharray="6 3"' : ''}><title>${esc(f.id)} · ${side === 'right' ? 'experimental review proposal' : 'earlier proposal'}</title></path>`;
+                    $(side).innerHTML = s + '</svg>';
+                }
+                $('lefttitle').textContent = $('before').selectedOptions[0].text;
+                $('righttitle').textContent = $('variant').selectedOptions[0].text;
+                const metric = (label, value) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`;
+                let html = metric('V4 REGION PROPOSALS', m.regions);
+                if (prior && m.cad)
+                    html +=
+                        metric('CAD MATCHES', `${prior.matched_iou_05} → ${m.cad.matched_iou_05} / ${m.cad.reference_regions}`) +
+                        metric('MERGED PROPOSALS', `${prior.merged_reference_regions} → ${m.cad.merged_reference_regions}`) +
+                        metric('FOOTPRINT IoU', `${prior.union_iou.toFixed(3)} → ${m.cad.union_iou.toFixed(3)}`);
+                else html += metric('GEOMETRY ACCURACY', 'Not scored');
+                $('metrics').innerHTML = html;
+                $('changes').textContent =
+                    `${m.candidate_splits} parent regions split into multiple candidates; ${m.candidate_merges} candidates overlap multiple parent regions. These are lineage changes, not verified corrections. Overlap with v2 wall polygons: ${Math.round(m.overlap_with_v2_wall_area_px2)} px².`;
+                $('download').href = `structure-assets/${id}-${variant}.json`;
+            }
+            for (const id of ['drawing', 'before', 'variant', 'source']) $(id).onchange = () => (id === 'drawing' ? reset() : render());
+            function change(f) {
+                const d = drawing(),
+                    next = Math.max(1, Math.min(zoom * f, 12)),
+                    ratio = zoom / next;
+                box = [box[0] + (box[2] * (1 - ratio)) / 2, box[1] + (box[3] * (1 - ratio)) / 2, box[2] * ratio, box[3] * ratio];
+                zoom = next;
+                render();
+            }
+            $('plus').onclick = () => change(1.5);
+            $('minus').onclick = () => change(1 / 1.5);
+            $('fit').onclick = reset;
+            for (const id of ['left', 'right']) {
+                const node = $(id);
+                let drag;
+                const point = (e) => new DOMPoint(e.clientX, e.clientY).matrixTransform(node.querySelector('svg').getScreenCTM().inverse());
+                node.onpointerdown = (e) => {
+                    drag = point(e);
+                    node.setPointerCapture(e.pointerId);
+                };
+                node.onpointermove = (e) => {
+                    if (!drag) return;
+                    const p = point(e);
+                    box[0] += drag.x - p.x;
+                    box[1] += drag.y - p.y;
+                    render();
+                };
+                node.onpointerup = node.onpointercancel = () => (drag = null);
+            }
+            (async () => {
+                try {
+                    [base, report, profiles] = await Promise.all(
+                        ['dashboard-data.json', 'structure-comparison.json', 'structure-profiles.json'].map(async (url) => {
+                            const r = await fetch(url);
+                            if (!r.ok) throw Error(url + ' unavailable');
+                            return r.json();
+                        }),
+                    );
+                    for (const row of report.drawings) $('drawing').add(new Option(row.id, row.id));
+                    $('drawing').value = '00-cubicasa5k';
+                    $('table').innerHTML = report.drawings
+                        .filter((r) => r.v2_cad)
+                        .map((r) => {
+                            const versions = {
+                                v2: r.v2_cad,
+                                v3: base.drawings[r.id].alignment.variants['wall-aligned'].cad_all,
+                                ...Object.fromEntries(Object.entries(r.variants).map(([k, v]) => [k, v.cad])),
+                            };
+                            return Object.entries(versions)
+                                .map(
+                                    ([name, m]) =>
+                                        `<tr><td>${esc(r.id)} / ${esc(name)}</td><td>${m.matched_iou_05}/${m.reference_regions}</td><td>${m.merged_reference_regions}</td><td>${m.union_iou.toFixed(4)}</td></tr>`,
+                                )
+                                .join('');
+                        })
+                        .join('');
+                    $('loaded').hidden = false;
+                    $('status').hidden = true;
+                    reset();
+                } catch (e) {
+                    $('status').textContent = 'Unable to load saved experiment: ' + e.message;
+                }
+            })();
+        </script>
+    </body>
+</html>
