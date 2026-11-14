@@ -1,6 +1,7 @@
 """Small model adapters. Optional dependencies are imported only by their worker."""
 
 import json
+import os
 from pathlib import Path
 
 from PIL import Image
@@ -126,8 +127,13 @@ def load_adapter(name, device):
     if name == "cubicasa-detail":
         from detail import CubiCasaDetailAdapter
 
+        contrast = os.environ.get("CUBICASA_DOOR_CONTRAST", "false")
+        if contrast not in {"true", "false"}:
+            raise RuntimeError("CUBICASA_DOOR_CONTRAST must be true or false")
         return CubiCasaDetailAdapter(
-            Path(__file__).parent / "weights/cubicasa5k.pkl", device
+            Path(__file__).parent / "weights/cubicasa5k.pkl",
+            device,
+            door_contrast=contrast == "true",
         )
     if name == "cubicasa":
         return CubiCasaAdapter(Path(__file__).parent / "weights/cubicasa5k.pkl", device)

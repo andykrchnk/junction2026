@@ -142,6 +142,40 @@ The standardized consumer endpoint is `/v1/process`, without model selection.
 Deployment uses [the production Compose stack](../compose.yaml); historical
 experiments are archived in `experiments/floorplans` at the repository root.
 
+### Optional contrast-assisted door proposals
+
+Set `CUBICASA_DOOR_CONTRAST=true` on the `cubicasa-detail` worker to enable an
+auxiliary discovery pass. The default is `false`; other values fail startup.
+This is an experimental recovery option, not a validated accuracy improvement.
+
+The worker measures the source's local dark-line residual against a 15-pixel
+morphological-closing background. It samples local ridge pixels with residual
+at least 8 and background luminance at least 160. With fewer than 64 samples,
+or a 25th-percentile residual of at least 128 on the 0–255 scale, it skips
+enhancement. Otherwise it applies CLAHE to LAB lightness with clip limit 2.0
+and an 8×8 tile grid. These fixed operating parameters are provisional: text,
+hatching, image resolution and room fills influence the source statistic.
+The score is not a calibrated quality measure or an exact output-contrast target.
+
+The original inference result remains authoritative for rooms, walls and
+existing fixtures. The auxiliary pass uses the same source dimensions and the
+original's automatic building crop. It contributes at most 32 additional Door
+proposals, ranked by the model's uncalibrated score, exclusively through
+`review_icon_detections` with `requires_verification=true`. Candidates overlapping
+an existing Door/Window or another addition (bbox IoU ≥0.1 or centers within
+5 original pixels) are suppressed. Existing detections are never replaced.
+The processing pipeline verifies these proposals against the **original** image
+using its existing conservative recovery rules; unavailable/limited verification
+leaves them removed. Direct worker consumers must honor the review contract.
+
+`door_contrast` diagnostics in `predictions.json` and `raw.json` record the source
+score, gate decision and number of additions. Optional-pass failure returns the
+successful original result with status `unavailable`; it never promotes an
+unverified candidate. The enhanced image and auxiliary artifacts are temporary
+and removed after the pass. Original images, OCR input and verifier imagery are
+unchanged. Enabling this option adds up to one full detector pass and additional
+verification work; account for existing request timeouts when opting in.
+
 ### Command line
 
 ```bash

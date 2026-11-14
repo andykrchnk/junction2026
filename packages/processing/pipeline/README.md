@@ -113,6 +113,12 @@ A successful partial result includes `X-Processing-Degraded` with `ocr`, `gemini
 
 Private per-request worker predictions, Gemini responses, decisions and final output
 are stored in `.local/processing-pipeline/artifacts`, outside the public API and Git.
+The detail worker's optional `CUBICASA_DOOR_CONTRAST=true` mode supplies additional
+doors through the existing review-only contract. These proposals start removed
+and require the same original-source Decisions checks as other recovered doors.
+OCR, verifier crops, existing fixture geometry and room geometry continue to use
+the original drawing. See the worker README for its experimental contrast gate,
+default-off configuration and additional inference cost.
 Per-request identical Gemini payloads are cached by hash. There is no cross-request
 cache or automatic artifact retention policy yet; operators must manage retention.
 Raw image uploads and API keys are not written to these artifacts. Do not publish

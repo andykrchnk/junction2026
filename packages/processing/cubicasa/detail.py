@@ -2,9 +2,13 @@
 
 import json
 from dataclasses import asdict
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
+import cv2
 import numpy as np
 import torch
+from PIL import Image
 from shapely import affinity
 from shapely.geometry import Polygon
 
@@ -15,23 +19,54 @@ from utils.preprocessor import preprocess_image
 from utils.room_instances import extract_instances, InstanceSettings, polygon_parts
 from utils.official_postprocessing import get_polygons
 from utils.geometry_cleanup import clean_instances
-from utils.multiscale import predict_detail
+from utils.multiscale import building_bounds, predict_detail
+from utils.door_contrast import additional_doors, prepare_contrast
 
 
 class CubiCasaDetailAdapter:
-    def __init__(self, checkpoint, device):
+    def __init__(self, checkpoint, device, door_contrast=False):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model = CubiCasa5K.from_pretrained(str(checkpoint), self.device)
         self.settings = InstanceSettings()
+        self.door_contrast = door_contrast
 
     @torch.inference_mode()
     def run(self, source, output, export_probabilities):
+        if not self.door_contrast:
+            return self._run(source, output, export_probabilities)
+        with Image.open(source) as image:
+            original = image.convert("RGB")
+        # Keep the native tile crop identical for both inference arms.
+        crop = building_bounds(original) if max(original.size) > 2048 else None
+        summary, directory = self._run(source, output, export_probabilities, crop)
+        try:
+            enhanced, report = prepare_contrast(original)
+            if enhanced is not None:
+                with TemporaryDirectory(prefix="door-contrast-") as temporary:
+                    root = Path(temporary)
+                    derivative = root / "drawing.png"
+                    enhanced.save(derivative)
+                    auxiliary, _ = self._run(derivative, root / "output", False, crop)
+                additions = additional_doors(summary, auxiliary)
+                summary["review_icon_detections"].extend(additions)
+                report["additional_review_doors"] = len(additions)
+        except (OSError, RuntimeError, ValueError, cv2.error):
+            # Optional recovery cannot discard an otherwise successful original run.
+            report = {"policy": "auxiliary-door-clahe-v1", "status": "unavailable"}
+        summary["door_contrast"] = report
+        raw_path = directory / "raw.json"
+        raw = json.loads(raw_path.read_text())
+        raw["door_contrast"] = report
+        raw_path.write_text(json.dumps(raw, indent=2))
+        return save_summary(summary, directory)
+
+    def _run(self, source, output, export_probabilities, building_crop=None):
         output.mkdir(parents=True, exist_ok=True)
         tensor, transform = preprocess_image(
             source, fixed_size=(2048, 2048), device=self.device
         )
         prediction, tiling, coarse_prediction, transform = predict_detail(
-            self.model, tensor, source, transform
+            self.model, tensor, source, transform, building_crop
         )
         prediction = prediction[0]
         del tensor
