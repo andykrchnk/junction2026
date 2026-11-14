@@ -11,7 +11,6 @@ import { MenuItem } from '@repo/design-system/components/ui/menu-item';
 import { remixIcons } from '@repo/design-system/lib/icons-remix';
 import { DrawingAttachmentThumbnail } from './drawing-upload';
 import { $$drawings } from './model';
-import { BlueprintContext } from './blueprint-context';
 
 const MoreIcon = remixIcons['more-horizontal'];
 
@@ -70,7 +69,6 @@ export function DrawingUploads({
     if (!attachment) return <p className="px-3 py-4 text-sm text-muted-foreground">Your uploaded blueprints will appear here.</p>;
     return (
         <div className="space-y-3 px-3 py-4">
-            <BlueprintContext drawing={drawing} />
             <div className="flex items-center gap-2">
                 {renaming ? (
                     <div className="flex min-w-0 flex-1 items-center gap-2">

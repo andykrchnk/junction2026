@@ -5,8 +5,7 @@ import { useUnit } from 'effector-react';
 import { createShapeId, useEditor, useValue } from 'tldraw';
 import { getDetectedObjectColor, type DetectedProperty, type Drawing, type PredictionPage } from '@repo/types';
 import { Tooltip, TooltipProvider } from '@repo/design-system/components/ui/tooltip';
-import { DetectedElementCard } from './detected-element-card';
-import { formatDetectedObjectArea, formatDetectedObjectTooltip } from './detected-object-tooltip';
+import { formatDetectedObjectTooltip } from './detected-object-tooltip';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import type { CanvasModel } from './canvas/model';
@@ -163,28 +162,5 @@ export function DetectionCanvasLayer() {
                 ))}
             </svg>
         </TooltipProvider>
-    );
-}
-
-export function DetectionControls({ drawing, model }: Readonly<{ drawing: Drawing; model: CanvasModel }>) {
-    const selected = useUnit(model.$selected);
-    const detectedPage = layoutPages(drawing.blueprints).find((page) => page.page === selected?.page);
-    const property = selected ? detectedPage?.detectedProperties[selected.index] : null;
-    const blueprint = drawing.blueprints.find((item) => item.pageNumber === selected?.page);
-    const entity = [...(blueprint?.layout?.rooms ?? []), ...(blueprint?.layout?.fixtures ?? [])].find((item) => item.id === property?.id);
-    if (!layoutPages(drawing.blueprints).some((page) => page.detectedProperties.length)) return null;
-    return (
-        <>
-            {property && detectedPage && selected && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[300] max-w-[calc(100%-1.5rem)]">
-                    <DetectedElementCard
-                        label={property.label}
-                        enrichment={entity?.enrichment}
-                        area={formatDetectedObjectArea({ drawing, page: detectedPage, property, index: selected.index })}
-                        onClose={() => model.selected(null)}
-                    />
-                </div>
-            )}
-        </>
     );
 }

@@ -23,7 +23,7 @@ import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import { type CanvasModel, type LoadedCanvas } from './canvas/model';
 import { readLocal, ViewZod, writeLocal } from './canvas-storage';
-import { DetectionCanvasLayer, DetectionContext, DetectionControls } from './detection-layer';
+import { DetectionCanvasLayer, DetectionContext } from './detection-layer';
 import { CommentsContext, CommentCanvasLayer } from './comment-layer';
 import { createCommentsModel } from './canvas/comments-model';
 import 'tldraw/tldraw.css';
@@ -467,7 +467,6 @@ function CanvasEditor({
                         />
                     </DetectionContext.Provider>
                 </CommentsContext.Provider>
-                <DetectionControls drawing={drawing} model={model} />
             </div>
         </div>
     );
