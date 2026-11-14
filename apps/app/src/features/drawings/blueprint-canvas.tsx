@@ -188,6 +188,7 @@ function CanvasEditor({
             // Portaled menus/dialogs and text editors own Escape before canvas selection.
             if (!commentUi && target?.closest('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')) return;
             if (openCommentId === null && target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+            if (openCommentId === null && commentMode === 'default' && document.querySelector('[data-detected-object][data-popup-open]')) return;
             event.preventDefault();
             event.stopPropagation();
             selectionGesture.current = null;

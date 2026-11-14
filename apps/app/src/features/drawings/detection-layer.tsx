@@ -4,12 +4,22 @@ import { useUnit } from 'effector-react';
 import { createShapeId, useEditor, useValue } from 'tldraw';
 import { getDetectedObjectColor, type DetectedProperty, type Drawing, type PredictionPage } from '@repo/types';
 import { Checkbox } from '@repo/design-system/components/ui/checkbox';
+import { Tooltip, TooltipProvider } from '@repo/design-system/components/ui/tooltip';
 import { DetectedElementCard } from './detected-element-card';
+import { formatDetectedObjectTooltip } from './detected-object-tooltip';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import type { CanvasModel } from './canvas/model';
 
 export const DetectionContext = createContext<{ drawing: Drawing; model: CanvasModel } | null>(null);
+
+function tooltipTextColor(color: string): string {
+    const luminance = [0.2126, 0.7152, 0.0722].reduce((total, weight, index) => {
+        const channel = Number.parseInt(color.slice(1 + index * 2, 3 + index * 2), 16) / 255;
+        return total + weight * (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+    }, 0);
+    return luminance > 0.179 ? '#000000' : '#ffffff';
+}
 
 function polygonPath(geometry: DetectedProperty['geometry']): string {
     if (geometry.type === 'Point') return '';
@@ -17,7 +27,7 @@ function polygonPath(geometry: DetectedProperty['geometry']): string {
     return polygons.flatMap((polygon) => polygon.map((ring) => ring.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${x},${y}`).join(' ') + 'Z')).join(' ');
 }
 
-function DetectionSheet({ page, drawingId, model }: Readonly<{ page: PredictionPage; drawingId: string; model: CanvasModel }>) {
+function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPage; drawing: Drawing; model: CanvasModel }>) {
     const editor = useEditor();
     const clipId = useId();
     const shape = useValue('blueprint sheet', () => editor.getShape(createShapeId(`blueprint-${page.page}`)), [editor, page.page]);
@@ -25,10 +35,10 @@ function DetectionSheet({ page, drawingId, model }: Readonly<{ page: PredictionP
     const { selected, visibility } = useUnit({ selected: model.$selected, visibility: model.$visibility });
     const [url, setUrl] = useState<string | null>(null);
     const { data: raster, isError } = useQuery({
-        queryKey: ['prediction-raster', drawingId, page.rasterFileId],
+        queryKey: ['prediction-raster', drawing.id, page.rasterFileId],
         staleTime: Infinity,
         queryFn: async () => {
-            const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawingId}/predictions/${page.page}/image`);
+            const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/predictions/${page.page}/image`);
             if (!response.ok) throw new Error('Could not load the detection image.');
             return response.blob();
         },
@@ -65,6 +75,7 @@ function DetectionSheet({ page, drawingId, model }: Readonly<{ page: PredictionP
                             const label = `${property.label}, sheet ${page.page}, model score ${Math.round(property.confidence * 100)}%`;
                             const select = () => model.selected({ page: page.page, index });
                             const color = getDetectedObjectColor(property);
+                            const tooltip = formatDetectedObjectTooltip({ drawing, page, property, index });
                             const common = {
                                 'data-detected-object': true,
                                 'data-detected-page': page.page,
@@ -84,20 +95,25 @@ function DetectionSheet({ page, drawingId, model }: Readonly<{ page: PredictionP
                                 strokeWidth: 1.5,
                                 vectorEffect: 'non-scaling-stroke',
                             };
-                            return property.geometry.type !== 'Point' ? (
-                                <path key={index} {...common} d={polygonPath(property.geometry)} fillRule="evenodd">
-                                    <title>{label}</title>
-                                </path>
-                            ) : (
-                                <circle
+                            return (
+                                <Tooltip
                                     key={index}
-                                    {...common}
-                                    cx={property.geometry.coordinates[0]}
-                                    cy={property.geometry.coordinates[1]}
-                                    r={3 / (zoom * Math.max(scaleX, scaleY))}
+                                    content={tooltip}
+                                    bubbleStyle={{ backgroundColor: color, color: tooltipTextColor(color) }}
+                                    contentClassName="z-[300000] pointer-events-none"
+                                    disableHoverablePopup
                                 >
-                                    <title>{label}</title>
-                                </circle>
+                                    {property.geometry.type !== 'Point' ? (
+                                        <path {...common} d={polygonPath(property.geometry)} fillRule="evenodd" />
+                                    ) : (
+                                        <circle
+                                            {...common}
+                                            cx={property.geometry.coordinates[0]}
+                                            cy={property.geometry.coordinates[1]}
+                                            r={3 / (zoom * Math.max(scaleX, scaleY))}
+                                        />
+                                    )}
+                                </Tooltip>
                             );
                         })}
                     </g>
@@ -128,22 +144,24 @@ export function DetectionCanvasLayer() {
     const context = useContext(DetectionContext);
     if (!context) return null;
     return (
-        <svg
-            aria-label="Detected geometry"
-            style={{ position: 'absolute', top: 0, left: 0, width: 1, height: 1, overflow: 'visible', pointerEvents: 'none', zIndex: 100000 }}
-        >
-            {Array.from({ length: context.drawing.attachment?.pages ?? 0 }, (_, index) => (
-                <SheetName
-                    key={index}
-                    page={index + 1}
-                    name={context.drawing.attachment?.name ?? 'Blueprint'}
-                    multiple={(context.drawing.attachment?.pages ?? 0) > 1}
-                />
-            ))}
-            {context.drawing.detection?.pages.map((page) => (
-                <DetectionSheet key={page.rasterFileId} page={page} drawingId={context.drawing.id} model={context.model} />
-            ))}
-        </svg>
+        <TooltipProvider>
+            <svg
+                aria-label="Detected geometry"
+                style={{ position: 'absolute', top: 0, left: 0, width: 1, height: 1, overflow: 'visible', pointerEvents: 'none', zIndex: 100000 }}
+            >
+                {Array.from({ length: context.drawing.attachment?.pages ?? 0 }, (_, index) => (
+                    <SheetName
+                        key={index}
+                        page={index + 1}
+                        name={context.drawing.attachment?.name ?? 'Blueprint'}
+                        multiple={(context.drawing.attachment?.pages ?? 0) > 1}
+                    />
+                ))}
+                {context.drawing.detection?.pages.map((page) => (
+                    <DetectionSheet key={page.rasterFileId} page={page} drawing={context.drawing} model={context.model} />
+                ))}
+            </svg>
+        </TooltipProvider>
     );
 }
 
