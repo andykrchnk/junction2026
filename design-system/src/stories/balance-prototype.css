@@ -1,0 +1,10 @@
+/* Scoped experiments. Never applies to Current or production components. */
+.balance-prototype [data-lighting="secondary"] { --study-edge: var(--balance-secondary); }
+.balance-prototype [data-lighting="tertiary"] { --study-edge: var(--balance-tertiary); --study-sheen: 0; --study-shade: 0; --study-bottom: 0; }
+.balance-prototype [data-lighting="ghost"] { --study-edge: 0; --study-sheen: 0; --study-shade: 0; --study-bottom: 0; }
+.balance-prototype .balance-panel,
+.balance-prototype input,
+.balance-prototype textarea {
+ background-image: linear-gradient(to bottom, rgb(255 255 255 / var(--balance-surface)), transparent 32px);
+ box-shadow: inset 0 1px 0 rgb(255 255 255 / var(--balance-surface));
+}
