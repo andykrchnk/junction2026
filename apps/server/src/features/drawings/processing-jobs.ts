@@ -177,7 +177,7 @@ export async function processNextJob(shutdown: AbortSignal): Promise<boolean> {
 
 export function startDrawingWorker() {
     const controller = new AbortController();
-    const done = (async () => {
+    const run = async () => {
         while (!controller.signal.aborted) {
             try {
                 if (await processNextJob(controller.signal)) continue;
@@ -187,7 +187,8 @@ export function startDrawingWorker() {
             }
             await delay(2000, undefined, { signal: controller.signal }).catch(() => {});
         }
-    })();
+    };
+    const done = Promise.all(Array.from({ length: Env.DRAWING_PROCESSING_CONCURRENCY }, () => run()));
     return {
         stop: async () => {
             controller.abort();

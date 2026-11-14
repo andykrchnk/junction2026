@@ -6,10 +6,16 @@ attachment write and queuing the work. GridFS uploads are preserved when a faile
 write acknowledgement leaves attachment ownership uncertain.
 
 The API process starts a polling worker after initializing MongoDB models/indexes.
-No browser session or open tab is required. The worker claims one bounded stage
+No browser session or open tab is required. `DRAWING_PROCESSING_CONCURRENCY` sets
+the number of concurrent worker slots per backend instance (default 3, integer
+1–32; restart the backend after changing it). Each slot claims one bounded stage
 at a time with an atomic `findOneAndUpdate`, a random lease token, a 60-second
 lease and a 15-second renewal. Multiple API replicas may poll; only one owns a
-particular document at a time. The claim index covers status, availability and
+particular document at a time, so pages within a document remain sequential.
+With multiple replicas the total limit is the sum of their configured slots.
+This limits document stages, not downstream requests within each stage; inference
+service capacity may still serialize GPU work or return backpressure. Shutdown
+aborts and awaits every slot. The claim index covers status, availability and
 expiry. Inference backpressure (503) defers work without using the failure budget.
 
 Each document has a persisted page cursor. Inference runs before analysis for that
