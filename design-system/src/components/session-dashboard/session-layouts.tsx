@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Plus, ChevronDown, ArrowUpRight, FileText, LogOut } from '@/lib/icons-remix';
-import { Progress } from '../ui/progress';
+import { Plus, ChevronDown, FileText, LogOut, Upload, ScanLine, GridIcon, Check } from '@/lib/icons-remix';
 import { Button } from '../ui/button';
 import { BrandLogo } from '../ui/brand-logo';
 import { DropdownMenu, DropdownTrigger, DropdownContent } from '../ui/dropdown';
@@ -11,7 +10,16 @@ import './session-layouts.css';
 
 export const OFFICIAL_TABLE_VARIANT = 0; // Quiet rules
 
-type PreviewSession = { id: number; name: string; file: string; status: string; rooms?: number; createdAt?: string; documentCount?: number };
+type PreviewSession = {
+    id: number;
+    name: string;
+    file: string;
+    status: string;
+    rooms?: number;
+    createdAt?: string;
+    documentCount?: number;
+    uploadProgress?: number;
+};
 const sortLabels = ['Recently added', 'Name A–Z', 'Name Z–A', 'Document count'];
 export const layoutDirections = [
     { name: 'Balanced', short: 'Balanced', note: 'Three generous cards with an understated frame.' },
@@ -29,11 +37,25 @@ function SessionDate({ value }: Readonly<{ value?: string }>) {
         <>—</>
     );
 }
-function SessionStatus({ status }: Readonly<{ status: string }>) {
+function SessionStatus({ status, rooms, uploadProgress }: Readonly<{ status: string; rooms?: number; uploadProgress?: number }>) {
+    const uploading = status === 'Uploading';
+    const analyzing = status === 'Analyzing';
+    const identified = !uploading && !analyzing && rooms !== undefined;
+    const Icon = uploading ? Upload : analyzing ? ScanLine : identified ? GridIcon : Check;
+    const label = uploading
+        ? `Uploading${uploadProgress === undefined ? '' : ` · ${Math.round(Math.max(0, Math.min(100, uploadProgress)))}%`}`
+        : analyzing
+          ? 'Analyzing'
+          : identified
+            ? `${rooms} ${rooms === 1 ? 'room' : 'rooms'} identified`
+            : status;
     return (
         <div className="sl-status-cell">
-            <span className={`sl-table-status ${status === 'Ready' ? 'is-ready' : 'needs-review'}`}>{status}</span>
-            {(status === 'Uploading' || status === 'Analyzing') && <Progress value={null} aria-label={status} className="sl-status-progress" />}
+            <span className="sl-status-icon-label">
+                <Icon size={16} />
+                <span>{label}</span>
+            </span>
+            {status === 'Needs review' && identified && <span className="sl-status-note">Needs review</span>}
         </div>
     );
 }
@@ -187,7 +209,7 @@ export function SessionLayouts({
                                             <SessionDate value={s.createdAt} />
                                         </TableCell>
                                         <TableCell>
-                                            <SessionStatus status={s.status} />
+                                            <SessionStatus status={s.status} rooms={s.rooms} uploadProgress={s.uploadProgress} />
                                         </TableCell>
                                         <TableCell>{s.documentCount ?? '—'}</TableCell>
                                     </TableRow>
@@ -206,13 +228,12 @@ export function SessionLayouts({
                                 <div className="sl-card-copy">
                                     <div className="sl-card-title">
                                         <h2>{s.name}</h2>
-                                        <ArrowUpRight size={15} />
                                     </div>
                                     <p>
                                         Created <SessionDate value={s.createdAt} />
                                     </p>
                                     <div className="sl-card-meta">
-                                        <SessionStatus status={s.status} />
+                                        <SessionStatus status={s.status} rooms={s.rooms} uploadProgress={s.uploadProgress} />
                                         <span className="sl-document-count">
                                             {s.documentCount ?? '—'} {s.documentCount === 1 ? 'document' : 'documents'}
                                         </span>

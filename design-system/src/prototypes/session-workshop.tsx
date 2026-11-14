@@ -50,6 +50,7 @@ type Session = {
     rooms: number;
     createdAt?: string;
     documentCount?: number;
+    uploadProgress?: number;
     notes?: string[];
     source?: File;
 };
@@ -58,7 +59,16 @@ const examples: Session[] = [
     { createdAt: '2026-11-11T10:00:00Z', documentCount: 2, id: 2, name: 'Riverside apartment', file: 'Level 02.pdf', status: 'Needs review', rooms: 6 },
     { createdAt: '2026-11-12T10:00:00Z', documentCount: 1, id: 3, name: 'Garden studio', file: 'Studio plan.png', status: 'Ready', rooms: 3 },
     { createdAt: '2026-11-13T10:00:00Z', documentCount: 4, id: 4, name: 'Northside residence', file: 'First floor.pdf', status: 'Analyzing', rooms: 7 },
-    { createdAt: '2026-11-14T10:00:00Z', documentCount: 1, id: 5, name: 'Workshop extension', file: 'Proposed plan.pdf', status: 'Uploading', rooms: 4 },
+    {
+        createdAt: '2026-11-14T10:00:00Z',
+        documentCount: 1,
+        id: 5,
+        name: 'Workshop extension',
+        file: 'Proposed plan.pdf',
+        status: 'Uploading',
+        uploadProgress: 64,
+        rooms: 4,
+    },
 ];
 const roomSamples = [
     { name: 'Living Room', score: 96, x: 24, y: 24, w: 225, h: 158 },
