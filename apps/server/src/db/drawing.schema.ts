@@ -1,6 +1,16 @@
 import mongoose from 'mongoose';
 import { z } from 'zod';
-import { StoredAnalysisZod, DetectionZod, AttachmentZod, DrawingZod, MessageZod, PpmCandidatesZod, StoredPpmResultZod, ScanCommentsZod } from '@repo/types';
+import {
+    StoredAnalysisZod,
+    DetectionZod,
+    AttachmentZod,
+    DrawingZod,
+    DrawingCoversZod,
+    MessageZod,
+    PpmCandidatesZod,
+    StoredPpmResultZod,
+    ScanCommentsZod,
+} from '@repo/types';
 import { connection } from './connection';
 
 const schema = new mongoose.Schema(
@@ -10,6 +20,7 @@ const schema = new mongoose.Schema(
         attachment: { type: mongoose.Schema.Types.Mixed, default: null },
         analysis: { type: mongoose.Schema.Types.Mixed, default: null },
         detection: { type: mongoose.Schema.Types.Mixed, default: null },
+        covers: { type: mongoose.Schema.Types.Mixed, default: null },
         ppmCandidates: { type: [mongoose.Schema.Types.Mixed], default: null },
         ppm: { type: mongoose.Schema.Types.Mixed, default: null },
         comments: { type: [mongoose.Schema.Types.Mixed], default: [] },
@@ -59,6 +70,7 @@ const StoredDrawingZod = z.object({
     attachment: AttachmentZod.nullable(),
     analysis: StoredAnalysisZod.nullable(),
     detection: DetectionZod.nullable().default(null),
+    covers: DrawingCoversZod.nullable().default(null),
     ppmCandidates: PpmCandidatesZod.nullable().default(null),
     ppm: StoredPpmResultZod.nullable().default(null),
     comments: StoredScanCommentsZod,
@@ -87,6 +99,7 @@ export function DrawingDto(data: unknown) {
         attachment: doc.attachment,
         analysis: doc.analysis,
         detection,
+        covers: doc.covers,
         ppmCandidates: doc.ppmCandidates,
         ppm: doc.ppm,
         comments: doc.comments.filter((comment) => comment.deletedAt == null),

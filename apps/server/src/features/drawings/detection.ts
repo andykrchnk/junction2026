@@ -7,6 +7,7 @@ import { Env } from '../../shared/env';
 import { blueprintFiles } from './files';
 import { prepareRaster } from './raster';
 import { InferenceError, predictRaster } from './inference';
+import { storeDrawingCovers, deleteUnreferencedDrawingCovers } from './covers';
 
 type DetectDrawingParams = { id: string; ownerId: string; page: number };
 
@@ -16,11 +17,30 @@ async function readDrawing(params: Pick<DetectDrawingParams, 'id' | 'ownerId'>) 
     return db.drawing.DrawingDto(doc);
 }
 
+async function ensureDrawingCovers(params: { drawing: Drawing; ownerId: string }) {
+    const { drawing, ownerId } = params;
+    if (drawing.covers || drawing.detection?.status !== 'ready') return drawing;
+    // Detection is already durable: cover failures must never discard successful geometry.
+    const covers = await storeDrawingCovers({ drawingId: drawing.id, ownerId, pages: drawing.detection.pages });
+    try {
+        const saved = await db.drawing.DrawingModel.updateOne({ _id: drawing.id, ownerId, covers: null, 'detection.status': 'ready' }, { $set: { covers } });
+        if (!saved.matchedCount) await deleteUnreferencedDrawingCovers({ drawingId: drawing.id, ownerId, covers });
+    } catch (cause) {
+        await deleteUnreferencedDrawingCovers({ drawingId: drawing.id, ownerId, covers });
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Room detection is saved, but cover generation failed. Retry detection to create covers.',
+            cause,
+        });
+    }
+    return readDrawing({ id: drawing.id, ownerId });
+}
+
 export async function detectDrawing(params: DetectDrawingParams) {
     const current = await readDrawing(params);
     if (!current.attachment) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload a blueprint first.' });
     if (params.page > current.attachment.pages) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid blueprint page.' });
-    if (current.detection?.pages.some((page) => page.page === params.page)) return current;
+    if (current.detection?.pages.some((page) => page.page === params.page)) return ensureDrawingCovers({ drawing: current, ownerId: params.ownerId });
 
     const availableLease = { $or: [{ inferenceLease: null }, { inferenceLeaseUntil: { $lte: new Date() } }] };
     const lease = crypto.randomUUID();
@@ -43,7 +63,7 @@ export async function detectDrawing(params: DetectDrawingParams) {
         // Another request may have completed this page between the initial read and lease acquisition.
         if (drawing.detection?.pages.some((page) => page.page === params.page)) {
             await db.drawing.DrawingModel.updateOne(ownedLease, { $set: { inferenceLease: null, inferenceLeaseUntil: null } });
-            return readDrawing(params);
+            return ensureDrawingCovers({ drawing: await readDrawing(params), ownerId: params.ownerId });
         }
         if (!Env.INFERENCE_BASE_URL || !Env.INFERENCE_API_KEY) {
             await db.drawing.DrawingModel.updateOne(ownedLease, {
@@ -122,5 +142,5 @@ export async function detectDrawing(params: DetectDrawingParams) {
         });
         throw new TRPCError({ code: cause instanceof TRPCError ? cause.code : 'INTERNAL_SERVER_ERROR', message, cause });
     }
-    return readDrawing(params);
+    return ensureDrawingCovers({ drawing: await readDrawing(params), ownerId: params.ownerId });
 }

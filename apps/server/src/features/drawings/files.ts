@@ -4,7 +4,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { GridFSBucket, ObjectId } from 'mongodb';
 import { fileTypeFromBuffer } from 'file-type';
 import { PDFDocument } from 'pdf-lib';
-import { MAX_FILE_BYTES, MAX_PDF_PAGES, AttachmentZod, MongoIdZod } from '@repo/types';
+import { MAX_FILE_BYTES, MAX_PDF_PAGES, AttachmentZod, DrawingCoversZod, MongoIdZod } from '@repo/types';
 import { database } from '../../db/connection';
 import { db } from '../../db';
 import type { AuthRequestContextVariables } from '../../services/better-auth';
@@ -92,6 +92,25 @@ drawingFiles.get('/:id/predictions/:page/image', async (c) => {
     if (!raster) return c.json({ message: 'Prediction page not found.' }, 404);
     const chunks: Buffer[] = [];
     for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(raster.rasterFileId))) chunks.push(Buffer.from(chunk));
+    c.header('Content-Type', 'image/png');
+    c.header('Cache-Control', 'private, no-store');
+    return c.body(Buffer.concat(chunks));
+});
+
+// Covers are generated during detection; this route only serves stored, owner-scoped images.
+drawingFiles.get('/:id/covers/:theme', async (c) => {
+    const id = MongoIdZod.safeParse(c.req.param('id'));
+    const theme = z.enum(['light', 'dark']).safeParse(c.req.param('theme'));
+    if (!id.success || !theme.success) return c.json({ message: 'Drawing cover not found.' }, 404);
+    const doc = await db.drawing.DrawingModel.findOne({ _id: id.data, ownerId: c.get('user')?.id })
+        .select('covers')
+        .lean();
+    if (!doc) return c.json({ message: 'Drawing cover not found.' }, 404);
+    const covers = DrawingCoversZod.nullable().optional().parse(doc.covers);
+    if (!covers) return c.json({ message: 'Drawing cover not found.' }, 404);
+    const fileId = theme.data === 'light' ? covers.lightFileId : covers.darkFileId;
+    const chunks: Buffer[] = [];
+    for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(fileId))) chunks.push(Buffer.from(chunk));
     c.header('Content-Type', 'image/png');
     c.header('Cache-Control', 'private, no-store');
     return c.body(Buffer.concat(chunks));

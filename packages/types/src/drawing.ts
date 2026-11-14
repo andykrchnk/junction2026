@@ -141,7 +141,10 @@ export const AttachmentZod = z.object({
     pages: z.number().int().positive(),
     hiddenFromCanvas: z.boolean().optional(),
 });
+export const DrawingCoversZod = z.object({ lightFileId: MongoIdZod, darkFileId: MongoIdZod });
+export type DrawingCovers = z.infer<typeof DrawingCoversZod>;
 export const DrawingSummaryZod = z.object({
+    covers: DrawingCoversZod.nullable().optional(),
     createdAt: z.string().optional(),
     documentCount: z.number().int().nonnegative().optional(),
     id: MongoIdZod,

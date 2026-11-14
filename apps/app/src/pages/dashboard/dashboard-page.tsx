@@ -7,6 +7,7 @@ import { useUnit } from 'effector-react';
 import { $$user } from '@/entities/user/model';
 import { $$drawings } from '@/features/drawings/model';
 import { DrawingWorkspace } from '@/features/drawings/drawing-workspace';
+import { DrawingCover } from '@/features/drawings/drawing-cover';
 import { trpc } from '@/shared/trpc';
 
 export function DashboardPage() {
@@ -59,6 +60,7 @@ export function DashboardPage() {
                     documentCount: drawing.documentCount,
                     file: `Updated ${new Date(drawing.updatedAt).toLocaleDateString()}`,
                     status: { empty: 'New', uploaded: 'Uploaded', analyzing: 'Analyzing', ready: 'Ready', failed: 'Needs attention' }[drawing.status],
+                    cover: <DrawingCover drawing={drawing} />,
                 }))}
                 onNew={() => {
                     void create();
