@@ -1,0 +1,25 @@
+# Overlay on experiments/compose.yaml; use --project-directory at the repo root.
+services:
+    pipeline:
+        image: junction-pipeline:standardized
+        build:
+            context: ./packages/processing
+            dockerfile: pipeline/Dockerfile
+        ports:
+            - 127.0.0.1:8002:8002
+        env_file: .local/gpu-comparison/service.env
+        environment:
+            CUBICASA_DETAIL_URL: http://cubicasa-detail:8001
+            PADDLEOCR_URL: http://paddleocr:8001
+            LEGACY_INFERENCE_URL: http://inference:8001
+            GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
+            PIPELINE_ARTIFACT_DIR: /artifacts
+        secrets:
+            - gemini_api_key
+        volumes:
+            - ./.local/processing-pipeline/artifacts:/artifacts
+        networks: [inference, gateway]
+        restart: unless-stopped
+secrets:
+    gemini_api_key:
+        file: ./.local/processing-pipeline/gemini-api-key

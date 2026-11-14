@@ -136,9 +136,12 @@ pixels. Configure a matching body-size limit at your proxy. Each request uses
 an isolated temporary directory, cleaned after JSON generation or ZIP delivery.
 The API omits Matplotlib visualizations to reduce response time and memory.
 
-Model selection, checkpoint path and 1024×1024 inference size live in
-`service.py`. Only deployment secrets and runtime device selection use the
-environment. Model scores remain uncalibrated; polygon areas are pixels,
+Model implementations, checkpoint paths and preprocessing live in `adapters.py`.
+The endpoint accepts `model=cubicasa|cubicasa-detail|raster2seq|grounding-sam|paddleocr`, with
+CubiCasa as the default. Optional models run in separate private workers behind
+this same authenticated upload boundary. See [the GPU comparison workflow](../experiments/README.md)
+for pinned sources, setup, capabilities and unsupported-field semantics.
+Deployment secrets, worker URLs and runtime device selection use the environment. Model scores remain uncalibrated; polygon areas are pixels,
 not square metres.
 
 ### Command line
