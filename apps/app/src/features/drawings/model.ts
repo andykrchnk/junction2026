@@ -7,12 +7,15 @@ import { queryClient, trpc, trpcClient } from '@/shared/trpc';
 
 const opened = createEvent<string | null>();
 const draftChanged = createEvent<string>();
+const analysisRequested = createEvent<string>();
 const operationStarted = createEvent<string>();
 const operationFinished = createEvent<string>();
 const $id = createStore<string | null>(null);
 const $draft = createStore('');
 const $activity = createStore<Record<string, number>>({});
 const $error = createStore<{ id: string | null; message: string } | null>(null);
+const $inferenceError = createStore<{ id: string; message: string } | null>(null);
+const $analysisRunning = createStore<Record<string, boolean>>({});
 const refresh = async (id?: string) => {
     await Promise.all([
         queryClient.invalidateQueries(trpc.drawings.list.queryFilter()),
@@ -36,8 +39,44 @@ const uploadFx = createEffect(async ({ id, file }: { id: string; file: File }) =
     await refresh(id);
     return id;
 });
+async function waitForInference(params: { id: string; deadline: number }): Promise<Drawing> {
+    const drawing = await trpcClient.drawings.get.query({ id: params.id });
+    queryClient.setQueryData(trpc.drawings.get.queryOptions({ id: params.id }).queryKey, drawing);
+    if (drawing.detection?.status !== 'processing' || Date.now() >= params.deadline) return drawing;
+    await new Promise<void>((resolve) => setTimeout(resolve, Math.min(2000, Math.max(0, params.deadline - Date.now()))));
+    return waitForInference(params);
+}
+const inferFx = createEffect(async (id: string) => {
+    const drawing = await waitForInference({ id, deadline: Date.now() + 300_000 });
+    if (!drawing.attachment || drawing.detection?.status === 'processing') return drawing;
+    const completed = new Set(drawing.detection?.pages.map((page) => page.page) ?? []);
+    // The service accepts one image at a time. Persist each page before requesting the next.
+    for (const page of Array.from({ length: drawing.attachment.pages }, (_, index) => index + 1)) {
+        if (completed.has(page)) continue;
+        try {
+            const updated = await trpcClient.drawings.detect.mutate({ id, page });
+            if (updated.detection?.status === 'not_configured') return updated;
+        } finally {
+            await refresh(id);
+        }
+    }
+    return trpcClient.drawings.get.query({ id });
+});
 const analyzeFx = createEffect(async (id: string) => {
     try {
+        const drawing = await trpcClient.drawings.get.query({ id });
+        if (!drawing.attachment || drawing.analysis) return drawing;
+        const detected = await inferFx(id);
+        if (detected.detection?.status !== 'ready') {
+            const status = detected.detection?.status;
+            const message =
+                status === 'not_configured'
+                    ? 'Object detection is not configured. Connect the inference service, then retry analysis.'
+                    : status === 'processing'
+                      ? 'Object detection is still running. Wait a moment, then retry analysis.'
+                      : (detected.detection?.error ?? 'Object detection has not finished. Retry analysis to resume the remaining pages.');
+            throw new Error(message);
+        }
         return await trpcClient.drawings.analyze.mutate({ id });
     } finally {
         await refresh(id);
@@ -46,7 +85,7 @@ const analyzeFx = createEffect(async (id: string) => {
 const askFx = createEffect(async (input: { id: string; message: Drawing['messages'][number] }) => {
     try {
         const drawing = await trpcClient.drawings.get.query({ id: input.id });
-        if (!drawing.analysis) await trpcClient.drawings.analyze.mutate({ id: input.id });
+        if (!drawing.analysis) await analyzeFx(input.id);
         return await trpcClient.drawings.ask.mutate({ id: input.id, message: { id: input.message.id, question: input.message.question } });
     } finally {
         await refresh(input.id);
@@ -70,7 +109,13 @@ sample({ clock: uploadFx.fail, fn: ({ params, error }) => ({ id: params.id, mess
 sample({ clock: analyzeFx.fail, fn: ({ params, error }) => ({ id: params, message: error.message }), target: $error });
 sample({ clock: askFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
 sample({ clock: askFx.done, source: $id, filter: (id, { params }) => id === params.id, fn: () => '', target: $draft });
-sample({ clock: uploadFx.doneData, target: analyzeFx });
+sample({ clock: [opened, inferFx], fn: () => null, target: $inferenceError });
+sample({ clock: opened, filter: (id): id is string => id !== null, target: analysisRequested });
+sample({ clock: inferFx.fail, fn: ({ params, error }) => ({ id: params, message: error.message }), target: $inferenceError });
+sample({ clock: analyzeFx, source: $analysisRunning, fn: (running, id) => ({ ...running, [id]: true }), target: $analysisRunning });
+sample({ clock: analyzeFx.finally, source: $analysisRunning, fn: (running, { params }) => ({ ...running, [params]: false }), target: $analysisRunning });
+sample({ clock: uploadFx.doneData, target: analysisRequested });
+sample({ clock: analysisRequested, source: $analysisRunning, filter: (running, id) => !running[id], fn: (_, id) => id, target: analyzeFx });
 
 export const $$drawings = {
     opened,
@@ -78,9 +123,12 @@ export const $$drawings = {
     createFx,
     uploadFx,
     analyzeFx,
+    inferFx,
     askFx,
     $draft: readonly($draft),
     $error: readonly($error),
+    $inferenceError: readonly($inferenceError),
+    $inferring: readonly(inferFx.pending),
     $creating: readonly(createFx.pending),
     $uploading: readonly(uploadFx.pending),
     $activity: readonly($activity),

@@ -1,13 +1,14 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { ObjectId } from 'mongodb';
-import { AskDrawingZod, DrawingIdZod, DrawingSummaryZod, DrawingZod, CanvasStateZod, SaveCanvasZod } from '@repo/types';
+import { AskDrawingZod, DetectDrawingZod, DrawingIdZod, DrawingSummaryZod, DrawingZod, CanvasStateZod, SaveCanvasZod } from '@repo/types';
 import type { Drawing } from '@repo/types';
 import { db } from '../../db';
 import { protectedProcedure, t } from '../../shared/trpc';
 import { Env } from '../../shared/env';
 import { blueprintFiles } from './files';
 import { analyze, answer } from './agent';
+import { detectDrawing } from './detection';
 
 export async function getDrawing(id: string, ownerId: string) {
     const doc = await db.drawing.DrawingModel.findOne({ _id: id, ownerId }).select('-canvasDocument -canvasRevision').lean();
@@ -95,6 +96,10 @@ export const drawingRouter = t.router({
         .input(DrawingIdZod)
         .output(DrawingZod)
         .query(({ input, ctx }) => getDrawing(input.id, ctx.user.id)),
+    detect: protectedProcedure
+        .input(DetectDrawingZod)
+        .output(DrawingZod)
+        .mutation(({ input, ctx }) => detectDrawing({ id: input.id, ownerId: ctx.user.id, page: input.page })),
     analyze: protectedProcedure
         .input(DrawingIdZod)
         .output(DrawingZod)
@@ -102,9 +107,17 @@ export const drawingRouter = t.router({
             processDrawing(input.id, ctx.user.id, async (drawing, signal) => {
                 if (drawing.analysis) return {};
                 if (!drawing.attachment) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Upload a blueprint first.' });
+                if (
+                    drawing.detection?.status !== 'ready' ||
+                    Array.from({ length: drawing.attachment.pages }, (_, index) => index + 1).some(
+                        (page) => !drawing.detection?.pages.some((prediction) => prediction.page === page),
+                    )
+                ) {
+                    throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Complete NN detection for every page before starting OpenAI analysis.' });
+                }
                 const chunks: Buffer[] = [];
                 for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(drawing.attachment.id))) chunks.push(Buffer.from(chunk));
-                const analysis = await analyze(drawing.attachment, Buffer.concat(chunks), signal);
+                const analysis = await analyze(drawing.attachment, Buffer.concat(chunks), signal, drawing.detection);
                 return { analysis };
             }),
         ),

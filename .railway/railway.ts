@@ -40,6 +40,9 @@ export default defineRailway((context) => {
         replicas: { [region]: 1 },
         env: {
             OPENAI_API_KEY: preserve(),
+            INFERENCE_BASE_URL: preserve(),
+            INFERENCE_API_KEY: preserve(),
+            INFERENCE_TIMEOUT_MS: preserve(),
             NODE_ENV: 'production',
             PORT: '8080',
             APP_ORIGIN: context.shared.APP_ORIGIN,

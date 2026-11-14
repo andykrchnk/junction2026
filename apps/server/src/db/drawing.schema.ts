@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { z } from 'zod';
-import { StoredAnalysisZod, AttachmentZod, DrawingZod, MessageZod } from '@repo/types';
+import { StoredAnalysisZod, DetectionZod, AttachmentZod, DrawingZod, MessageZod } from '@repo/types';
 import { connection } from './connection';
 
 const schema = new mongoose.Schema(
@@ -9,6 +9,9 @@ const schema = new mongoose.Schema(
         title: { type: String, default: 'Untitled drawing' },
         attachment: { type: mongoose.Schema.Types.Mixed, default: null },
         analysis: { type: mongoose.Schema.Types.Mixed, default: null },
+        detection: { type: mongoose.Schema.Types.Mixed, default: null },
+        inferenceLease: { type: String, default: null },
+        inferenceLeaseUntil: { type: Date, default: null },
         messages: { type: [mongoose.Schema.Types.Mixed], default: [] },
         lease: { type: String, default: null },
         leaseUntil: { type: Date, default: null },
@@ -29,6 +32,9 @@ const StoredDrawingZod = z.object({
     updatedAt: z.date(),
     attachment: AttachmentZod.nullable(),
     analysis: StoredAnalysisZod.nullable(),
+    detection: DetectionZod.nullable().default(null),
+    inferenceLease: z.string().nullable().default(null),
+    inferenceLeaseUntil: z.date().nullable().default(null),
     messages: z.array(MessageZod),
     lease: z.string().nullable(),
     leaseUntil: z.date().nullable(),
@@ -38,12 +44,18 @@ export function DrawingDto(data: unknown) {
     const doc = StoredDrawingZod.parse(data);
     const busy = doc.lease !== null && doc.leaseUntil !== null && doc.leaseUntil.getTime() > Date.now();
     const error = !busy && doc.lease ? 'Processing was interrupted. Please retry.' : doc.error;
+    const inferenceBusy = doc.inferenceLease !== null && doc.inferenceLeaseUntil !== null && doc.inferenceLeaseUntil.getTime() > Date.now();
+    const detection =
+        doc.detection?.status === 'processing' && !inferenceBusy
+            ? { ...doc.detection, status: doc.detection.pages.length > 0 ? 'partial' : 'failed', error: 'Detection was interrupted. Please retry.' }
+            : doc.detection;
     return DrawingZod.parse({
         id: doc._id.toHexString(),
         title: doc.title,
         updatedAt: doc.updatedAt.toISOString(),
         attachment: doc.attachment,
         analysis: doc.analysis,
+        detection,
         messages: doc.messages,
         busy,
         error,
