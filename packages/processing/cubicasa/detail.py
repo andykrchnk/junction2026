@@ -15,6 +15,7 @@ from utils.preprocessor import preprocess_image
 from utils.room_instances import extract_instances, InstanceSettings, polygon_parts
 from utils.official_postprocessing import get_polygons
 from utils.geometry_cleanup import clean_instances
+from utils.multiscale import predict_detail
 
 
 class CubiCasaDetailAdapter:
@@ -29,7 +30,10 @@ class CubiCasaDetailAdapter:
         tensor, transform = preprocess_image(
             source, fixed_size=(2048, 2048), device=self.device
         )
-        prediction = self.model(tensor)[0].float().cpu()
+        prediction, tiling, coarse_prediction, transform = predict_detail(
+            self.model, tensor, source, transform
+        )
+        prediction = prediction[0]
         del tensor
         rows, columns = transform.content_slices
         heatmaps = prediction[:21, rows, columns].numpy()
@@ -53,11 +57,28 @@ class CubiCasaDetailAdapter:
             for shape in footprint
             for part in polygon_parts(shape)
         ]
+        coarse_regions = []
+        if coarse_prediction is not None:
+            coarse = coarse_prediction[0, :, rows, columns]
+            _, _, coarse_footprint, _ = get_polygons(
+                (coarse[:21].numpy().copy(), torch.softmax(coarse[21:33], 0).numpy(),
+                 torch.softmax(coarse[33:], 0).numpy()), 0.4, [1, 2]
+            )
+            coarse_regions = [
+                affinity.scale(part, sx, sy, origin=(0, 0))
+                for shape in coarse_footprint for part in polygon_parts(shape)
+            ]
+            # Refined barriers may split rooms, but missing refined junction cells
+            # must not carve unsupported notches out of the whole-image footprint.
+            regions.extend(coarse_regions)
+            del coarse_prediction, coarse
         extracted = extract_instances(
             rooms, icons, regions, structures, transform, self.settings
         )
         cleanup = clean_instances(extracted, source, transform, rooms)
         raw = {
+            "inference_tiling": tiling,
+            "whole_image_room_regions": [r.wkt for r in coarse_regions],
             "geometry_cleanup": cleanup,
             "original_instances": [
                 {"id": r["id"], "geometry_wkt": r["original_geometry_wkt"]}
@@ -111,7 +132,7 @@ class CubiCasaDetailAdapter:
         summary.update(
             metadata(
                 "cubicasa-detail",
-                CUBICASA_REVISION + ":wall-aligned-v3:2048",
+                CUBICASA_REVISION + ":native-source-tiles:1024",
                 {
                     "rooms": True,
                     "icons": True,
@@ -159,6 +180,7 @@ class CubiCasaDetailAdapter:
                     "area_px": shape.area,
                     "confidence": item["class_mean_softmax"],
                     "mean_head_support": item["mean_head_support"],
+                    "requires_verification": item.get("requires_verification", False),
                     "review_reasons": item["review_reasons"],
                 }
                 if item["type"] == "wall":

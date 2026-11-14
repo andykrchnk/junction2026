@@ -45,7 +45,10 @@ def verify(target, parts, tokens, bounds, client):
         {
             "type": "text",
             "text": json.dumps(
-                {"crop_bounds": bounds, "ocr": tokens, "measurements": candidates}
+                {
+                    "crop_bounds": bounds, "ocr": tokens, "measurements": candidates,
+                    **({"original_class": target["class"]} if target["kind"] == "room" else {}),
+                }
             ),
         },
     ]
@@ -73,7 +76,12 @@ def verify(target, parts, tokens, bounds, client):
                 "Reconcile the class with the printed name. Imperfect boundaries alone do not "
                 "invalidate clear room use. Choose ambiguous rather than a best guess when evidence "
                 "is insufficient. Choose conflicting_room_uses when the target spans distinct "
-                "spaces with incompatible uses. Linework or wall fragments are ambiguous, not rooms."
+                "spaces with incompatible uses. Linework or wall fragments are ambiguous, not rooms. "
+                "Check the supplied original class independently; do not preserve it just because "
+                "a replacement use is unknown. Choose Undefined when this is clearly a room but "
+                "its specific use is not established, particularly when the original class is "
+                "contradicted. Generic room labels do not establish bedroom, living-room, or garage use. "
+                "Garage requires vehicle access or other clear garage evidence."
             ),
             "criteria": {
                 **{
@@ -81,7 +89,8 @@ def verify(target, parts, tokens, bounds, client):
                     for c in ROOM_CLASSES
                     if c not in STRUCTURAL_CLASSES and c != "Undefined"
                 },
-                "ambiguous": "Insufficient room-use evidence, unclear label association, non-room fragment, or use outside the supported classes; retain original classification.",
+                "Undefined": "A real room is identifiable but its functional use is unspecified or outside the supported classes; do not retain an unsupported original use.",
+                "ambiguous": "The target itself cannot be assessed reliably (unreadable input, unclear boundaries/association, or non-room fragment); retain original classification.",
                 "conflicting_room_uses": "The target spans distinct spaces with incompatible room uses; no single room class is supported.",
             },
         }

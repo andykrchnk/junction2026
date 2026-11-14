@@ -8,6 +8,7 @@ from taxonomy import STRUCTURAL_CLASSES
 
 def targets(worker, image):
     result = []
+    seen_geometries = set()
     rooms = worker.room_instances
     if rooms is None:
         rooms = []
@@ -34,6 +35,10 @@ def targets(worker, image):
                 or geometry.area <= 0
             ):
                 continue
+            key = (kind, label, geometry.normalize().wkb)
+            if key in seen_geometries:
+                continue
+            seen_geometries.add(key)
             x0, y0, x1, y1 = geometry.bounds
             if x0 < 0 or y0 < 0 or x1 > image.width or y1 > image.height:
                 continue
@@ -45,6 +50,8 @@ def targets(worker, image):
                     "geometry": geometry,
                     "measurements": {},
                     "name": None,
+                    "requires_verification": row.requires_verification,
+                    **({"decision": "removed"} if row.requires_verification else {}),
                 }
             )
     return result

@@ -3,7 +3,8 @@
 Copyright (c) 2019 CubiCasa.
 Source: https://github.com/CubiCasa/CubiCasa5k/blob/
 c34440266665a11f4484eb06cd2e4b7d72ad76c1/floortrans/post_prosessing.py
-Compatibility changes: SciPy mode keepdims; Shapely multipart .geoms iteration.
+Compatibility changes: SciPy mode keepdims; Shapely multipart .geoms iteration;
+hash-based wall membership preserving upstream traversal and tie-breaking.
 The upstream algorithm is otherwise retained. See ../NOTICE.md.
 """
 
@@ -825,34 +826,35 @@ def icons_same_corner(icon1, icon2):
 
 
 def drop_long_walls(walls, wall_points):
-    bad_walls = []
+    # Preserve upstream pair traversal, tie-breaking and output order. Hash-based
+    # membership avoids repeated linear scans for dense native-resolution tiles.
+    bad_walls = set()
     remaining_walls = []
+    remaining_seen = set()
+
+    def keep(wall):
+        if wall not in remaining_seen:
+            remaining_walls.append(wall)
+            remaining_seen.add(wall)
+
     for wall1, wall2 in combinations(walls, 2):
         if wall1 not in bad_walls and wall2 not in bad_walls and walls_same_corner(wall1, wall2, wall_points):
-            # if walls_same_corner(wall1, wall2, wall_points):
             length1 = get_wall_length(wall1, wall_points)
             length2 = get_wall_length(wall2, wall_points)
             if length1 <= length2:
                 good_wall = wall1
-                bad_walls.append(wall2)
+                bad_walls.add(wall2)
             else:
                 good_wall = wall2
-                bad_walls.append(wall1)
-
-            if good_wall not in remaining_walls:
-                remaining_walls.append(good_wall)
+                bad_walls.add(wall1)
+            keep(good_wall)
         else:
-            if wall1 not in remaining_walls and wall1 not in bad_walls:
-                remaining_walls.append(wall1)
-            if wall2 not in remaining_walls and wall2 not in bad_walls:
-                remaining_walls.append(wall2)
+            if wall1 not in bad_walls:
+                keep(wall1)
+            if wall2 not in bad_walls:
+                keep(wall2)
 
-    res = []
-    for wall in remaining_walls:
-        if wall not in bad_walls:
-            res.append(wall)
-
-    return res
+    return [wall for wall in remaining_walls if wall not in bad_walls]
 
 
 def walls_same_corner(wall1, wall2, wall_points):

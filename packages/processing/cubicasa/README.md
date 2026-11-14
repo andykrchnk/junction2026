@@ -219,3 +219,40 @@ for detection in result.icon_detections:
 ## References
 
 - **CubiCasa5K dataset & model:** Kalervo et al., _CubiCasa5K: A Dataset and an Improved Multi-Task Model for Floorplan Image Analysis_, SCIA 2019. [GitHub](https://github.com/CubiCasa/CubiCasa5k)
+
+### Outdoor footprint recovery
+
+The detailed worker supplements the official junction-grid footprint with bounded
+pixels whose Outdoor model support is at least 0.5. This recovers balconies omitted
+when thin railings do not produce reliable junction rectangles. Image-edge outdoor
+components are excluded; walls, railings, and accepted opening barriers still clip
+regions. Recovery is rejected wherever it would join multiple existing significant
+regions. Existing area filtering, geometry cleanup, and class-score calculation then
+apply normally. This uses model evidence, not inferred balcony rectangles or OCR
+labels, and does not guarantee recovery when Outdoor evidence itself is missing.
+
+### Thin-wall and opening detail
+
+For source drawings larger than 2048 pixels, detailed inference proposes a building
+crop from dominant connected dark linework in the original image. Multiple
+substantial components or insufficient evidence retain the full sheet. The crop is
+a heuristic, not a drawing-type classifier; disconnected buildings and faint scans
+need review. The crop bounds and fallback reason are saved in raw artifacts.
+
+Overlapping 1024-pixel tiles (768-pixel stride) are taken directly from the original
+RGB image and letterboxed to 2048 pixels for inference. They are never cut from the
+resized overview. Low-resolution sources retain the original whole-image pass to
+avoid excessive magnification. Predictions are accumulated on CPU on a grid capped at a 2048-pixel long edge. Output geometry remains in original
+image pixels; the probability-grid transform documents any scaling.
+
+Outside an accepted crop, room/icon grids are background and junction heatmaps
+are zero. The coarse footprint is retained only inside the crop so missing refined
+grid cells cannot carve unsupported holes out of rooms; refined wall and opening
+barriers may still split enclosed spaces. This costs additional inference work and
+does not guarantee correct room separation or complete opening detection.
+
+Dense Door components omitted by the junction decoder become bounded verification
+proposals, with model-derived geometry and scores. Overlapping decoded openings
+are excluded; at most 64 additional candidates are retained. These candidates are
+marked `requires_verification` and cannot divide geometry before verification.
+The standardized pipeline admits them only after positive door verification.

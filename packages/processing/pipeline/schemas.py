@@ -113,6 +113,7 @@ class WorkerRecord(BaseModel):
     confidence: Score
     class_: IconClass | None = Field(default=None, alias="class")
     model_label: RoomClass | None = None
+    requires_verification: bool = False
 
 
 class OCRToken(Model):

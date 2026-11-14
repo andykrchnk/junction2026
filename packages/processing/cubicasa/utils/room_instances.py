@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage
 from shapely import affinity
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, box
 from shapely.ops import unary_union
 from skimage import measure
 
@@ -14,6 +14,7 @@ from skimage import measure
 @dataclass(frozen=True)
 class InstanceSettings:
     wall_threshold: float = 0.5
+    outdoor_threshold: float = 0.5
     stability_thresholds: tuple[float, float] = (0.35, 0.65)
     minimum_stability_iou: float = 0.8
     minimum_area_fraction: float = 0.0001
@@ -95,6 +96,33 @@ def mask_polygons(mask, scale_x, scale_y, minimum_area):
     return regions
 
 
+def recover_openings(icon_probabilities, structures, scale_x, scale_y):
+    """Recover dense Door proposals omitted by the junction decoder."""
+    existing = [r["shape"] for r in structures
+                if r["type"] == "icon" and r["class_id"] in {1, 2}]
+    labels, _ = ndimage.label(icon_probabilities[2] > 0.5)
+    proposals = []
+    for index, slices in enumerate(ndimage.find_objects(labels), 1):
+        if slices is None:
+            continue
+        rows, columns = slices
+        if (labels[slices] == index).sum() < 8 or max(
+            rows.stop - rows.start, columns.stop - columns.start
+        ) < 6:
+            continue
+        shape = box(columns.start * scale_x, rows.start * scale_y,
+                    columns.stop * scale_x, rows.stop * scale_y)
+        score = float(region_scores(shape, icon_probabilities, scale_x, scale_y)[2])
+        if score < 0.55 or any(
+            shape.intersection(other).area / min(shape.area, other.area) > 0.25
+            for other in existing if other.area > 0
+        ):
+            continue
+        proposals.append({"shape": shape, "type": "icon", "class_id": 2,
+                          "requires_verification": True, "dense_support": score})
+    return sorted(proposals, key=lambda r: r["dense_support"], reverse=True)[:64]
+
+
 def extract_instances(
     room_probabilities,
     icon_probabilities,
@@ -124,6 +152,21 @@ def extract_instances(
     footprint_mask = rasterize(
         polygon_parts(footprint), width, height, scale_x, scale_y
     )
+    # The official junction grid can miss thin balcony railings and classify a
+    # large cell as background, dropping strong Outdoor evidence inside it.
+    # Recover only model-supported outdoor pixels; never extrapolate rectangles.
+    outdoor_mask = room_probabilities[1] >= settings.outdoor_threshold
+    outdoor_labels, _ = ndimage.label(outdoor_mask)
+    border_labels = np.unique(np.concatenate((
+        outdoor_labels[0], outdoor_labels[-1],
+        outdoor_labels[:, 0], outdoor_labels[:, -1],
+    )))
+    # Do not grow into an unbounded exterior region at the image edge.
+    outdoor_mask &= ~np.isin(outdoor_labels, border_labels)
+
+    structures = list(structures) + recover_openings(
+        icon_probabilities, structures, scale_x, scale_y
+    )
     accepted_structures, review_structures, barriers, doorway_widths = [], [], [], []
     for record in structures:
         shape, kind, index = record["shape"], record["type"], record["class_id"]
@@ -149,7 +192,9 @@ def extract_instances(
             review_structures.append(detail)
             continue
         accepted_structures.append(detail)
-        if kind == "wall" or (kind == "icon" and index in {1, 2}):
+        if not record.get("requires_verification", False) and (
+            kind == "wall" or (kind == "icon" and index in {1, 2})
+        ):
             barriers.append(shape)
         if kind == "icon" and index == 2:
             x0, y0, x1, y1 = shape.bounds
@@ -167,7 +212,21 @@ def extract_instances(
             mask = ndimage.binary_closing(
                 mask, structure=np.ones((radius * 2 + 1, radius * 2 + 1))
             )
-        regions = mask_polygons(footprint_mask & ~mask, scale_x, scale_y, minimum_area)
+        original_free = footprint_mask & ~mask
+        recovered_free = (footprint_mask | outdoor_mask) & ~mask
+        original_labels, _ = ndimage.label(original_free)
+        original_areas = np.bincount(original_labels.ravel()) * scale_x * scale_y
+        recovered_labels, _ = ndimage.label(recovered_free)
+        for label, slices in enumerate(ndimage.find_objects(recovered_labels), 1):
+            if slices is None:
+                continue
+            component = recovered_labels[slices] == label
+            old_labels = np.unique(original_labels[slices][component])
+            old_labels = old_labels[old_labels != 0]
+            if np.count_nonzero(original_areas[old_labels] >= minimum_area) > 1:
+                # Dense outdoor evidence must not bridge previously separate rooms.
+                recovered_free[slices][component] = original_free[slices][component]
+        regions = mask_polygons(recovered_free, scale_x, scale_y, minimum_area)
         return [
             part
             for shape in regions

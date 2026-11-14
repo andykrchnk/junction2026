@@ -6,7 +6,14 @@ def apply(target, answers):
     selected = answers["class"]["choice"]
     score = answers["class"]["confidence"]
     evidence = answers["evidence"]["noul"]
-    target["decision"] = "retained"
+    recovered = target.get("requires_verification", False)
+    target["decision"] = "removed" if recovered else "retained"
+    if recovered and (
+        selected != "Door" or score < 0.9
+        or answers["exists"]["noul"] < 0.9
+        or answers["door_swing"]["noul"] < 0.5
+    ):
+        return
     if target["kind"] == "fixture" and selected == "No Icon":
         if score >= 0.99 and evidence >= 0.95 and answers["exists"]["noul"] <= 0.05:
             target["decision"] = "removed"
@@ -26,7 +33,10 @@ def apply(target, answers):
         # Inconsistent or absent resolutions retain the original classification.
         if (
             resolution != "resolved"
-            or basis not in {"printed_label", "visual_context", "label_and_visual_context"}
+            or (
+                basis not in {"printed_label", "visual_context", "label_and_visual_context"}
+                and not (selected == "Undefined" and basis == "insufficient_evidence")
+            )
             or selected in STRUCTURAL_CLASSES
         ):
             return
@@ -45,6 +55,9 @@ def apply(target, answers):
             )
         ):
             return
+    if recovered:
+        target["decision"] = "verified_recovery"
+        target["confidence"] = score
     if selected != target["class"]:
         target.update(class_original=target["class"], decision="relabelled")
         target["class"] = selected
