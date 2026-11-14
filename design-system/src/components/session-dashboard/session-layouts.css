@@ -12,11 +12,12 @@
     border-bottom: 1px solid var(--border);
 }
 .sl-account {
+    padding-inline: 12px;
     color: var(--foreground) !important;
 }
 .sl-avatar {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
