@@ -19,9 +19,11 @@ export function createCanvasModel(id: string, storageKey: string) {
     const selected = createEvent<ObjectSelection | null>();
     const rangeSelected = createEvent<{ object: ObjectSelection; order: ObjectSelection[] }>();
     const selectionToggled = createEvent<ObjectSelection>();
+    const groupSelected = createEvent<{ page: number; objects: ObjectSelection[] }>();
     const focusRequested = createEvent<ObjectSelection>();
     const objectVisibilityChanged = createEvent<{ object: ObjectSelection; visible: boolean }>();
     const visibilityChanged = createEvent<{ type: DetectedProperty['type']; visible: boolean }>();
+    const $sheetFocus = createStore<{ page: number; sequence: number } | null>(null);
     const $anchor = createStore<ObjectSelection | null>(null);
     const $hiddenObjects = createStore<string[]>([]);
     const $selection = createStore<ObjectSelection[]>([]);
@@ -37,6 +39,9 @@ export function createCanvasModel(id: string, storageKey: string) {
     const retainRecoveryFx = createEffect((state: CanvasState) => writeLocal(`${storageKey}:recovery`, state));
     const retainVisibilityFx = createEffect((visibility: z.infer<typeof VisibilityZod>) => writeLocal(`${storageKey}:layers`, visibility));
 
+    sample({ clock: groupSelected, fn: ({ objects }) => objects, target: $selection });
+    sample({ clock: groupSelected, fn: ({ objects }) => objects[0] ?? null, target: $anchor });
+    sample({ clock: groupSelected, source: $sheetFocus, fn: (focus, { page }) => ({ page, sequence: (focus?.sequence ?? 0) + 1 }), target: $sheetFocus });
     sample({
         clock: objectVisibilityChanged,
         source: $hiddenObjects,
@@ -127,6 +132,8 @@ export function createCanvasModel(id: string, storageKey: string) {
     });
 
     return {
+        groupSelected,
+        $sheetFocus: readonly($sheetFocus),
         objectVisibilityChanged,
         $hiddenObjects: readonly($hiddenObjects),
         rangeSelected,

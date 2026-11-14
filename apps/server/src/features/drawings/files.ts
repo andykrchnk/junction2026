@@ -22,7 +22,7 @@ drawingFiles.post('/:id/file', async (c) => {
     if (!id.success) return c.json({ message: 'Drawing not found.' }, 404);
     const doc = await db.drawing.DrawingModel.findOne({ _id: id.data, ownerId }).lean();
     if (!doc) return c.json({ message: 'Drawing not found.' }, 404);
-    if (db.drawing.DrawingDto(doc).blueprints.length) return c.json({ message: 'Create a new session for another blueprint.' }, 409);
+    const existing = db.drawing.DrawingDto(doc).blueprints;
     const body = await c.req.parseBody();
     const file = body.file;
     if (!(file instanceof File) || file.size === 0 || file.size > MAX_FILE_BYTES) return c.json({ message: 'Choose a file between 1 byte and 20 MB.' }, 400);
@@ -47,19 +47,34 @@ drawingFiles.post('/:id/file', async (c) => {
             upload.once('error', reject);
             upload.end(bytes);
         });
+        const appendedPages = Array.from({ length: pages }, (_, index) => existing.length + index + 1);
+        const blueprints = db.drawing
+            .createBlueprints({ id: upload.id.toHexString(), name, mediaType: mediaType.data, pages })
+            .map((blueprint, index) => ({ ...blueprint, pageNumber: existing.length + index + 1 }));
+        // Decide from the current job in the same write as attachment insertion. A worker
+        // may finish during upload; never replace an active run or append to a completed one.
         const result = await db.drawing.DrawingModel.updateOne(
-            { _id: id.data, ownerId, 'blueprints.0': { $exists: false } },
-            {
-                $set: {
-                    title: name,
-                    processingJob: db.drawing.createProcessingJob(Array.from({ length: pages }, (_, index) => index + 1)),
-                    blueprints: db.drawing.createBlueprints({ id: upload.id.toHexString(), name, mediaType: mediaType.data, pages }),
+            { _id: id.data, ownerId, blueprints: { $size: existing.length } },
+            [
+                {
+                    $set: {
+                        ...(!existing.length ? { title: { $literal: name } } : {}),
+                        blueprints: { $concatArrays: ['$blueprints', { $literal: blueprints }] },
+                        processingJob: {
+                            $cond: [
+                                { $in: ['$processingJob.status', ['queued', 'running']] },
+                                { $mergeObjects: ['$processingJob', { pages: { $concatArrays: ['$processingJob.pages', { $literal: appendedPages }] } }] },
+                                { $literal: db.drawing.createProcessingJob(appendedPages) },
+                            ],
+                        },
+                    },
                 },
-            },
+            ],
+            { updatePipeline: true },
         );
         if (!result.modifiedCount) {
             await blueprintFiles.delete(upload.id);
-            return c.json({ message: 'A blueprint is already attached.' }, 409);
+            return c.json({ message: 'Another upload changed this drawing. Retry this file.' }, 409);
         }
     } catch (error) {
         const referenced = await db.drawing.DrawingModel.exists({ _id: id.data, ownerId, 'blueprints.attachment.id': upload.id.toHexString() }).catch(
@@ -75,7 +90,13 @@ drawingFiles.get('/:id/file', async (c) => {
     if (!id.success) return c.json({ message: 'Drawing not found.' }, 404);
     const doc = await db.drawing.DrawingModel.findOne({ _id: id.data, ownerId: c.get('user')?.id }).lean();
     if (!doc) return c.json({ message: 'Drawing not found.' }, 404);
-    const attachment = db.drawing.DrawingDto(doc).blueprints[0]?.attachment;
+    const page = z.coerce
+        .number()
+        .int()
+        .positive()
+        .safeParse(c.req.query('page') ?? 1);
+    if (!page.success) return c.json({ message: 'Invalid blueprint page.' }, 400);
+    const attachment = db.drawing.DrawingDto(doc).blueprints.find((blueprint) => blueprint.pageNumber === page.data)?.attachment;
     if (!attachment) return c.json({ message: 'Upload a blueprint first.' }, 404);
     const chunks: Buffer[] = [];
     for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(attachment.id))) chunks.push(Buffer.from(chunk));

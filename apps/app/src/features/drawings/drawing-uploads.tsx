@@ -19,7 +19,8 @@ export function DrawingUploads({
     preview,
     expanded,
     onToggle,
-}: Readonly<{ drawing: Drawing; preview: boolean; expanded?: boolean; onToggle?: () => void }>) {
+    onFocus,
+}: Readonly<{ drawing: Drawing; preview: boolean; expanded?: boolean; onToggle?: () => void; onFocus?: () => void }>) {
     const [open, setOpen] = useState(false);
     const [renaming, setRenaming] = useState(false);
     const [infoOpen, setInfoOpen] = useState(false);
@@ -43,7 +44,7 @@ export function DrawingUploads({
     const update = async (change: Omit<UpdateDrawingUpload, 'id'>) => {
         setError(null);
         try {
-            await $$drawings.updateUploadFx({ id: drawing.id, ...change });
+            await $$drawings.updateUploadFx({ id: drawing.id, page: drawing.blueprints[0]?.pageNumber, ...change });
             setRenaming(false);
         } catch (cause) {
             setError(cause instanceof Error ? cause.message : 'Could not update upload.');
@@ -125,7 +126,10 @@ export function DrawingUploads({
                         type="button"
                         aria-expanded={expanded}
                         aria-label={`${expanded ? 'Collapse' : 'Expand'} ${attachment.name}`}
-                        onClick={onToggle}
+                        onClick={(event) => {
+                            if (event.shiftKey && onFocus) onFocus();
+                            else onToggle();
+                        }}
                         className="flex min-w-0 flex-1 items-center gap-2 text-left focus-visible:outline-2 focus-visible:outline-ring"
                     >
                         <span className="inline-flex size-4 shrink-0 items-center justify-center" aria-hidden>

@@ -8,10 +8,12 @@ import { queryClient, trpc, trpcClient } from '@/shared/trpc';
 const canvasSelectionRequested = createEvent<{ id: string; page: number; index: number }>();
 const stageChanged = createEvent<{ id: string; label: string }>();
 
+const uploadRequested = createEvent<{ id: string; files: File[] }>();
 const opened = createEvent<string | null>();
 const draftChanged = createEvent<string>();
 const operationStarted = createEvent<string>();
 const operationFinished = createEvent<string>();
+const $uploadQueue = createStore<{ id: string; files: File[] }[]>([]);
 const $stages = createStore<Record<string, string>>({});
 const $outgoing = createStore<Record<string, Drawing['messages'][number] | undefined>>({});
 const $id = createStore<string | null>(null);
@@ -40,16 +42,25 @@ const createFx = createEffect(async () => {
     await refresh();
     return drawing;
 });
-const uploadFx = createEffect(async ({ id, file }: { id: string; file: File }) => {
-    if (file.size > MAX_FILE_BYTES) throw new Error('Choose a file no larger than 20 MB.');
-    const body = new FormData();
-    body.set('file', file);
-    const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${id}/file`, { method: 'POST', body });
-    if (!response.ok) {
-        const result = UploadErrorZod.safeParse(await response.json());
-        throw new Error(result.success ? result.data.message : 'Upload failed. Please retry.');
+const uploadFx = createEffect(async ({ id, files }: { id: string; files: File[] }) => {
+    const failures: string[] = [];
+    for (const file of files) {
+        try {
+            if (!['application/pdf', 'image/png', 'image/jpeg'].includes(file.type)) throw new Error('Choose a PDF, PNG or JPG.');
+            if (!file.size || file.size > MAX_FILE_BYTES) throw new Error('Choose a file between 1 byte and 20 MB.');
+            const body = new FormData();
+            body.set('file', file);
+            const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${id}/file`, { method: 'POST', body });
+            if (!response.ok) {
+                const result = UploadErrorZod.safeParse(await response.json());
+                throw new Error(result.success ? result.data.message : 'Upload failed. Please retry.');
+            }
+        } catch (error) {
+            failures.push(`${file.name}: ${error instanceof Error ? error.message : 'Upload failed.'}`);
+        }
     }
     await refresh(id);
+    if (failures.length) throw new Error(failures.join('\n'));
     return id;
 });
 // Processing belongs to the backend. These effects only enqueue explicit retries.
@@ -72,6 +83,15 @@ const askFx = createEffect(async (input: { id: string; message: Drawing['message
     }
 });
 
+sample({ clock: uploadRequested, source: $uploadQueue, fn: (queue, request) => [...queue, request], target: $uploadQueue });
+sample({
+    clock: [uploadRequested, uploadFx.finally],
+    source: { queue: $uploadQueue, pending: uploadFx.pending },
+    filter: ({ queue, pending }) => !pending && queue.length > 0,
+    fn: ({ queue }) => queue[0],
+    target: uploadFx,
+});
+sample({ clock: uploadFx, source: $uploadQueue, fn: (queue) => queue.slice(1), target: $uploadQueue });
 sample({ clock: stageChanged, source: $stages, fn: (stages, { id, label }) => ({ ...stages, [id]: label }), target: $stages });
 sample({ clock: uploadFx, fn: ({ id }) => ({ id, label: 'Uploading blueprint' }), target: stageChanged });
 sample({ clock: inferFx, fn: (id) => ({ id, label: 'Preparing blueprint' }), target: stageChanged });
@@ -89,7 +109,7 @@ sample({ clock: operationFinished, source: $activity, fn: (activity, id) => ({ .
 sample({ clock: opened, target: $id });
 sample({ clock: draftChanged, target: $draft });
 sample({ clock: opened, fn: () => '', target: $draft });
-sample({ clock: [opened, createFx, uploadFx, analyzeFx, askFx], fn: () => null, target: $error });
+sample({ clock: [opened, createFx, uploadFx, askFx], fn: () => null, target: $error });
 sample({ clock: createFx.failData, fn: (error) => ({ id: null, message: error.message }), target: $error });
 sample({ clock: uploadFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
 sample({ clock: analyzeFx.fail, fn: ({ params, error }) => ({ id: params, message: error.message }), target: $error });
@@ -99,6 +119,7 @@ sample({ clock: [opened, inferFx], fn: () => null, target: $inferenceError });
 sample({ clock: inferFx.fail, fn: ({ params, error }) => ({ id: params, message: error.message }), target: $inferenceError });
 
 export const $$drawings = {
+    uploadRequested,
     canvasSelectionRequested,
     opened,
     renameFx,

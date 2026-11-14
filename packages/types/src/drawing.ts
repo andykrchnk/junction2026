@@ -46,5 +46,9 @@ export type Attachment = z.infer<typeof AttachmentZod>;
 export type DrawingSummary = z.infer<typeof DrawingSummaryZod>;
 export const UploadErrorZod = z.object({ message: z.string() });
 
-export const UpdateDrawingUploadZod = DrawingIdZod.extend({ name: z.string().trim().min(1).max(200).optional(), hiddenFromCanvas: z.boolean().optional() });
+export const UpdateDrawingUploadZod = DrawingIdZod.extend({
+    page: z.number().int().positive().optional(),
+    name: z.string().trim().min(1).max(200).optional(),
+    hiddenFromCanvas: z.boolean().optional(),
+});
 export type UpdateDrawingUpload = z.infer<typeof UpdateDrawingUploadZod>;

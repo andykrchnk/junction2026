@@ -38,33 +38,33 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
     const [localFile, setLocalFile] = useState<File | null>(null);
     const [localUrl, setLocalUrl] = useState('');
     const [uploadError, setUploadError] = useState('');
+    const operationError = useUnit($$drawings.$error);
+    const visibleError = uploadError || (operationError?.id === id ? operationError.message : null);
     useEffect(() => {
         if (!localFile) return;
         const url = URL.createObjectURL(localFile);
         setLocalUrl(url);
         return () => URL.revokeObjectURL(url);
     }, [localFile]);
-    function upload(file: File) {
+    function upload(files: File[]) {
         setUploadError('');
-        if (previewDrawing) setLocalFile(file);
-        else
-            void $$drawings
-                .uploadFx({ id, file })
-                .catch((error: unknown) => setUploadError(error instanceof Error ? error.message : 'Upload failed. Please retry.'));
+        if (previewDrawing) setLocalFile(files[0] ?? null);
+        else $$drawings.uploadRequested({ id, files });
     }
     const { getRootProps, getInputProps, open } = useDropzone({
         accept: { 'application/pdf': ['.pdf'], 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'] },
-        multiple: false,
+        multiple: true,
         minSize: 1,
         maxSize: MAX_FILE_BYTES,
-        disabled: uploading || Boolean(drawing?.blueprints.length),
+
         noClick: true,
         noKeyboard: true,
         onDropAccepted: (files) => {
-            if (files[0]) upload(files[0]);
+            upload(files);
         },
-        onDropRejected: () => setUploadError('Choose one PDF, PNG or JPG between 1 byte and 20 MB.'),
+        onDropRejected: () => setUploadError('Each file must be a PDF, PNG or JPG between 1 byte and 20 MB.'),
     });
+    const dropProps = getRootProps();
     if (isPending)
         return (
             <p role="status" className="p-6 text-sm">
@@ -103,29 +103,40 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                 <div className="pointer-events-auto w-full max-w-sm border bg-card p-8 text-card-foreground">
                     <FileText size={48} className="mx-auto mb-6 text-muted-foreground" aria-hidden />
                     <h2 className="text-xl font-medium">Upload your first blueprint</h2>
-                    <p className="mt-3 text-sm text-muted-foreground">Drop a floor plan here, or choose a file to get started.</p>
+                    <p className="mt-3 text-sm text-muted-foreground">Drop floor plans here, or choose multiple documents to get started.</p>
                     <Button className="mt-6" leadingIcon={Upload} loading={uploading} onClick={open}>
-                        Upload floor plan
+                        Upload documents
                     </Button>
-                    <p className="mt-4 text-xs text-muted-foreground">PDF, PNG or JPG · Up to 20 MB</p>
+                    <p className="mt-4 text-xs text-muted-foreground">PDF, PNG or JPG · Up to 20 MB each · 10 pages per PDF</p>
                 </div>
-            )}
-            <input {...getInputProps({ 'aria-label': 'Upload floor plan' })} />
-            {uploadError && (
-                <p role="alert" className="mt-4 text-sm text-destructive">
-                    {uploadError}
-                </p>
             )}
         </div>
     );
     return (
-        <div className="relative isolate flex h-full min-h-0 flex-1 bg-muted/30" {...getRootProps()} aria-disabled={undefined}>
+        <div
+            className="relative isolate flex h-full min-h-0 flex-1 bg-muted/30"
+            {...dropProps}
+            onDropCapture={(event) => {
+                if (event.dataTransfer.types.includes('Files')) {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    upload(Array.from(event.dataTransfer.files));
+                }
+            }}
+            aria-disabled={undefined}
+        >
+            <input {...getInputProps({ 'aria-label': 'Upload documents' })} />
+            {visibleError && (
+                <p role="alert" className="absolute bottom-4 left-1/2 z-30 max-w-md whitespace-pre-wrap border bg-card p-3 text-sm text-destructive">
+                    {visibleError}
+                </p>
+            )}
             <section aria-label="Blueprint canvas" className="absolute inset-0 z-0">
                 {canvas}
             </section>
             <SessionChatPanel drawing={drawing} previewDrawing={previewDrawing} />
             <div className="pointer-events-none relative z-10 min-h-0 min-w-0 flex-1">{uploadOverlay}</div>
-            <BlueprintLayersPanel drawing={drawing} model={canvasModel} preview={!!previewDrawing} />
+            <BlueprintLayersPanel drawing={drawing} model={canvasModel} preview={!!previewDrawing} onUpload={open} uploading={false} />
         </div>
     );
 }

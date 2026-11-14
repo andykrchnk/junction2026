@@ -84,10 +84,10 @@ export function DrawingAttachmentThumbnail({ drawing, nameSlot }: Readonly<{ dra
     const name = attachment?.name;
     const mediaType = attachment?.mediaType;
     const { data, isError } = useQuery({
-        queryKey: ['blueprint-file', drawing.id],
+        queryKey: ['blueprint-file', drawing.id, drawing.blueprints[0]?.pageNumber],
         enabled: Boolean(attachment),
         queryFn: async () => {
-            const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/file`);
+            const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/file?page=${drawing.blueprints[0]?.pageNumber ?? 1}`);
             if (!response.ok) throw new Error('Could not load blueprint.');
             return response.blob();
         },
