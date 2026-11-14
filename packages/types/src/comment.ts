@@ -22,25 +22,33 @@ const CommentBaseZod = z.object({
     deletedAt: z.string().nullable().optional(),
 });
 
+const PointCommentTargetZod = z.object({ application: z.literal('point'), x: NormalizedCoordinateZod, y: NormalizedCoordinateZod });
+const EntityCommentTargetZod = z
+    .object({ application: z.literal('entity'), roomId: z.string().min(1).nullable(), fixtureId: z.string().min(1).nullable() })
+    .refine((comment) => (comment.roomId !== null) !== (comment.fixtureId !== null), {
+        message: 'An entity comment must reference exactly one room or fixture.',
+    });
+export const CommentTargetZod = z.discriminatedUnion('application', [PointCommentTargetZod, EntityCommentTargetZod]);
+export type CommentTarget = z.infer<typeof CommentTargetZod>;
+
 export const ScanCommentZod = z.discriminatedUnion('application', [
-    CommentBaseZod.extend({ application: z.literal('point'), x: NormalizedCoordinateZod, y: NormalizedCoordinateZod }),
+    CommentBaseZod.extend(PointCommentTargetZod.shape),
     CommentBaseZod.extend({ application: z.literal('area'), boundaries: CommentBoundariesZod }),
-    CommentBaseZod.extend({ application: z.literal('entity'), roomId: z.string().min(1).nullable(), fixtureId: z.string().min(1).nullable() }).refine(
-        (comment) => (comment.roomId !== null) !== (comment.fixtureId !== null),
-        { message: 'An entity comment must reference exactly one room or fixture.' },
-    ),
+    EntityCommentTargetZod.safeExtend(CommentBaseZod.shape),
 ]);
 export const ScanCommentsZod = z.array(ScanCommentZod);
 export const CommentListZod = z.object({ drawingId: MongoIdZod });
 export const CommentDeleteResultZod = z.object({ id: z.string().min(1).max(128) });
 export const CommentDeleteZod = CommentListZod.extend(CommentDeleteResultZod.shape);
-export const CommentCreateZod = CommentListZod.extend({
+const CommentCreateBaseZod = CommentListZod.extend({
     id: z.string().uuid(),
     page: z.number().int().positive(),
     text: z.string().min(1).max(6000),
-    x: NormalizedCoordinateZod,
-    y: NormalizedCoordinateZod,
 });
+export const CommentCreateZod = z.union([
+    PointCommentTargetZod.extend({ ...CommentCreateBaseZod.shape, application: z.literal('point').default('point') }).strict(),
+    EntityCommentTargetZod.safeExtend(CommentCreateBaseZod.shape).strict(),
+]);
 export type ScanComment = z.infer<typeof ScanCommentZod>;
 export type ScanComments = z.infer<typeof ScanCommentsZod>;
 export type CommentCreate = z.infer<typeof CommentCreateZod>;

@@ -9,7 +9,7 @@ import { createShapeId, useEditor, useValue } from 'tldraw';
 import type { Drawing, ScanComment } from '@repo/types';
 import { Button } from '@repo/design-system/components/ui/button';
 import { ScrollArea } from '@repo/design-system/components/ui/scroll-area';
-import { Textarea } from '@repo/design-system/components/ui/textarea';
+import { CommentEditor } from './comment-editor';
 import { SurfaceProvider } from '@repo/design-system/lib/surface-context';
 import { surfaceClasses } from '@repo/design-system/lib/surface-classes';
 import { DropdownMenu, DropdownTrigger, DropdownContent } from '@repo/design-system/components/ui/dropdown';
@@ -135,7 +135,7 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
         () => {
             const markers: ScanComment[] = [
                 ...comments.filter((comment) => comment.id !== draft?.id && !comment.deletedAt),
-                ...(draft ? [{ ...draft, source: 'user' as const, createdAt: '', application: 'point' as const, type: 'comment' as const }] : []),
+                ...(draft ? [{ ...draft, source: 'user' as const, createdAt: '', type: 'comment' as const }] : []),
             ];
             return markers.flatMap((comment) => {
                 const point = commentPoint({ comment, drawing });
@@ -244,52 +244,14 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                                             </p>
                                         )}
                                         {isDraft ? (
-                                            <form
-                                                className="flex flex-col"
-                                                onSubmit={(event) => {
-                                                    event.preventDefault();
-                                                    model.saveRequested();
-                                                }}
-                                            >
-                                                <Textarea
-                                                    autoFocus
-                                                    placeholder="Write a comment…"
-                                                    aria-label="Comment text"
-                                                    value={draft.text}
-                                                    maxLength={6000}
-                                                    rows={4}
-                                                    disabled={creating}
-                                                    onChange={(event) => model.draftChanged(event.currentTarget.value)}
-                                                    onKeyDown={(event) => {
-                                                        if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
-                                                        event.preventDefault();
-                                                        event.stopPropagation();
-                                                        if (event.repeat) return;
-                                                        if (event.metaKey) {
-                                                            const input = event.currentTarget;
-                                                            if (input.value.length - (input.selectionEnd - input.selectionStart) >= input.maxLength) return;
-                                                            input.setRangeText('\n', input.selectionStart, input.selectionEnd, 'end');
-                                                            model.draftChanged(input.value);
-                                                        } else {
-                                                            model.saveRequested();
-                                                        }
-                                                    }}
-                                                />
-                                                {error && (
-                                                    <p role="alert" className="mt-2 text-xs text-destructive">
-                                                        {error}
-                                                    </p>
-                                                )}
-                                                <Button
-                                                    className="mt-3 self-end"
-                                                    type="submit"
-                                                    size="compact"
-                                                    disabled={!draft.text.trim() || creating || deleting}
-                                                    loading={creating}
-                                                >
-                                                    {error ? 'Retry' : 'Post'}
-                                                </Button>
-                                            </form>
+                                            <CommentEditor
+                                                text={draft.text}
+                                                error={error}
+                                                creating={creating}
+                                                deleting={deleting}
+                                                onTextChange={model.draftChanged}
+                                                onSubmit={model.saveRequested}
+                                            />
                                         ) : (
                                             <p className="whitespace-pre-wrap break-words">{comment.text}</p>
                                         )}

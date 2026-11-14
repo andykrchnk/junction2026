@@ -53,16 +53,20 @@ async function getSnapshot(params: Readonly<{ drawingId: string; ownerId: string
 
 function existingComment(params: Readonly<{ comments: ScanComment[]; input: CommentCreate }>) {
     const existing = params.comments.find((comment) => comment.id === params.input.id);
+    if (!existing) return undefined;
+    const sameTarget =
+        (existing.application === 'point' && params.input.application === 'point' && existing.x === params.input.x && existing.y === params.input.y) ||
+        (existing.application === 'entity' &&
+            params.input.application === 'entity' &&
+            existing.roomId === params.input.roomId &&
+            existing.fixtureId === params.input.fixtureId);
     if (
-        existing &&
-        (existing.deletedAt != null ||
-            existing.source !== 'user' ||
-            existing.type !== 'comment' ||
-            existing.application !== 'point' ||
-            existing.page !== params.input.page ||
-            existing.text !== params.input.text ||
-            existing.x !== params.input.x ||
-            existing.y !== params.input.y)
+        existing.deletedAt != null ||
+        existing.source !== 'user' ||
+        existing.type !== 'comment' ||
+        existing.page !== params.input.page ||
+        existing.text !== params.input.text ||
+        !sameTarget
     ) {
         throw new TRPCError({ code: 'CONFLICT', message: 'This comment ID was already used for a different comment.' });
     }
@@ -116,25 +120,42 @@ export const scanCommentsRouter = t.router({
             if (existing) return existing;
             const blueprint = snapshot.blueprints.find((item) => item.pageNumber === input.page);
             if (!blueprint) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Choose a page in the uploaded blueprint.' });
+            const layout = blueprint.layout;
+            const entityTarget = input.application === 'entity' ? input : null;
+            if (
+                entityTarget &&
+                (!layout ||
+                    (entityTarget.roomId !== null && !layout.rooms.some((room) => room.id === entityTarget.roomId)) ||
+                    (entityTarget.fixtureId !== null && !layout.fixtures.some((fixture) => fixture.id === entityTarget.fixtureId)))
+            ) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Choose a detected room or fixture on this blueprint page.' });
+            }
             const comment = ScanCommentZod.parse({
-                id: input.id,
-                page: input.page,
-                text: input.text,
+                ...input,
                 source: 'user',
                 type: 'comment',
                 createdAt: new Date().toISOString(),
                 number:
                     Math.max(0, ...snapshot.comments.filter((item) => item.type === 'comment' && item.source === 'user').map((item) => item.number ?? 0)) + 1,
                 author: { id: ctx.user.id, name: ctx.user.email },
-                application: 'point',
-                x: input.x,
-                y: input.y,
             });
             const saved = await db.drawing.DrawingModel.updateOne(
                 {
                     _id: input.drawingId,
                     ownerId: ctx.user.id,
-                    'blueprints.id': blueprint.id,
+                    blueprints: {
+                        $elemMatch: {
+                            id: blueprint.id,
+                            ...(entityTarget && layout
+                                ? {
+                                      'layout.revision': layout.revision,
+                                      ...(entityTarget.roomId !== null
+                                          ? { 'layout.rooms.id': entityTarget.roomId }
+                                          : { 'layout.fixtures.id': entityTarget.fixtureId }),
+                                  }
+                                : {}),
+                        },
+                    },
                     'blueprints.comments.id': { $ne: input.id },
                     $expr: {
                         $and: [

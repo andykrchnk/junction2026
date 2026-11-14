@@ -1,5 +1,5 @@
 import { layoutPages } from './layout';
-import { AnnotateButton, AnnotationChatNavigation } from './drawing-annotation';
+import { AnnotationChatNavigation } from './drawing-annotation';
 import { MessageSquare } from '@repo/design-system/lib/icons-remix';
 import { DrawingComments } from './drawing-comments';
 import type { CommentsModel } from './canvas/comments-model';
@@ -14,26 +14,15 @@ import { AskUserQuestions } from '@repo/design-system/components/ui/ask-user-que
 import { Button } from '@repo/design-system/components/ui/button';
 import { InputMessage } from '@repo/design-system/components/ui/input-message';
 import { Badge } from '@repo/design-system/components/ui/badge';
-import { z } from 'zod';
+import { annotationMarker, annotationContextSchema } from './annotation-context';
 import { ChatMessage } from '@repo/design-system/components/ui/chat-message';
 import { trpc } from '@/shared/trpc';
 import { $$drawings } from './model';
 import { DrawingActivity } from './drawing-activity';
 import { DrawingProgress } from './drawing-progress';
+import { ChatMarkdown } from './chat-markdown';
 
 const questionLimit = 4000;
-const annotationMarker = '\n\nSelected blueprint element (user-selected context, not verified measurements):\n';
-const annotationContextSchema = z.object({
-    blueprintId: z.string().min(1).optional(),
-    entityId: z.string().min(1).optional(),
-    sheet: z.number().int().positive(),
-    label: z.string().min(1).max(200),
-    element: z.number().int().positive(),
-    type: z.string(),
-    boundsPx: z.array(z.number()).length(4),
-    rasterWidth: z.number().positive(),
-    rasterHeight: z.number().positive(),
-});
 
 function UserQuestion({ question }: Readonly<{ question: string }>) {
     const markerIndex = question.lastIndexOf(annotationMarker);
@@ -157,10 +146,12 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                             />
                             {drawing.blueprints.some((blueprint) => blueprint.layout?.summary) && (
                                 <ChatMessage from="assistant" className="w-full max-w-full">
-                                    {drawing.blueprints
-                                        .map((blueprint) => blueprint.layout?.summary)
-                                        .filter(Boolean)
-                                        .join('\n')}
+                                    <ChatMarkdown>
+                                        {drawing.blueprints
+                                            .map((blueprint) => blueprint.layout?.summary)
+                                            .filter(Boolean)
+                                            .join('\n')}
+                                    </ChatMarkdown>
                                 </ChatMessage>
                             )}
                             <AnimatePresence initial={false}>
@@ -173,7 +164,7 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                                             {message.answer.status === 'cannot_determine' && (
                                                 <p className="text-muted-foreground mb-2 text-xs font-medium">Cannot determine from available information</p>
                                             )}
-                                            {message.answer.text}
+                                            <ChatMarkdown>{message.answer.text}</ChatMarkdown>
                                             {!!message.answer.references?.length && (
                                                 <div className="mt-3 flex flex-wrap gap-2" aria-label="Supporting drawing objects">
                                                     {message.answer.references.map((reference, index) => {
@@ -208,7 +199,9 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                                                 message.id !== (clarification ? latestMessage?.id : null) && (
                                                     <div className="mt-3 border-t pt-3">
                                                         <p className="text-primary text-xs font-medium">More information needed</p>
-                                                        <p className="mt-1">{message.answer.clarificationQuestion}</p>
+                                                        <div className="mt-1">
+                                                            <ChatMarkdown>{message.answer.clarificationQuestion}</ChatMarkdown>
+                                                        </div>
                                                     </div>
                                                 )}
                                             {!!message.answer.userProvidedInformation?.length && (
@@ -276,14 +269,6 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                                 showQueue={false}
                                 placeholder="Message…"
                                 sendLabel="Send message"
-                                rightSlot={
-                                    commentsModel && (
-                                        <AnnotateButton
-                                            model={commentsModel}
-                                            disabled={!layoutPages(drawing.blueprints).some((page) => page.detectedProperties.length)}
-                                        />
-                                    )
-                                }
                                 minRows={1}
                                 maxRows={6}
                                 disabled={!drawing.blueprints.length || busy || !!pending || asking}

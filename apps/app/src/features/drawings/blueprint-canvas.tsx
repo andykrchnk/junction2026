@@ -224,14 +224,16 @@ function CanvasEditor({
     useHotkeys(
         'c',
         (event) => {
-            if (!activeEditor) return;
-            commentsModel.modeChanged('comment');
+            if (!activeEditor || event.repeat) return;
+            const target = event.target instanceof Element ? event.target : null;
+            if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+            commentsModel.modeChanged(commentMode === 'comment' ? 'default' : 'comment');
             activeEditor.setCurrentTool('hand');
             activeEditor.focus();
             event.stopPropagation();
         },
         { enabled: activeEditor !== null, preventDefault: true, eventListenerOptions: { capture: true } },
-        [activeEditor, commentsModel],
+        [activeEditor, commentsModel, commentMode],
     );
     useHotkeys(
         'esc',
@@ -449,6 +451,22 @@ function CanvasEditor({
                     }
                     event.preventDefault();
                     event.stopPropagation();
+                    const element = event.target.closest('[data-detected-object]');
+                    const pageNumber = Number(element?.getAttribute('data-detected-page'));
+                    const index = Number(element?.getAttribute('data-detected-index'));
+                    const property =
+                        element && Number.isInteger(index) && index >= 0
+                            ? layoutPages(drawing.blueprints).find((page) => page.page === pageNumber)?.detectedProperties[index]
+                            : null;
+                    if (property?.type === 'room' || property?.type === 'icon') {
+                        commentsModel.placementRequested({
+                            application: 'entity',
+                            page: pageNumber,
+                            roomId: property.type === 'room' ? property.id : null,
+                            fixtureId: property.type === 'icon' ? property.id : null,
+                        });
+                        return;
+                    }
                     const point = activeEditor.screenToPage({ x: event.clientX, y: event.clientY });
                     const hit = drawing.blueprints
                         .filter((item) => !item.attachment.hiddenFromCanvas)
@@ -462,7 +480,7 @@ function CanvasEditor({
                             return x >= 0 && x <= 1 && y >= 0 && y <= 1 ? [{ page, x, y }] : [];
                         })
                         .at(-1);
-                    if (hit) commentsModel.pointRequested(hit);
+                    if (hit) commentsModel.placementRequested({ ...hit, application: 'point' });
                 }}
                 onPointerMoveCapture={(event) => {
                     const gesture = selectionGesture.current;

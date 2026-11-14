@@ -5,25 +5,8 @@ import { createShapeId, useValue, type Editor } from 'tldraw';
 import type { Drawing } from '@repo/types';
 import { Button } from '@repo/design-system/components/ui/button';
 import { Textarea } from '@repo/design-system/components/ui/textarea';
-import { Cursor } from '@repo/design-system/lib/icons-remix';
 import type { CommentsModel } from './canvas/comments-model';
 import type { CanvasModel } from './canvas/model';
-
-export function AnnotateButton({ model, disabled }: Readonly<{ model: CommentsModel; disabled: boolean }>) {
-    const mode = useUnit(model.$mode);
-    return (
-        <Button
-            size="compact"
-            variant="ghost"
-            leadingIcon={Cursor}
-            disabled={disabled}
-            active={mode === 'annotate'}
-            onClick={() => model.modeChanged(mode === 'annotate' ? 'default' : 'annotate')}
-        >
-            Annotate
-        </Button>
-    );
-}
 
 export function AnnotationPicker({
     drawing,
