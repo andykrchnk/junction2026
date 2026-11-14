@@ -73,6 +73,43 @@ export function BlueprintLayersPanel({
         model.focusRequested(object);
     };
     const pages = layoutPages(drawing.blueprints);
+    // Selection stays in the canvas model; expansion is local presentation state.
+    const [revealedSelection, setRevealedSelection] = useState(selection);
+    if (revealedSelection !== selection) {
+        setRevealedSelection(selection);
+        const added = selection.filter((item) => !revealedSelection.some((previous) => previous.page === item.page && previous.index === item.index));
+        if (added.length) {
+            const sheets = new Set<string>();
+            const groups: Record<string, boolean> = {};
+            for (const item of added) {
+                const blueprint = drawing.blueprints.find((sheet) => sheet.pageNumber === item.page);
+                const property = pages.find((page) => page.page === item.page)?.detectedProperties[item.index];
+                if (!blueprint || !property) continue;
+                sheets.add(blueprint.id);
+                groups[JSON.stringify([blueprint.id, property.type])] = true;
+                groups[JSON.stringify([blueprint.id, property.type, property.label])] = true;
+            }
+            if (sheets.size) {
+                setCollapsed(false);
+                setCollapsedSheets((current) => current.filter((id) => !sheets.has(id)));
+                setOpenGroups((current) => ({ ...current, ...groups }));
+            }
+        }
+    }
+    useEffect(() => {
+        const selected = selection.at(-1);
+        if (!selected) return;
+        // Keep the row visible while its nested accordions finish opening, without moving keyboard focus.
+        let frame = 0;
+        const started = performance.now();
+        const reveal = () => {
+            const row = container.current?.querySelector<HTMLButtonElement>(`button[data-layer-page="${selected.page}"][data-layer-index="${selected.index}"]`);
+            row?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+            if (performance.now() - started < 600) frame = requestAnimationFrame(reveal);
+        };
+        frame = requestAnimationFrame(reveal);
+        return () => cancelAnimationFrame(frame);
+    }, [selection]);
     const attachment = drawing.blueprints[0]?.attachment;
     const count = pages.reduce((total, page) => total + page.detectedProperties.length, 0);
     return (

@@ -6,21 +6,14 @@ import { createShapeId, useEditor, useValue } from 'tldraw';
 import { getDetectedObjectColor, type DetectedProperty, type Drawing, type PredictionPage } from '@repo/types';
 import { Tooltip, TooltipProvider } from '@repo/design-system/components/ui/tooltip';
 import { remixIcons } from '@repo/design-system/lib/icons-remix';
-import { formatDetectedObjectTooltip } from './detected-object-tooltip';
+import { formatDetectedObjectArea } from './detected-object-tooltip';
+import { DetectedObjectTooltipCard } from './detected-object-tooltip-card';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import type { CanvasModel } from './canvas/model';
 
 export const DetectionContext = createContext<{ drawing: Drawing; model: CanvasModel } | null>(null);
 const LoaderCircle = remixIcons.loader;
-
-function tooltipTextColor(color: string): string {
-    const luminance = [0.2126, 0.7152, 0.0722].reduce((total, weight, index) => {
-        const channel = Number.parseInt(color.slice(1 + index * 2, 3 + index * 2), 16) / 255;
-        return total + weight * (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
-    }, 0);
-    return luminance > 0.179 ? '#000000' : '#ffffff';
-}
 
 function polygonPath(geometry: DetectedProperty['geometry']): string {
     if (geometry.type === 'Point') return '';
@@ -79,7 +72,7 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
                             const select = (additive: boolean) =>
                                 additive ? model.selectionToggled({ page: page.page, index }) : model.selected({ page: page.page, index });
                             const color = getDetectedObjectColor(property);
-                            const tooltip = formatDetectedObjectTooltip({ drawing, page, property, index });
+                            const area = formatDetectedObjectArea({ drawing, page, property, index });
                             const processing = entities.get(property.id)?.enrichment.type === 'processing';
                             const center =
                                 property.centroid ??
@@ -90,6 +83,7 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
                                       : null);
                             const common = {
                                 'data-detected-object': true,
+                                'data-detected-type': property.type,
                                 'data-detected-page': page.page,
                                 'data-detected-index': index,
                                 role: 'button',
@@ -104,15 +98,15 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
                                 },
                                 style: { pointerEvents: 'all' as const, cursor: 'pointer', color },
                                 stroke: color,
-                                strokeWidth: 1.5,
+                                strokeWidth: property.type === 'room' ? 3 : 1.5,
                                 vectorEffect: 'non-scaling-stroke',
                             };
                             return (
                                 <g key={property.id}>
                                     <Tooltip
-                                        content={tooltip}
-                                        bubbleStyle={{ backgroundColor: color, color: tooltipTextColor(color) }}
-                                        contentClassName="z-[300000] pointer-events-none"
+                                        content={<DetectedObjectTooltipCard label={property.label} area={area} confidence={property.confidence} />}
+                                        bubbleStyle={{ backgroundColor: color, color: '#ffffff', padding: 0 }}
+                                        contentClassName="z-[300000] pointer-events-none [text-box:normal]"
                                         disableHoverablePopup
                                     >
                                         {property.geometry.type !== 'Point' ? (
