@@ -42,7 +42,7 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
     return (
         <div className="grid min-h-svh lg:grid-cols-[1.05fr_1fr]">
             <AuthHero />
-            <main className="flex flex-col justify-center px-6 py-12 sm:px-14">
+            <main className="bg-card text-card-foreground flex flex-col justify-center px-6 py-12 sm:px-14">
                 <div className="mx-auto w-full max-w-sm">
                     <Link to="/login" className="mb-10 flex w-fit items-center text-white">
                         <BrandLogo />
