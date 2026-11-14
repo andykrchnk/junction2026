@@ -76,6 +76,9 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
     return (
         <MotionConfig reducedMotion="user">
             <section aria-label="Drawing chat" className="flex h-full min-h-0 flex-col">
+                <header className="flex min-h-16 shrink-0 items-center border-b px-5">
+                    <h1 className="truncate text-base font-medium">{drawing.title}</h1>
+                </header>
                 <div role="log" aria-label="Conversation" className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
                     {drawing.attachment && <DrawingAttachmentThumbnail key={id} drawing={drawing} />}
                     <DrawingProgress drawing={drawing} busy={busy} />

@@ -268,17 +268,12 @@ export function SessionWorkshop({
             <div className="flex h-svh flex-col overflow-hidden">
                 <AppHeader onSignOut={onSignOut} />
                 <div className="flex min-h-0 flex-1">
-                    <aside className="bg-card w-64 shrink-0 border-r p-5">
-                        <Button variant="ghost" leadingIcon={ArrowLeft} onClick={() => setScreen('home')}>
-                            Your sessions
-                        </Button>
-                    </aside>
                     <WorkspacePanels
                         id={String(active.id).padStart(24, '0')}
                         userId="local-preview"
                         previewDrawing={{
                             id: String(active.id).padStart(24, '0'),
-                            title: active.name,
+                            title: 'Sample project',
                             updatedAt: active.createdAt ?? '',
                             status: 'empty',
                             attachment: null,

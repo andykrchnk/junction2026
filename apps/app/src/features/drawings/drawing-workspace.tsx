@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { Group, Panel, Separator, useGroupRef } from 'react-resizable-panels';
 import { z } from 'zod';
-import { Link } from '@tanstack/react-router';
 import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { trpc } from '@/shared/trpc';
@@ -83,23 +82,14 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
     );
     return (
         <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-            <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b px-5">
-                <div className="min-w-0">
-                    <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">Drawing workspace</p>
-                    <h1 className="truncate text-sm font-medium">{drawing.title}</h1>
-                </div>
-                <div className="flex gap-1 md:hidden">
-                    <Link to="/" search={{}} className="self-center px-2 text-xs text-muted-foreground underline">
-                        Sessions
-                    </Link>
-                    <Button size="sm" variant="ghost" aria-pressed={mobilePane === 'canvas'} onClick={() => setMobilePane('canvas')}>
-                        Canvas
-                    </Button>
-                    <Button size="sm" variant="ghost" aria-pressed={mobilePane === 'chat'} onClick={() => setMobilePane('chat')}>
-                        Chat
-                    </Button>
-                </div>
-            </header>
+            <div className="flex shrink-0 gap-1 border-b px-3 py-2 md:hidden">
+                <Button size="sm" variant="ghost" aria-pressed={mobilePane === 'chat'} onClick={() => setMobilePane('chat')}>
+                    Chat
+                </Button>
+                <Button size="sm" variant="ghost" aria-pressed={mobilePane === 'canvas'} onClick={() => setMobilePane('canvas')}>
+                    Canvas
+                </Button>
+            </div>
             {/* react-resizable-panels supplies keyboard and pointer resizing; Fluid has no split-pane primitive. */}
             <Group
                 groupRef={groupRef}
@@ -110,15 +100,15 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                     if (meta.isUserInteraction) writeLocal(layoutKey, next);
                 }}
             >
-                <Panel id="canvas" defaultSize="70%" minSize="40%" maxSize="80%" className="workspace-canvas min-w-0 bg-muted/30">
-                    {canvas}
+                <Panel id="chat" defaultSize="30%" minSize="20%" maxSize="60%" className="workspace-chat min-w-0 bg-background">
+                    <DrawingChat id={id} previewDrawing={previewDrawing} />
                 </Panel>
                 <Separator
                     aria-label="Resize canvas and chat"
                     className="workspace-divider w-1 shrink-0 bg-border transition-colors hover:bg-primary focus-visible:bg-primary focus-visible:outline-none"
                 />
-                <Panel id="chat" defaultSize="30%" minSize="20%" maxSize="60%" className="workspace-chat min-w-0 bg-background">
-                    <DrawingChat id={id} previewDrawing={previewDrawing} />
+                <Panel id="canvas" defaultSize="70%" minSize="40%" maxSize="80%" className="workspace-canvas min-w-0 bg-muted/30">
+                    {canvas}
                 </Panel>
             </Group>
         </section>
