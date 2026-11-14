@@ -36,7 +36,7 @@ def building_bounds(source):
     ), "dominant_connected_linework"
 
 
-def predict_detail(model, tensor, source, transform):
+def predict_detail(model, tensor, source, transform, building_crop=None):
     baseline = model(tensor).float().cpu()
     if max(transform.original_width, transform.original_height) <= 2048:
         return baseline, {
@@ -49,7 +49,9 @@ def predict_detail(model, tensor, source, transform):
         source = Image.fromarray(source.astype(np.uint8)).convert("RGB")
     else:
         source = source.convert("RGB")
-    bounds, reason = building_bounds(source)
+    bounds, reason = (
+        building_crop if building_crop is not None else building_bounds(source)
+    )
     # Keep the established 2048-pixel reconstruction budget. Tiles always
     # come from the original RGB image, never the resized overview tensor.
     scale = min(1.0, 2048 / max(source.size))
