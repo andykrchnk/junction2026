@@ -1,4 +1,4 @@
-import { useEffect, useState, useId } from 'react';
+import { useEffect, useState, useId, useRef } from 'react';
 import { useUnit } from 'effector-react';
 import { useTheme } from 'next-themes';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -25,6 +25,14 @@ import { CommentsContext, CommentCanvasLayer } from './comment-layer';
 import { createCommentsModel } from './canvas/comments-model';
 import 'tldraw/tldraw.css';
 import './blueprint-canvas.css';
+
+type SelectionGesture = {
+    pointerId: number;
+    x: number;
+    y: number;
+    moved: boolean;
+    object: { page: number; index: number } | null;
+};
 
 function CanvasLayers() {
     return (
@@ -158,6 +166,7 @@ function CanvasEditor({
     });
     const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const selectionGesture = useRef<SelectionGesture | null>(null);
     useHotkeys(
         'c',
         (event) => {
@@ -181,6 +190,7 @@ function CanvasEditor({
             if (openCommentId === null && target?.closest('input, textarea, select, [contenteditable="true"]')) return;
             event.preventDefault();
             event.stopPropagation();
+            selectionGesture.current = null;
             if (openCommentId !== null) commentsModel.openChanged(null);
             else if (commentMode === 'comment') commentsModel.modeChanged('default');
             else model.selected(null);
@@ -358,13 +368,26 @@ function CanvasEditor({
                 data-comment-mode={commentMode}
                 tabIndex={-1}
                 onPointerDownCapture={(event) => {
+                    selectionGesture.current = null;
                     if (!(event.target instanceof Element) || event.target.closest('[data-comment-ui], input, textarea, select, [contenteditable="true"]'))
                         return;
-                    if (event.button !== 0 || !activeEditor || !event.target.closest('.tl-canvas')) return;
-                    if (commentMode === 'default' && !event.target.closest('[data-detected-object]')) model.selected(null);
+                    if (event.button !== 0 || !event.isPrimary || !activeEditor || !event.target.closest('.tl-canvas')) return;
                     activeEditor.setCurrentTool('hand');
                     activeEditor.focus();
-                    if (commentMode !== 'comment') return;
+                    if (commentMode !== 'comment') {
+                        const element = event.target.closest('[data-detected-object]');
+                        const page = Number(element?.getAttribute('data-detected-page'));
+                        const index = Number(element?.getAttribute('data-detected-index'));
+                        const object =
+                            element &&
+                            Number.isInteger(index) &&
+                            index >= 0 &&
+                            drawing.detection?.pages.find((item) => item.page === page)?.detectedProperties[index]
+                                ? { page, index }
+                                : null;
+                        selectionGesture.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false, object };
+                        return;
+                    }
                     event.preventDefault();
                     event.stopPropagation();
                     const point = activeEditor.screenToPage({ x: event.clientX, y: event.clientY });
@@ -379,6 +402,24 @@ function CanvasEditor({
                         })
                         .at(-1);
                     if (hit) commentsModel.pointRequested(hit);
+                }}
+                onPointerMoveCapture={(event) => {
+                    const gesture = selectionGesture.current;
+                    if (gesture?.pointerId === event.pointerId && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 5) gesture.moved = true;
+                }}
+                onPointerUpCapture={(event) => {
+                    const gesture = selectionGesture.current;
+                    selectionGesture.current = null;
+                    if (
+                        gesture?.pointerId === event.pointerId &&
+                        !gesture.moved &&
+                        Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) <= 5 &&
+                        commentMode === 'default'
+                    )
+                        model.selected(gesture.object);
+                }}
+                onPointerCancelCapture={() => {
+                    selectionGesture.current = null;
                 }}
                 onKeyDownCapture={(event) => {
                     if (!activeEditor || !(event.target instanceof Element)) return;

@@ -1,8 +1,8 @@
-import { createContext, useContext, useEffect, useId, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { createContext, useContext, useEffect, useId, useState, type KeyboardEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { createShapeId, useEditor, useValue } from 'tldraw';
-import type { DetectedProperty, Drawing, PredictionPage } from '@repo/types';
+import { getDetectedObjectColor, type DetectedProperty, type Drawing, type PredictionPage } from '@repo/types';
 import { Checkbox } from '@repo/design-system/components/ui/checkbox';
 import { DetectedElementCard } from './detected-element-card';
 import { authenticatedFetch } from '@/shared/auth';
@@ -10,7 +10,6 @@ import { config } from '@/shared/config';
 import type { CanvasModel } from './canvas/model';
 
 export const DetectionContext = createContext<{ drawing: Drawing; model: CanvasModel } | null>(null);
-const colors = { room: '#0d9488', icon: '#d97706', junction: '#7c3aed' };
 
 function polygonPath(geometry: DetectedProperty['geometry']): string {
     if (geometry.type === 'Point') return '';
@@ -65,24 +64,23 @@ function DetectionSheet({ page, drawingId, model }: Readonly<{ page: PredictionP
                             const isSelected = selected?.page === page.page && selected.index === index;
                             const label = `${property.label}, sheet ${page.page}, model score ${Math.round(property.confidence * 100)}%`;
                             const select = () => model.selected({ page: page.page, index });
+                            const color = getDetectedObjectColor(property);
                             const common = {
                                 'data-detected-object': true,
+                                'data-detected-page': page.page,
+                                'data-detected-index': index,
                                 role: 'button',
                                 tabIndex: 0,
                                 'aria-label': label,
                                 'aria-pressed': isSelected,
-                                onPointerDown: (event: PointerEvent<SVGElement>) => {
-                                    if (event.button !== 0) return;
-                                    select();
-                                },
                                 onKeyDown: (event: KeyboardEvent<SVGElement>) => {
                                     if (event.key === 'Enter' || event.key === ' ') {
                                         event.preventDefault();
                                         select();
                                     }
                                 },
-                                style: { pointerEvents: 'all' as const, cursor: 'pointer', color: colors[property.type] },
-                                stroke: colors[property.type],
+                                style: { pointerEvents: 'all' as const, cursor: 'pointer', color },
+                                stroke: color,
                                 strokeWidth: 1.5,
                                 vectorEffect: 'non-scaling-stroke',
                             };

@@ -5,3 +5,4 @@ export * from './drawing';
 export * from './canvas';
 export * from './prediction';
 export * from './comment';
+export * from './detected-object-colors';
