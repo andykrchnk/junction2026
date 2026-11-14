@@ -30,6 +30,7 @@ const schema = new mongoose.Schema(
         messages: { type: [mongoose.Schema.Types.Mixed], default: [] },
         lease: { type: String, default: null },
         leaseUntil: { type: Date, default: null },
+        activeChatMessageId: { type: String, default: null },
         error: { type: String, default: null },
         processingJob: { type: mongoose.Schema.Types.Mixed, default: null },
         canvasDocument: { type: String, default: null },

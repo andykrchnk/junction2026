@@ -121,6 +121,13 @@ const reviewContextFx = createEffect(async (input: ReviewDrawingContext) => {
         await refresh(input.id);
     }
 });
+const stopFx = createEffect(async (input: { id: string; messageId: string }) => {
+    try {
+        return await trpcClient.drawings.stop.mutate(input);
+    } finally {
+        await refresh(input.id);
+    }
+});
 
 sample({
     clock: traceReceived,
@@ -173,6 +180,8 @@ sample({ clock: createFx.failData, fn: (error) => ({ id: null, message: error.me
 sample({ clock: uploadFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
 sample({ clock: analyzeFx.fail, fn: ({ params, error }) => ({ id: params, message: error.message }), target: $error });
 sample({ clock: askFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
+sample({ clock: stopFx, fn: () => null, target: $error });
+sample({ clock: stopFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
 sample({ clock: askFx.done, source: $id, filter: (id, { params }) => id === params.id, fn: () => '', target: $draft });
 sample({ clock: [opened, inferFx], fn: () => null, target: $inferenceError });
 sample({ clock: inferFx.fail, fn: ({ params, error }) => ({ id: params, message: error.message }), target: $inferenceError });
@@ -195,6 +204,8 @@ export const $$drawings = {
     analyzeFx,
     inferFx,
     askFx,
+    stopFx,
+    $stopping: readonly(stopFx.pending),
     $outgoing: readonly($outgoing),
     $stages: readonly($stages),
     $draft: readonly($draft),
