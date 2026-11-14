@@ -117,7 +117,7 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
                         </Button>
                     </form>
                     <p className="text-muted-foreground mt-7 text-center text-sm">
-                        {mode === 'register' ? 'Already have an account? ' : 'New to Pirtoa? '}
+                        {mode === 'register' ? 'Already have an account? ' : 'New to Pirto? '}
                         <Link className="text-primary font-medium underline-offset-4 hover:underline" to={mode === 'register' ? '/login' : '/register'}>
                             {mode === 'register' ? 'Sign in' : 'Create an account'}
                         </Link>
