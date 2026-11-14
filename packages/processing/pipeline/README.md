@@ -49,7 +49,13 @@ curl --fail http://127.0.0.1:8002/v1/process \
 CubiCasa detail and PaddleOCR run sequentially to bound concurrent GPU demand.
 Workers retain their loaded weights. The API admits one standardized processing
 request at a time; further calls receive 503 with Retry-After. Gemini runs at most
-four concurrent requests, one contextual request per candidate combining class,
+four concurrent requests. Fixtures complete first, then rooms receive fixture class
+suggestions, acceptance status, uncalibrated class/evidence/existence scores and bounds for fixtures with at least
+50% of their area inside the room. Removed, failed, skipped and No Icon
+decisions are excluded. Unaccepted suggestions require independent image support;
+the public fixture acceptance gates are unchanged. Empty context does not establish that fixtures are absent.
+Both stages share the target cap and deadline; fixture work can exhaust the window
+before rooms run. One contextual request per candidate combines class,
 name and measurement questions. Each question is independent; code combines answers.
 Verification is capped at 500 targets, 20 measurement candidates per target and a
 180-second scheduling window plus up to 30 seconds for in-flight calls. Worker
@@ -59,9 +65,10 @@ unknown measurements. Response headers identify degraded processing.
 
 ## Output semantics
 
-All class values are members of the exact 12-room/structure or 11-icon CubiCasa
-vocabularies. Structural/background predictions are not returned as rooms. `No Icon`
-is an internal removal decision, not an extra fixture object. No invented classes
+Room output classes use the service vocabulary: the 12 CubiCasa room/structure
+classes plus Sauna. Fixture classes retain the 11-icon CubiCasa vocabulary. Worker
+validation still accepts only the original CubiCasa classes. Structural/background predictions are not returned as rooms. `No Icon`
+is an internal removal decision, not an extra fixture object. Only explicitly supported classes
 are accepted from Gemini or workers. Classification never changes the geometry. The geometry worker applies bounded
 wall-aligned cleanup before verification and recomputes selected-class support
 over the final regions. Cleanup diagnostics remain internal.
@@ -150,3 +157,9 @@ Recovered opening candidates are excluded from the public response unless fixtur
 verification accepts a Door with existence and swing evidence. Failures retain
 the exclusion. They do not become geometry barriers before verification. Exact
 duplicate class/geometry targets are removed before verification.
+
+Fixture context stays internal and geometry is unchanged. Sauna is a service-only
+room class selected by Decisions from labels and visual/fixture evidence after
+inference; CubiCasa weights and worker taxonomy are unchanged. There is no Heater
+fixture extension. The shared consumer schema and colors support Sauna. Names
+remain printed OCR labels or null; a relabelled Sauna uses its Decisions class score.

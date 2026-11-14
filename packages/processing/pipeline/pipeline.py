@@ -4,7 +4,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from clients.workers import predict, WorkerFailure
 from clients.gemini import Gemini, VerificationFailure
-from stages.prepare import targets, context, image_part
+from stages.prepare import targets, context, image_part, room_fixtures
 from stages.verify import verify
 from stages.resolve import apply
 from stages.normalize import normalize
@@ -40,6 +40,8 @@ def process(image, image_bytes, settings):
         index, target = pair
         if index >= settings.max_targets or time.monotonic() >= deadline:
             return "verification_limit"
+        if target["kind"] == "room":
+            target["fixture_context"] = room_fixtures(target, proposals)
         parts, words, bounds = context(target, image, tokens, overview_part)
         try:
             answers = verify(target, parts, words, bounds, verifier)
@@ -50,9 +52,10 @@ def process(image, image_bytes, settings):
 
     try:
         with ThreadPoolExecutor(max_workers=settings.gemini_workers) as pool:
-            degraded.update(
-                result for result in pool.map(evaluate, enumerate(proposals)) if result
-            )
+            # Keep the original target budget and wait for all fixture decisions.
+            for kind in ("fixture", "room"):
+                batch = [(i, t) for i, t in enumerate(proposals) if t["kind"] == kind]
+                degraded.update(result for result in pool.map(evaluate, batch) if result)
     finally:
         verifier.close()
     result = normalize(image, proposals)
@@ -64,7 +67,7 @@ def process(image, image_bytes, settings):
         json.dumps(
             {
                 "degraded": sorted(degraded),
-                "policy": "room-recovery-v3",
+                "policy": "fixture-aware-room-decisions-v1",
                 "model": settings.model,
             }
         )

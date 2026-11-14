@@ -6,6 +6,11 @@ def apply(target, answers):
     selected = answers["class"]["choice"]
     score = answers["class"]["confidence"]
     evidence = answers["evidence"]["noul"]
+    if target["kind"] == "fixture":
+        target["fixture_verification"] = {
+            "class": selected, "class_score": score,
+            "evidence_score": evidence, "existence_score": answers["exists"]["noul"],
+        }
     recovered = target.get("requires_verification", False)
     target["decision"] = "removed" if recovered else "retained"
     if recovered and (
@@ -55,6 +60,8 @@ def apply(target, answers):
             )
         ):
             return
+    if target["kind"] == "fixture":
+        target["accepted_classification"] = {"class": selected, "score": score}
     if recovered:
         target["decision"] = "verified_recovery"
         target["confidence"] = score

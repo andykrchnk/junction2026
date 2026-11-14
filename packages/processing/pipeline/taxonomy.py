@@ -29,3 +29,12 @@ IconClass = Enum(
     "IconClass", {f"C{i}": v for i, v in enumerate(ICON_CLASSES)}, type=str
 )
 STRUCTURAL_CLASSES = {"Background", "Wall", "Railing"}
+
+
+# Service extensions are resolved after inference; worker labels remain unchanged.
+SERVICE_ROOM_CLASSES = ROOM_CLASSES + ("Sauna",)
+ServiceRoomClass = Enum(
+    "ServiceRoomClass",
+    {f"C{i}": v for i, v in enumerate(SERVICE_ROOM_CLASSES)},
+    type=str,
+)

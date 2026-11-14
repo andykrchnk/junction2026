@@ -46,6 +46,7 @@ export const ProcessingPredictionZod = z
                         'Storage',
                         'Garage',
                         'Undefined',
+                        'Sauna',
                     ]),
                     confidence: ScoreZod,
                     name: z.string().nullable().default(null),
