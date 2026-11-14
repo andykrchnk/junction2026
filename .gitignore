@@ -47,3 +47,5 @@ artifacts/
 
 # Agent-local verification artifacts
 .local/
+
+.pnpm-store/
