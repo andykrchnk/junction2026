@@ -1,4 +1,4 @@
-import type { Drawing } from '@repo/types';
+import { SidebarTrigger } from '@repo/design-system/components/ui/sidebar';
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
@@ -11,7 +11,7 @@ import { ChatMessage } from '@repo/design-system/components/ui/chat-message';
 import { ThinkingIndicator } from '@repo/design-system/components/ui/thinking-indicator';
 import { trpc } from '@/shared/trpc';
 import { $$drawings } from './model';
-import { DrawingUpload, DrawingAttachmentThumbnail } from './drawing-upload';
+import { DrawingAttachmentThumbnail } from './drawing-upload';
 import { DrawingProgress } from './drawing-progress';
 
 const questionLimit = 4000;
@@ -76,8 +76,9 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
     return (
         <MotionConfig reducedMotion="user">
             <section aria-label="Drawing chat" className="flex h-full min-h-0 flex-col">
-                <header className="flex min-h-16 shrink-0 items-center border-b px-5">
+                <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b px-4">
                     <h1 className="truncate text-base font-medium">{drawing.title}</h1>
+                    <SidebarTrigger />
                 </header>
                 <div role="log" aria-label="Conversation" className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
                     {drawing.attachment && <DrawingAttachmentThumbnail key={id} drawing={drawing} />}
@@ -130,16 +131,7 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                     <div ref={endRef} />
                 </div>
                 <div className="max-h-[50%] shrink-0 overflow-y-auto p-3">
-                    {!drawing.attachment && (
-                        <DrawingUpload
-                            key={id}
-                            disabled={busy}
-                            uploading={uploading && busy}
-                            onUpload={(file) => {
-                                void $$drawings.uploadFx({ id, file }).catch(() => {});
-                            }}
-                        />
-                    )}
+                    {previewDrawing && <p className="mb-3 text-xs text-muted-foreground">Local preview · Sign in to analyze and chat.</p>}
                     {clarification ? (
                         <fieldset disabled={busy || asking} className="min-w-0 border-0 p-0">
                             <legend className="text-primary mb-2 text-xs font-medium">More information needed</legend>
