@@ -9,6 +9,7 @@ import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import { createCanvasModel, type CanvasModel, type LoadedCanvas } from './canvas/model';
 import { readLocal, ViewZod, writeLocal } from './canvas-storage';
+import { DetectionCanvasLayer, DetectionContext, DetectionControls } from './detection-layer';
 import 'tldraw/tldraw.css';
 
 type BlueprintPage = Readonly<{ src: string; width: number; height: number }>;
@@ -269,7 +270,17 @@ function CanvasEditor({
                 </div>
             )}
             <div className="relative min-h-0 flex-1" aria-label="Blueprint canvas">
-                <Tldraw store={store} onMount={mount} hideUi licenseKey={config.TLDRAW_LICENSE_KEY} options={{ maxPages: 1 }} />
+                <DetectionContext.Provider value={{ drawing, model }}>
+                    <Tldraw
+                        store={store}
+                        onMount={mount}
+                        hideUi
+                        licenseKey={config.TLDRAW_LICENSE_KEY}
+                        options={{ maxPages: 1 }}
+                        components={{ OnTheCanvas: DetectionCanvasLayer }}
+                    />
+                </DetectionContext.Provider>
+                <DetectionControls drawing={drawing} model={model} />
             </div>
         </div>
     );

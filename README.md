@@ -58,10 +58,17 @@ To draw these geometries, fetch the matching authenticated `GET /api/drawings/:i
 
 Drawings open in a tldraw viewer on the left and the existing chat on the right,
 starting at a 70/30 split. The divider supports pointer and keyboard resizing;
-small screens switch between Canvas and Chat. The viewer exposes pan, zoom,
-and fit, with all PDF sheets arranged side by side on one canvas. Drawing, media insertion and editing tools are
-disabled. Blueprint backgrounds are locked; no neural-network integration or
-geometry overlays are included.
+small screens switch between Canvas and Chat. The viewer supports dragging to pan
+and gesture zoom, with an automatic initial fit and all PDF sheets side by side
+on one canvas. Drawing, media insertion and editing tools are disabled.
+
+Completed detection pages display their exact normalized inference raster with
+room polygons, fixture boxes and optional junction points. Small floating layer
+toggles control visibility. Select an element to inspect its class, source sheet,
+uncalibrated model score and pixel area. These derived overlays are read directly
+from saved detection results, not copied into canvas snapshots; selection and
+layer visibility do not modify the saved canvas. Source raster coordinates map
+through each sheet's canvas position and scale, including multi-sheet layouts.
 
 Canvas documents are stored separately from analysis/chat fields on the drawing
 in MongoDB. Protected tRPC procedures enforce ownership and compare revisions
@@ -75,9 +82,10 @@ are combined on opening, preserving their shapes. Undo history is not persisted.
 Set `VITE_TLDRAW_LICENSE_KEY` in `apps/app/.env` for local builds or in the Railway
 app service variables before a production build. This is a public SDK license
 key, not an API secret; the SDK requires an appropriate license for production.
-The Docker build and Railway IaC pass it through at build time. PDFs are rasterized
-client-side using the existing PDF.js renderer and stored as page references,
-not embedded image bytes or expiring blob URLs in the saved document.
+The Docker build and Railway IaC pass it through at build time. PDFs without
+detections are rasterized client-side using the existing PDF.js renderer. Saved
+canvas documents reference sheets rather than embedding raster bytes or expiring
+blob URLs; available detection rasters are fetched through the authenticated API.
 
 ## Verification
 

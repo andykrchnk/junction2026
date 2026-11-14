@@ -16,7 +16,7 @@ export function DrawingChat({ id }: Readonly<{ id: string }>) {
         error: loadError,
     } = useQuery({
         ...trpc.drawings.get.queryOptions({ id }),
-        refetchInterval: (query) => (query.state.data?.busy ? 2000 : false),
+        refetchInterval: (query) => (query.state.data?.busy || query.state.data?.detection?.status === 'processing' ? 2000 : false),
     });
     const { draft, error, uploading, activity, asking } = useUnit({
         draft: $$drawings.$draft,

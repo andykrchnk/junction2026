@@ -16,7 +16,14 @@ const LayoutZod = z
     .refine((layout) => Math.abs(layout.canvas + layout.chat - 100) < 1);
 
 function WorkspacePanels({ id, userId }: Readonly<{ id: string; userId: string }>) {
-    const { data: drawing, isPending, error } = useQuery(trpc.drawings.get.queryOptions({ id }));
+    const {
+        data: drawing,
+        isPending,
+        error,
+    } = useQuery({
+        ...trpc.drawings.get.queryOptions({ id }),
+        refetchInterval: (query) => (query.state.data?.detection?.status === 'processing' ? 2000 : false),
+    });
     const layoutKey = `junction:workspace:${userId}:${id}:layout`;
     const [layout] = useState(() => {
         const parsed = LayoutZod.safeParse(readLocal(layoutKey));
