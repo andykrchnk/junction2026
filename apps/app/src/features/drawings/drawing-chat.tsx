@@ -2,10 +2,10 @@ import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { AnimatePresence, MotionConfig } from 'motion/react';
-import { ArrowUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ChatMessage } from '@/components/ui/chat-message';
+import { Button } from '@repo/design-system/components/ui/button';
+import { Input } from '@repo/design-system/components/ui/input';
+import { InputMessage } from '@repo/design-system/components/ui/input-message';
+import { ChatMessage } from '@repo/design-system/components/ui/chat-message';
 import { trpc } from '@/shared/trpc';
 import { $$drawings } from './model';
 
@@ -91,15 +91,7 @@ export function DrawingChat({ id }: Readonly<{ id: string }>) {
                     )}
                     <div ref={endRef} />
                 </div>
-                <form
-                    className="shrink-0 p-3"
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        if (draft.trim() && drawing.attachment && !busy && !pending) {
-                            void $$drawings.askFx({ id, message: { id: crypto.randomUUID(), question: draft.trim(), answer: null } }).catch(() => {});
-                        }
-                    }}
-                >
+                <div className="shrink-0 p-3">
                     {!drawing.attachment && (
                         <Input
                             aria-label="Upload blueprint"
@@ -114,27 +106,22 @@ export function DrawingChat({ id }: Readonly<{ id: string }>) {
                             }}
                         />
                     )}
-                    <div className="flex items-center gap-2">
-                        <Input
-                            aria-label={clarification ? 'Reply to clarification' : 'Message'}
-                            value={draft}
-                            onChange={(event) => $$drawings.draftChanged(event.target.value)}
-                            placeholder="Message…"
-                            maxLength={4000}
-                            disabled={!drawing.attachment || busy || !!pending}
-                            autoComplete="off"
-                        />
-                        <Button
-                            type="submit"
-                            size="icon"
-                            aria-label="Send message"
-                            disabled={!drawing.attachment || !draft.trim() || !!pending || busy}
-                            loading={asking && busy}
-                        >
-                            <ArrowUp className="size-4" />
-                        </Button>
-                    </div>
-                </form>
+                    <InputMessage
+                        value={draft}
+                        onValueChange={$$drawings.draftChanged}
+                        onSend={(question) => {
+                            if (question.trim() && drawing.attachment && !busy && !pending) {
+                                void $$drawings.askFx({ id, message: { id: crypto.randomUUID(), question: question.trim(), answer: null } }).catch(() => {});
+                            }
+                        }}
+                        placeholder="Message…"
+                        sendLabel="Send message"
+                        minRows={1}
+                        maxRows={6}
+                        disabled={!drawing.attachment || busy || !!pending || asking}
+                        textareaProps={{ 'aria-label': clarification ? 'Reply to clarification' : 'Message', maxLength: 4000, autoComplete: 'off' }}
+                    />
+                </div>
             </section>
         </MotionConfig>
     );

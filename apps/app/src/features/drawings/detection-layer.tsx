@@ -3,7 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { createShapeId, useEditor, useValue } from 'tldraw';
 import type { DetectedProperty, Drawing, PredictionPage } from '@repo/types';
-import { Button } from '@/components/ui/button';
+import { Button } from '@repo/design-system/components/ui/button';
+import { Checkbox } from '@repo/design-system/components/ui/checkbox';
+import { X } from '@repo/design-system/lib/icons-remix';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import type { CanvasModel } from './canvas/model';
@@ -135,11 +137,12 @@ export function DetectionControls({ drawing, model }: Readonly<{ drawing: Drawin
         <>
             <div aria-label="Geometry layers" className="absolute top-3 left-3 z-[300] flex flex-wrap gap-3 rounded border bg-card px-3 py-2 text-xs shadow-sm">
                 {(['room', 'icon', 'junction'] as const).map((type) => (
-                    <label key={type} className="flex items-center gap-1.5">
-                        <input
-                            type="checkbox"
+                    <label key={type} htmlFor={`geometry-${drawing.id}-${type}`} className="flex items-center gap-1.5">
+                        <Checkbox
+                            id={`geometry-${drawing.id}-${type}`}
+                            size="compact"
                             checked={visibility[type]}
-                            onChange={(event) => model.visibilityChanged({ type, visible: event.target.checked })}
+                            onCheckedChange={(visible) => model.visibilityChanged({ type, visible })}
                         />
                         {type === 'room' ? 'Rooms' : type === 'icon' ? 'Fixtures' : 'Junctions'}
                     </label>
@@ -154,9 +157,13 @@ export function DetectionControls({ drawing, model }: Readonly<{ drawing: Drawin
                         <span className="font-medium">
                             {property.label} · Sheet {selected?.page}
                         </span>
-                        <Button size="sm" variant="ghost" aria-label="Close element properties" onClick={() => model.selected(null)}>
-                            ×
-                        </Button>
+                        <Button
+                            size="icon-compact"
+                            variant="ghost"
+                            leadingIcon={X}
+                            aria-label="Close element properties"
+                            onClick={() => model.selected(null)}
+                        />
                     </div>
                     <p>
                         Model score: {Math.round(property.confidence * 100)}% ·{' '}

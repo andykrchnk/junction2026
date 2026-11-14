@@ -4,7 +4,7 @@ import { useTheme } from 'next-themes';
 import { CanvasStateZod, type Drawing } from '@repo/types';
 import { AssetRecordType, createTLStore, createShapeId, getSnapshot, parseTldrawJsonFile, Tldraw, type Editor, type TLAssetStore } from 'tldraw';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&url';
-import { Button } from '@/components/ui/button';
+import { Button } from '@repo/design-system/components/ui/button';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import { createCanvasModel, type CanvasModel, type LoadedCanvas } from './canvas/model';

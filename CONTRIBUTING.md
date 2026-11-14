@@ -6,6 +6,6 @@ Commit after each requested implementation step with Conventional Commits: `<typ
 
 `pnpm install` enables the shared pre-commit hook. It runs `pnpm format` across the project and restages only files already staged for the commit. Other formatting changes remain unstaged. Partially staged files must be fully staged or unstaged before committing.
 
-## Platform UI integration
+## Platform UI work
 
-For the ongoing design work, branch `feature/ui-<change>` from `feature/platform-ui` and target that integration branch with task PRs. Open the accumulated integration PR against `master` when ready. See [the UI workflow](docs/ui-workflow.md).
+Create each `feature/ui-<change>` branch directly from the latest `master` and open its PR directly to `master`. Do not create child branches from an ongoing UI branch or use `feature/platform-ui` as an integration target. Reuse the existing shared design-system components; extend or compose them before introducing a new primitive. See [the UI workflow](docs/ui-workflow.md).

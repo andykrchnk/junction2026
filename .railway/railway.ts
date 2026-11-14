@@ -9,7 +9,6 @@ const appBuild = {
     dockerfilePath: 'apps/app/Dockerfile.railway',
     watchPatterns: [
         'apps/app/**',
-        'design-system/**',
         'apps/server/src/trpc/**',
         'apps/server/src/shared/trpc.ts',
         'packages/**',

@@ -9,4 +9,4 @@ pnpm-lock.yaml
 research
 
 # Preserved registry/workshop sources are maintained in their own toolchain.
-design-system
+packages/design-system

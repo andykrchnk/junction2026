@@ -11,11 +11,11 @@
     },
     "iconLibrary": "lucide",
     "aliases": {
-        "components": "@/components",
-        "utils": "@/lib/utils",
-        "ui": "@/components/ui",
-        "lib": "@/lib",
-        "hooks": "@/shared/hooks"
+        "components": "@repo/design-system/components",
+        "utils": "@repo/design-system/lib/utils",
+        "ui": "@repo/design-system/components/ui",
+        "lib": "@repo/design-system/lib",
+        "hooks": "@repo/design-system/hooks"
     },
     "registries": {
         "@fluid": "https://www.fluidfunctionalism.com/r/{name}.json"

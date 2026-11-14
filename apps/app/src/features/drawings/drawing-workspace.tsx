@@ -4,7 +4,7 @@ import { useUnit } from 'effector-react';
 import { Group, Panel, Separator, useGroupRef } from 'react-resizable-panels';
 import { z } from 'zod';
 import { Link } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
+import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { trpc } from '@/shared/trpc';
 import { DrawingChat } from './drawing-chat';

@@ -1,5 +1,5 @@
 import { createAuthClient } from 'better-auth/react';
-import { config } from './config';
+import { config } from '@/shared/config';
 
 const tokenStorageKey = 'junction_bearer_token';
 let authVersion = 0;

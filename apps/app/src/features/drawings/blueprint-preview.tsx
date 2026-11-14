@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { PDFDocumentLoadingTask, RenderTask } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&url';
 import type { Drawing, Observation } from '@repo/types';
-import { Button } from '@/components/ui/button';
+import { Button } from '@repo/design-system/components/ui/button';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 

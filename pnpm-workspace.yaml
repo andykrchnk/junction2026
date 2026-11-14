@@ -1,6 +1,8 @@
 packages:
     - 'apps/*'
     - 'packages/*'
+allowBuilds:
+    esbuild: true
 minimumReleaseAgeExclude:
     - '@better-auth/core@1.7.23'
     - '@better-auth/drizzle-adapter@1.7.23'
@@ -12,3 +14,6 @@ minimumReleaseAgeExclude:
     - better-auth@1.7.23
     - railway@3.17.0
     - '@openai/agents-realtime@0.22.0'
+    - framer-motion@14.14.0
+    - motion-dom@14.14.0
+    - motion@14.14.0
