@@ -4,7 +4,7 @@ import { useForm } from '@tanstack/react-form';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
 import { useEffect } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight } from '@/lib/icons-remix';
 import { SignInInputZod, SignUpInputZod } from '@repo/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

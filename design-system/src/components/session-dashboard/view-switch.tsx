@@ -1,8 +1,8 @@
 'use client';
 
 // Prototype adaptation of the shared Fluid Switch; retains its drag and keyboard behavior.
-import { List } from 'lucide-react';
-import { GridIcon } from './grid-icon';
+import { List } from '@/lib/icons-remix';
+import { GridIcon } from '@/lib/icons-remix';
 
 import { forwardRef, useRef, useState, useEffect, useCallback, useId, type HTMLAttributes } from 'react';
 import { motion, useMotionValue, animate, type Transition } from 'motion/react';
@@ -298,10 +298,7 @@ const ViewSwitch = forwardRef<HTMLDivElement, ViewSwitchProps>(
                                     {...rest}
                                     // Pinned to the top-left and placed only by the x and y transforms;
                                     // width and height carry the hover and press shapes.
-                                    className={cn(
-                                        'absolute top-0 left-0 block bg-secondary shadow-sm border border-border',
-                                        sharp ? 'rounded-none' : 'rounded-full',
-                                    )}
+                                    className={cn('absolute top-0 left-0 block bg-foreground shadow-sm', sharp ? 'rounded-none' : 'rounded-full')}
                                     initial={false}
                                     style={{
                                         ...(baseStyle as React.CSSProperties | undefined),
@@ -331,10 +328,10 @@ const ViewSwitch = forwardRef<HTMLDivElement, ViewSwitchProps>(
                             pointerEvents: 'none',
                         }}
                     >
-                        <span style={{ color: checked ? 'var(--muted-foreground)' : 'var(--foreground)' }}>
+                        <span style={{ color: checked ? 'var(--muted-foreground)' : 'var(--background)' }}>
                             <GridIcon />
                         </span>
-                        <List size={16} style={{ color: checked ? 'var(--foreground)' : 'var(--muted-foreground)' }} />
+                        <List size={16} style={{ color: checked ? 'var(--background)' : 'var(--muted-foreground)' }} />
                     </span>
                 </SwitchPrimitive.Root>
 

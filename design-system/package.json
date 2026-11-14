@@ -31,6 +31,7 @@
     "@radix-ui/react-switch": "^1.4.1",
     "@radix-ui/react-tabs": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.4.1",
+    "@remixicon/react": "^4.9.0",
     "@tanstack/react-table": "^8.21.3",
     "@untitledui/icons": "^0.0.23",
     "class-variance-authority": "^0.7.1",

@@ -3,7 +3,7 @@ import { queryClient } from '@/shared/trpc';
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { FluidProvider } from '@/lib/fluid-provider';
-import { untitleduiIcons } from '@/lib/icons-untitledui';
+import { remixIcons } from '@/lib/icons-remix';
 import { ThemeProvider } from 'next-themes';
 import appCss from '../styles.css?url';
 
@@ -35,7 +35,7 @@ function RootDocument(props: Readonly<{ children: ReactNode }>) {
             </head>
             <body>
                 <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-                    <FluidProvider shape="sharp" size="default" icons={untitleduiIcons}>
+                    <FluidProvider shape="sharp" size="default" icons={remixIcons}>
                         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
                     </FluidProvider>
                 </ThemeProvider>

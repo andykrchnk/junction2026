@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "cn"
-import { XIcon } from "lucide-react"
+import { XIcon } from "@/lib/icons-remix"
 import { Dialog as SheetPrimitive } from "radix-ui"
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {

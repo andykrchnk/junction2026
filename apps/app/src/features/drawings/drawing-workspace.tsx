@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { AnimatePresence, MotionConfig } from 'motion/react';
-import { ArrowUp, FileUp, FileText, RefreshCw } from 'lucide-react';
+import { ArrowUp, FileUp, FileText, RefreshCw } from '@/lib/icons-remix';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage } from '@/components/ui/chat-message';

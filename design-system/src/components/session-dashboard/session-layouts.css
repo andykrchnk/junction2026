@@ -3,12 +3,12 @@
     min-height: calc(100svh - 112px);
 }
 .sl-header {
-    height: 72px;
+    height: 64px;
     background: var(--session-header);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 40px;
+    padding: 0 32px;
     border-bottom: 1px solid var(--border);
 }
 .sl-account {
@@ -27,14 +27,14 @@
 .sl-main {
     max-width: 1280px;
     margin: auto;
-    padding: 64px 32px;
+    padding: 48px 32px;
 }
 .sl-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 24px;
-    padding-bottom: 40px;
+    padding-bottom: 48px;
 }
 .sl-heading h1 {
     font-family: var(--font-sans);
@@ -307,4 +307,8 @@
 }
 .sl-account {
     max-width: 240px;
+}
+
+.sl-header .sl-logo {
+    height: 28px;
 }

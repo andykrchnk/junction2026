@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, ChevronDown, ArrowUpRight, FileText } from 'lucide-react';
+import { Plus, ChevronDown, ArrowUpRight, FileText } from '@/lib/icons-remix';
 import { Button } from '../ui/button';
 import { BrandLogo } from '../ui/brand-logo';
 import { DropdownMenu, DropdownTrigger, DropdownContent } from '../ui/dropdown';
@@ -68,20 +68,17 @@ export function SessionLayouts({
     return (
         <div className={`sl-root sl-${variant}`}>
             <header className="sl-header">
-                <BrandLogo />
+                <BrandLogo className="sl-logo" />
                 <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                     <DropdownTrigger
                         render={
-                            <Button variant="ghost" className="sl-account" trailingIcon={ChevronDown}>
+                            <Button variant="ghost" className="sl-account">
                                 <span className="sl-avatar">{accountName.slice(0, 1).toUpperCase()}</span>
                                 <span>{accountName}</span>
                             </Button>
                         }
                     />
-                    <DropdownContent align="end">
-                        <MenuItem index={0} label={accountName} onSelect={() => setAccountOpen(false)} />
-                        {onSignOut && <MenuItem index={1} label="Sign out" onSelect={onSignOut} />}
-                    </DropdownContent>
+                    <DropdownContent align="end">{onSignOut && <MenuItem index={0} label="Log out" onSelect={onSignOut} />}</DropdownContent>
                 </DropdownMenu>
             </header>
             <main className="sl-main">

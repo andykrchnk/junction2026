@@ -1,6 +1,6 @@
 import { SessionLayouts, layoutDirections } from '../components/session-dashboard/session-layouts';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Plus, Upload, FileText, Check, X, ScanLine } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Upload, FileText, Check, X, ScanLine } from '@/lib/icons-remix';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Progress } from '../components/ui/progress';

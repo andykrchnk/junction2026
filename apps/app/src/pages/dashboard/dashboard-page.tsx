@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, Link, useSearch } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
-import { LogOut, Plus, FileStack } from 'lucide-react';
+import { LogOut, Plus, FileStack } from '@/lib/icons-remix';
 import { Button } from '@/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { $$drawings } from '@/features/drawings/model';
