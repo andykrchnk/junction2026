@@ -1,3 +1,4 @@
+import type { CommentsModel } from './canvas/comments-model';
 import { useState, useRef, useEffect } from 'react';
 import type { Drawing } from '@repo/types';
 import { Button } from '@repo/design-system/components/ui/button';
@@ -8,7 +9,11 @@ const CollapseIcon = remixIcons['panel-left'];
 import { DrawingChat } from './drawing-chat';
 import { $$drawings } from './model';
 
-export function SessionChatPanel({ drawing, previewDrawing }: Readonly<{ drawing: Drawing; previewDrawing?: Drawing }>) {
+export function SessionChatPanel({
+    drawing,
+    previewDrawing,
+    commentsModel,
+}: Readonly<{ drawing: Drawing; previewDrawing?: Drawing; commentsModel?: CommentsModel }>) {
     const container = useRef<HTMLDivElement>(null);
     const reducedMotion = useReducedMotion();
     const [height, setHeight] = useState(600);
@@ -135,7 +140,7 @@ export function SessionChatPanel({ drawing, previewDrawing }: Readonly<{ drawing
                         className="min-h-0 flex-1 overflow-hidden border-t"
                         style={{ visibility: collapsed ? 'hidden' : 'visible' }}
                     >
-                        <DrawingChat id={drawing.id} previewDrawing={previewDrawing} />
+                        <DrawingChat commentsModel={commentsModel} id={drawing.id} previewDrawing={previewDrawing} />
                     </div>
                 </div>
                 <div

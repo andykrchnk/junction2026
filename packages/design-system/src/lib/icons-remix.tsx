@@ -3,6 +3,7 @@ import type { IconComponent, IconName } from '@repo/design-system/lib/icon-conte
 import {
     RiAddLine,
     RiCrosshair2Line,
+    RiCursorLine,
     RiArrowDownLine,
     RiArrowDownSLine,
     RiArrowLeftLine,
@@ -14,6 +15,8 @@ import {
     RiBrushLine,
     RiCalendarLine,
     RiChat3Line,
+    RiChat4Line,
+    RiChatNewLine,
     RiCheckLine,
     RiCircleFill,
     RiCircleLine,
@@ -186,3 +189,9 @@ export const ChevronRightIcon = remix(RiArrowRightSLine);
 export const CircleIcon = remix(RiCircleLine);
 
 export const Crosshair = remix(RiCrosshair2Line);
+export const MessageSquare = remix(RiChat4Line);
+
+export const MessageAdd = remix(RiChatNewLine);
+
+export const Cursor = remix(RiCursorLine);
+export const Search = remix(RiSearchLine);
