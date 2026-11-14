@@ -1,11 +1,13 @@
 import { layoutPages } from './layout';
 import { useEffect, useState, useId, useRef } from 'react';
 import { useUnit } from 'effector-react';
+import { useReducedMotion } from 'motion/react';
 import { useTheme } from 'next-themes';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { CanvasStateZod, type Drawing } from '@repo/types';
 import {
     AssetRecordType,
+    Box,
     createTLStore,
     createShapeId,
     getSnapshot,
@@ -19,7 +21,7 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&url';
 import { Button } from '@repo/design-system/components/ui/button';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
-import { createCanvasModel, type CanvasModel, type LoadedCanvas } from './canvas/model';
+import { type CanvasModel, type LoadedCanvas } from './canvas/model';
 import { readLocal, ViewZod, writeLocal } from './canvas-storage';
 import { DetectionCanvasLayer, DetectionContext, DetectionControls } from './detection-layer';
 import { CommentsContext, CommentCanvasLayer } from './comment-layer';
@@ -168,6 +170,21 @@ function CanvasEditor({
     const [activeEditor, setActiveEditor] = useState<Editor | null>(null);
     const [error, setError] = useState<string | null>(null);
     const selectionGesture = useRef<SelectionGesture | null>(null);
+    const focus = useUnit(model.$focus);
+    const reducedMotion = useReducedMotion();
+    useEffect(() => {
+        if (!activeEditor || !focus) return;
+        const page = layoutPages(drawing.blueprints).find((page) => page.page === focus.object.page);
+        const property = page?.detectedProperties[focus.object.index];
+        const shape = activeEditor.getShape(createShapeId(`blueprint-${focus.object.page}`));
+        if (!page || !property || !shape || shape.type !== 'image') return;
+        const geometry = property.geometry;
+        const coordinates =
+            geometry.type === 'Point' ? [geometry.coordinates] : geometry.type === 'Polygon' ? geometry.coordinates.flat() : geometry.coordinates.flat(2);
+        const transform = activeEditor.getShapePageTransform(shape);
+        const points = coordinates.map(([x, y]) => transform.applyToPoint({ x: (x * shape.props.w) / page.width, y: (y * shape.props.h) / page.height }));
+        if (points.length) activeEditor.zoomToBounds(Box.FromPoints(points).expandBy(32), { targetZoom: 2, animation: { duration: reducedMotion ? 0 : 350 } });
+    }, [activeEditor, focus, drawing.blueprints, reducedMotion]);
     useHotkeys(
         'c',
         (event) => {
@@ -419,7 +436,8 @@ function CanvasEditor({
                         Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) <= 5 &&
                         commentMode === 'default'
                     )
-                        model.selected(gesture.object);
+                        if (event.shiftKey && gesture.object) model.selectionToggled(gesture.object);
+                        else model.selected(gesture.object);
                 }}
                 onPointerCancelCapture={() => {
                     selectionGesture.current = null;
@@ -455,9 +473,8 @@ function CanvasEditor({
     );
 }
 
-function SavedBlueprintCanvas({ drawing, userId }: Readonly<{ drawing: Drawing; userId: string }>) {
+function SavedBlueprintCanvas({ drawing, userId, model }: Readonly<{ drawing: Drawing; userId: string; model: CanvasModel }>) {
     const storageKey = `junction:canvas:${userId}:${drawing.id}`;
-    const [model] = useState(() => createCanvasModel(drawing.id, storageKey));
     const [preparation, setPreparation] = useState<Preparation>({ type: 'loading' });
     useEffect(() => {
         let disposed = false;
@@ -521,7 +538,7 @@ function EmptyBlueprintCanvas({ locked }: Readonly<{ locked: boolean }>) {
     );
 }
 
-export default function BlueprintCanvas(props: Readonly<{ drawing: Drawing; userId: string }>) {
+export default function BlueprintCanvas(props: Readonly<{ drawing: Drawing; userId: string; model: CanvasModel }>) {
     return props.drawing.blueprints.some((blueprint) => !blueprint.attachment.hiddenFromCanvas) ? (
         <SavedBlueprintCanvas {...props} />
     ) : (

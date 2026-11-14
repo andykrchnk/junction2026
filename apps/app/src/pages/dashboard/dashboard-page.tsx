@@ -52,7 +52,11 @@ export function DashboardPage() {
                 pending={creating}
                 loading={isPending}
                 sample={false}
-                error={authError ?? (error?.id === null ? error.message : undefined) ?? listError?.message}
+                error={
+                    authError ??
+                    (error?.id === null ? error.message : undefined) ??
+                    (listError ? 'Could not load your sessions. Refresh the page to try again.' : undefined)
+                }
                 sessions={(drawings ?? []).map((drawing, index, all) => ({
                     id: all.length - index,
                     name: drawing.title,

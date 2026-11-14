@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { createShapeId, useEditor, useValue } from 'tldraw';
 import { getDetectedObjectColor, type DetectedProperty, type Drawing, type PredictionPage } from '@repo/types';
-import { Checkbox } from '@repo/design-system/components/ui/checkbox';
 import { Tooltip, TooltipProvider } from '@repo/design-system/components/ui/tooltip';
 import { DetectedElementCard } from './detected-element-card';
 import { formatDetectedObjectArea, formatDetectedObjectTooltip } from './detected-object-tooltip';
@@ -33,7 +32,7 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
     const clipId = useId();
     const shape = useValue('blueprint sheet', () => editor.getShape(createShapeId(`blueprint-${page.page}`)), [editor, page.page]);
     const zoom = useValue('geometry zoom', () => editor.getZoomLevel(), [editor]);
-    const { selected, visibility } = useUnit({ selected: model.$selected, visibility: model.$visibility });
+    const { selected, visibility, hiddenObjects } = useUnit({ selected: model.$selection, visibility: model.$visibility, hiddenObjects: model.$hiddenObjects });
     const [url, setUrl] = useState<string | null>(null);
     const { data: raster, isError } = useQuery({
         queryKey: ['prediction-raster', drawing.id, page.rasterFileId],
@@ -71,10 +70,11 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
                         {/* Use the exact normalized inference raster, including its EXIF/PDF orientation. */}
                         <image href={url} width={page.width} height={page.height} preserveAspectRatio="none" />
                         {page.detectedProperties.map((property, index) => {
-                            if (!visibility[property.type]) return null;
-                            const isSelected = selected?.page === page.page && selected.index === index;
+                            if (!visibility[property.type] || hiddenObjects.includes(`${page.page}:${index}`)) return null;
+                            const isSelected = selected.some((item) => item.page === page.page && item.index === index);
                             const label = `${property.label}, sheet ${page.page}, model score ${Math.round(property.confidence * 100)}%`;
-                            const select = () => model.selected({ page: page.page, index });
+                            const select = (additive: boolean) =>
+                                additive ? model.selectionToggled({ page: page.page, index }) : model.selected({ page: page.page, index });
                             const color = getDetectedObjectColor(property);
                             const tooltip = formatDetectedObjectTooltip({ drawing, page, property, index });
                             const common = {
@@ -88,7 +88,7 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
                                 onKeyDown: (event: KeyboardEvent<SVGElement>) => {
                                     if (event.key === 'Enter' || event.key === ' ') {
                                         event.preventDefault();
-                                        select();
+                                        select(event.shiftKey);
                                     }
                                 },
                                 style: { pointerEvents: 'all' as const, cursor: 'pointer', color },
@@ -167,7 +167,7 @@ export function DetectionCanvasLayer() {
 }
 
 export function DetectionControls({ drawing, model }: Readonly<{ drawing: Drawing; model: CanvasModel }>) {
-    const { selected, visibility } = useUnit({ selected: model.$selected, visibility: model.$visibility });
+    const selected = useUnit(model.$selected);
     const detectedPage = layoutPages(drawing.blueprints).find((page) => page.page === selected?.page);
     const property = selected ? detectedPage?.detectedProperties[selected.index] : null;
     const blueprint = drawing.blueprints.find((item) => item.pageNumber === selected?.page);
@@ -175,21 +175,8 @@ export function DetectionControls({ drawing, model }: Readonly<{ drawing: Drawin
     if (!layoutPages(drawing.blueprints).some((page) => page.detectedProperties.length)) return null;
     return (
         <>
-            <div aria-label="Geometry layers" className="absolute top-3 left-3 z-[300] flex flex-wrap gap-3 rounded border bg-card px-3 py-2 text-xs shadow-sm">
-                {(['room', 'icon', 'junction'] as const).map((type) => (
-                    <label key={type} htmlFor={`geometry-${drawing.id}-${type}`} className="flex items-center gap-1.5">
-                        <Checkbox
-                            id={`geometry-${drawing.id}-${type}`}
-                            size="compact"
-                            checked={visibility[type]}
-                            onCheckedChange={(visible) => model.visibilityChanged({ type, visible })}
-                        />
-                        {type === 'room' ? 'Rooms' : type === 'icon' ? 'Fixtures' : 'Junctions'}
-                    </label>
-                ))}
-            </div>
             {property && detectedPage && selected && (
-                <div className="absolute top-3 right-3 z-[300] max-w-[calc(100%-1.5rem)]">
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[300] max-w-[calc(100%-1.5rem)]">
                     <DetectedElementCard
                         label={property.label}
                         enrichment={entity?.enrichment}

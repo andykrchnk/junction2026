@@ -8,7 +8,7 @@
         }
     },
     "scripts": {
-        "dev": "bun --env-file=../../.env --hot src/app/index.ts",
+        "dev": "bun --env-file=../../.env --watch src/app/index.ts",
         "start": "bun dist/index.js",
         "build": "bun build src/app/index.ts --target=bun --outfile=dist/index.js --external sharp --external @napi-rs/canvas --external pdfjs-dist",
         "check-types": "tsc --noEmit",
