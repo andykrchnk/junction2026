@@ -15,6 +15,14 @@ import type { CommentsModel } from './canvas/comments-model';
 type CommentsContextValue = Readonly<{ drawing: Drawing; model: CommentsModel }>;
 export const CommentsContext = createContext<CommentsContextValue | null>(null);
 
+// Stop wheel bubbling before tldraw's native canvas listener, while preserving native scrolling.
+function isolatePopoverWheel(element: HTMLElement | null) {
+    if (!element) return;
+    const stopWheel = (event: WheelEvent) => event.stopPropagation();
+    element.addEventListener('wheel', stopWheel, { passive: true });
+    return () => element.removeEventListener('wheel', stopWheel);
+}
+
 function commentPoint(params: { comment: ScanComment; drawing: Drawing }) {
     const { comment, drawing } = params;
     if (comment.type === 'point') return { x: comment.x, y: comment.y };
@@ -135,6 +143,7 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                         {isOpen && (
                             <SurfaceProvider value={2}>
                                 <section
+                                    ref={isolatePopoverWheel}
                                     role="dialog"
                                     aria-label={isDraft ? 'New comment' : comment.source === 'ppm' ? 'Scale estimate comment' : 'Comment'}
                                     className={`${surfaceClasses(2)} absolute flex flex-col gap-3 overflow-hidden rounded p-3 text-sm text-foreground`}
@@ -145,7 +154,6 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                                         width,
                                         maxHeight,
                                     }}
-                                    onWheel={(event) => event.stopPropagation()}
                                 >
                                     <div className="flex shrink-0 items-center justify-between gap-3">
                                         <p className="text-xs font-medium">
@@ -156,19 +164,16 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                                             <Button
                                                 size="icon-compact"
                                                 variant="ghost"
-                                                leadingIcon={Trash2}
                                                 aria-label="Delete comment"
                                                 disabled={creating || deleting}
                                                 loading={deleting}
                                                 onClick={() => model.deleteRequested(comment.id)}
-                                            />
-                                            <Button
-                                                size="icon-compact"
-                                                variant="ghost"
-                                                leadingIcon={X}
-                                                aria-label="Close comment"
-                                                onClick={() => model.openChanged(null)}
-                                            />
+                                            >
+                                                <Trash2 />
+                                            </Button>
+                                            <Button size="icon-compact" variant="ghost" aria-label="Close comment" onClick={() => model.openChanged(null)}>
+                                                <X />
+                                            </Button>
                                         </div>
                                     </div>
                                     <ScrollArea

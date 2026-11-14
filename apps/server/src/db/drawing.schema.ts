@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { z } from 'zod';
-import { StoredAnalysisZod, DetectionZod, AttachmentZod, DrawingZod, MessageZod, PpmCandidatesZod, ScanCommentsZod } from '@repo/types';
+import { StoredAnalysisZod, DetectionZod, AttachmentZod, DrawingZod, MessageZod, PpmCandidatesZod, StoredPpmResultZod, ScanCommentsZod } from '@repo/types';
 import { connection } from './connection';
 
 const schema = new mongoose.Schema(
@@ -11,6 +11,7 @@ const schema = new mongoose.Schema(
         analysis: { type: mongoose.Schema.Types.Mixed, default: null },
         detection: { type: mongoose.Schema.Types.Mixed, default: null },
         ppmCandidates: { type: [mongoose.Schema.Types.Mixed], default: null },
+        ppm: { type: mongoose.Schema.Types.Mixed, default: null },
         comments: { type: [mongoose.Schema.Types.Mixed], default: [] },
         inferenceLease: { type: String, default: null },
         inferenceLeaseUntil: { type: Date, default: null },
@@ -37,6 +38,7 @@ const StoredDrawingZod = z.object({
     analysis: StoredAnalysisZod.nullable(),
     detection: DetectionZod.nullable().default(null),
     ppmCandidates: PpmCandidatesZod.nullable().default(null),
+    ppm: StoredPpmResultZod.nullable().default(null),
     comments: ScanCommentsZod.default([]),
     inferenceLease: z.string().nullable().default(null),
     inferenceLeaseUntil: z.date().nullable().default(null),
@@ -64,6 +66,7 @@ export function DrawingDto(data: unknown) {
         analysis: doc.analysis,
         detection,
         ppmCandidates: doc.ppmCandidates,
+        ppm: doc.ppm,
         comments: doc.comments.filter((comment) => comment.deletedAt == null),
         messages: doc.messages,
         busy,

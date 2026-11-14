@@ -45,6 +45,13 @@ export const PpmCandidateZod = z.object({
 export const PpmCandidatesZod = z.array(PpmCandidateZod);
 export type PpmCandidate = z.infer<typeof PpmCandidateZod>;
 export type PpmCandidates = z.infer<typeof PpmCandidatesZod>;
+export const AgentPpmResultZod = z.discriminatedUnion('type', [
+    z.object({ type: z.literal('success'), value: z.number().finite().positive(), message: z.string() }),
+    z.object({ type: z.literal('fail'), message: z.string() }),
+]);
+export const StoredPpmResultZod = z.object({ value: z.number().finite().positive().optional(), message: z.string() });
+export type AgentPpmResult = z.infer<typeof AgentPpmResultZod>;
+export type StoredPpmResult = z.infer<typeof StoredPpmResultZod>;
 export const ClassificationZod = z.object({
     contentTypes: z.array(ContentTypeZod),
     drawingStyle: z.enum(['manual', 'machine_drawn', 'mixed', 'unknown']),
@@ -146,6 +153,7 @@ export const DrawingZod = DrawingSummaryZod.extend({
     analysis: AnalysisZod.nullable(),
     detection: DetectionZod.nullable().optional(),
     ppmCandidates: PpmCandidatesZod.nullable().optional(),
+    ppm: StoredPpmResultZod.nullable().optional(),
     comments: ScanCommentsZod.optional(),
     messages: z.array(MessageZod),
     busy: z.boolean(),

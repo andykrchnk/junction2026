@@ -70,7 +70,7 @@ const inferFx = createEffect(async (id: string) => {
 const analyzeFx = createEffect(async (id: string) => {
     try {
         const drawing = await trpcClient.drawings.get.query({ id });
-        if (!drawing.attachment || (drawing.analysis && drawing.ppmCandidates != null)) return drawing;
+        if (!drawing.attachment || (drawing.analysis && drawing.ppmCandidates != null && drawing.ppm != null)) return drawing;
         const detected = await inferFx(id);
         if (detected.detection?.status !== 'ready') {
             const status = detected.detection?.status;
@@ -90,7 +90,7 @@ const analyzeFx = createEffect(async (id: string) => {
 const askFx = createEffect(async (input: { id: string; message: Drawing['messages'][number] }) => {
     try {
         const drawing = await trpcClient.drawings.get.query({ id: input.id });
-        if (!drawing.analysis || drawing.ppmCandidates == null) await analyzeFx(input.id);
+        if (!drawing.analysis || drawing.ppmCandidates == null || drawing.ppm == null) await analyzeFx(input.id);
         return await trpcClient.drawings.ask.mutate({ id: input.id, message: { id: input.message.id, question: input.message.question } });
     } finally {
         await refresh(input.id);
