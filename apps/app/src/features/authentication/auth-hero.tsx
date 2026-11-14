@@ -22,7 +22,7 @@ export function AuthHero() {
         <aside
             ref={heroRef}
             className="relative isolate hidden items-center justify-center overflow-hidden p-12 lg:flex"
-            style={{ backgroundColor: '#080808' }}
+            style={{ backgroundColor: '#1C1C1C' }}
         >
             <div ref={iconRef} className="relative z-10 flex items-center justify-center text-white">
                 <BrandLogo iconOnly />
