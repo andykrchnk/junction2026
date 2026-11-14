@@ -1,3 +1,4 @@
+import { drawingFiles } from '../features/drawings/files';
 import { $$betterAuth } from '../services/better-auth';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -30,6 +31,8 @@ app.on(['GET', 'POST'], '/api/auth/*', async (c) => {
     await $$userCreationService.create({ betterAuthUserId: user.id, email: user.email });
     return response;
 });
+app.use('/api/drawings/*', authContextMiddleware);
+app.route('/api/drawings', drawingFiles);
 app.use('/api/trpc/*', authContextMiddleware);
 app.use(
     '/api/trpc/*',

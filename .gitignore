@@ -44,3 +44,6 @@ yarn-error.log*
 !.env.example
 artifacts/
 .railway/.state/
+
+# Agent-local verification artifacts
+.local/

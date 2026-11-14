@@ -38,6 +38,8 @@ export default defineRailway((context) => {
         deploy: { ...restart, healthcheckPath: '/health', healthcheckTimeout: 120 },
         replicas: { [region]: 1 },
         env: {
+            OPENAI_API_KEY: preserve(),
+            OPENAI_MODEL: preserve(),
             NODE_ENV: 'production',
             PORT: '8080',
             APP_ORIGIN: context.shared.APP_ORIGIN,

@@ -17,7 +17,16 @@
         "dev": {
             "cache": false,
             "persistent": true,
-            "passThroughEnv": ["MONGODB_URI", "MONGODB_DB_NAME", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "APP_ORIGIN", "PORT"]
+            "passThroughEnv": [
+                "OPENAI_API_KEY",
+                "OPENAI_MODEL",
+                "MONGODB_URI",
+                "MONGODB_DB_NAME",
+                "BETTER_AUTH_SECRET",
+                "BETTER_AUTH_URL",
+                "APP_ORIGIN",
+                "PORT"
+            ]
         }
     }
 }
