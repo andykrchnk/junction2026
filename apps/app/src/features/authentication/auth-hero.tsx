@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Link } from '@tanstack/react-router';
-import { background, mesh } from 'asciify-engine/kit';
+import { background, constellation } from 'asciify-engine/kit';
 import { BrandLogo } from '@/components/ui/brand-logo';
 
 export function AuthHero() {
@@ -10,13 +10,11 @@ export function AuthHero() {
     useEffect(() => {
         if (!heroRef.current || !copyRef.current) return;
         const backdrop = background(heroRef.current, {
-            preset: mesh,
+            preset: constellation,
             clear: copyRef.current,
             charset: ' .:-=+YCIFSA#@',
-            ink: '#FF3C00',
-            accent: '#FF3C00',
-            opacity: 0.9,
-            cellSize: 12,
+            palette: '#ff7a59',
+            cursor: false,
         });
         return () => backdrop.destroy();
     }, []);
