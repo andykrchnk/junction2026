@@ -37,19 +37,19 @@ const schema = new mongoose.Schema(
     { timestamps: true, versionKey: false, bufferCommands: false },
 );
 schema.index({ ownerId: 1, updatedAt: -1 });
-schema.index({ 'processingJob.status': 1, 'processingJob.availableAt': 1, 'processingJob.leaseUntil': 1 });
+schema.index({ 'processingJob.status': 1 });
 
 export const StoredJobZod = z.object({
+    id: z.string().uuid(),
     status: z.enum(['queued', 'running', 'completed']),
     pages: z.array(z.number().int().positive()).min(1),
     cursor: z.number().int().nonnegative(),
     attempts: z.number().int().nonnegative(),
     availableAt: z.date(),
     lease: z.string().nullable(),
-    leaseUntil: z.date().nullable(),
 });
 export function createProcessingJob(pages: number[]) {
-    return StoredJobZod.parse({ status: 'queued', pages, cursor: 0, attempts: 0, availableAt: new Date(), lease: null, leaseUntil: null });
+    return StoredJobZod.parse({ id: crypto.randomUUID(), status: 'queued', pages, cursor: 0, attempts: 0, availableAt: new Date(), lease: null });
 }
 
 type StoredDrawing = mongoose.InferSchemaType<typeof schema>;

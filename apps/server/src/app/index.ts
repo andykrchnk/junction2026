@@ -5,7 +5,7 @@ import { Env } from '../shared/env';
 import { startDrawingWorker } from '../features/drawings/processing-jobs';
 
 await Promise.all([db.user.UserModel.init(), db.drawing.DrawingModel.init()]);
-const worker = startDrawingWorker();
+const worker = await startDrawingWorker();
 const server = Bun.serve({ hostname: '0.0.0.0', port: Env.PORT, idleTimeout: 255, fetch: app.fetch });
 console.log(`API listening on port ${server.port}`);
 

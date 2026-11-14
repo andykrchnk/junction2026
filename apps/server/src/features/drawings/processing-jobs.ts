@@ -1,5 +1,9 @@
 import { TRPCError } from '@trpc/server';
-import { setTimeout as delay } from 'node:timers/promises';
+import { Agenda } from 'agenda';
+import { MongoBackend } from '@agendajs/mongo-backend';
+import { z } from 'zod';
+import { MongoIdZod } from '@repo/types';
+import { database } from '../../db/connection';
 import { db } from '../../db';
 import { Env } from '../../shared/env';
 import { getDrawing, processDrawing } from './operations';
@@ -7,10 +11,13 @@ import { detectDrawing } from './detection';
 import { processBlueprint } from './blueprint-processing';
 import { InferenceError } from './inference';
 
-const LEASE_MS = 60_000;
+const DRAWING_JOB = 'process-drawing';
+const RECONCILE_JOB = 'enqueue-pending-drawings';
+const QUEUE_COLLECTION = 'drawingJobs';
+const JobDataZod = z.object({ drawingId: MongoIdZod, runId: z.string().uuid() });
 const MAX_ATTEMPTS = 3;
 
-// One embedded job is atomically committed with the attachment on upload.
+// Progress doubles as an outbox record, atomically committed with uploaded pages.
 export async function enqueueDrawing(id: string, ownerId: string, page?: number) {
     const drawing = await getDrawing(id, ownerId);
     if (drawing.processing?.status === 'queued' || drawing.processing?.status === 'running') return drawing;
@@ -35,30 +42,21 @@ export async function enqueueDrawing(id: string, ownerId: string, page?: number)
     return getDrawing(id, ownerId);
 }
 
-// Exported for operational checks and a future dedicated worker process.
-export async function processNextJob(shutdown: AbortSignal): Promise<boolean> {
-    if (shutdown.aborted) return false;
-    const now = new Date();
+// Agenda owns scheduling and exclusive job claims; this token fences saved results.
+async function processDrawingStage(data: z.infer<typeof JobDataZod>, signal: AbortSignal) {
+    if (signal.aborted) return;
     const token = crypto.randomUUID();
     const doc = await db.drawing.DrawingModel.findOneAndUpdate(
         {
-            'processingJob.availableAt': { $lte: now },
-            $or: [
-                {
-                    'processingJob.status': 'queued',
-                    $and: [
-                        { $or: [{ lease: null }, { leaseUntil: { $lte: now } }] },
-                        { $or: [{ inferenceLease: null }, { inferenceLeaseUntil: { $lte: now } }] },
-                    ],
-                },
-                { 'processingJob.status': 'running', 'processingJob.leaseUntil': { $lte: now } },
-            ],
+            _id: data.drawingId,
+            'processingJob.id': data.runId,
+            'processingJob.status': { $in: ['queued', 'running'] },
+            'processingJob.availableAt': { $lte: new Date() },
         },
         {
             $set: {
                 'processingJob.status': 'running',
                 'processingJob.lease': token,
-                'processingJob.leaseUntil': new Date(Date.now() + LEASE_MS),
                 lease: null,
                 leaseUntil: null,
                 inferenceLease: null,
@@ -67,48 +65,29 @@ export async function processNextJob(shutdown: AbortSignal): Promise<boolean> {
             },
             $inc: { 'processingJob.attempts': 1 },
         },
-        { returnDocument: 'after', sort: { 'processingJob.availableAt': 1 } },
+        { returnDocument: 'after' },
     ).lean();
-    if (!doc) return false;
+    if (!doc) return;
     const drawing = db.drawing.DrawingDto(doc);
     const job = db.drawing.StoredJobZod.parse(doc.processingJob);
     const owned = { _id: drawing.id, ownerId: doc.ownerId, 'processingJob.lease': token, 'processingJob.status': 'running' };
     const page = job.pages[job.cursor];
-    const controller = new AbortController();
-    const signal = AbortSignal.any([shutdown, controller.signal]);
-    let renewing = false;
-    const heartbeat = setInterval(() => {
-        if (renewing || signal.aborted) return;
-        renewing = true;
-        void db.drawing.DrawingModel.updateOne(
-            { ...owned, 'processingJob.leaseUntil': { $gt: new Date() } },
-            { $set: { 'processingJob.leaseUntil': new Date(Date.now() + LEASE_MS) } },
-        )
-            .then((result) => {
-                if (!result.matchedCount) controller.abort();
-            })
-            .catch(() => controller.abort())
-            .finally(() => {
-                renewing = false;
-            });
-    }, 15_000);
-    heartbeat.unref();
     let advance = false;
     let failed = false;
     let backpressure = false;
     try {
         if (page === undefined) {
             advance = true;
-            return true;
+            return;
         }
         const blueprint = drawing.blueprints.find((item) => item.pageNumber === page);
         if (!blueprint) {
             advance = true;
-            return true;
+            return;
         }
         if (blueprint.status.type === 'ready') {
             advance = true;
-            return true;
+            return;
         }
         if (job.attempts > MAX_ATTEMPTS) throw new Error('Repeatedly interrupted processing');
         if (!blueprint.layout || !blueprint.raster) {
@@ -133,7 +112,7 @@ export async function processNextJob(shutdown: AbortSignal): Promise<boolean> {
             advance = updated.blueprints.find((item) => item.pageNumber === page)?.status.type === 'ready';
         }
     } catch (cause) {
-        if (signal.aborted) return true; // Lease expiry/shutdown leaves a resumable claim.
+        if (signal.aborted) return; // Shutdown leaves the saved checkpoint for the next Agenda invocation.
         failed = true;
         backpressure = cause instanceof TRPCError && cause.cause instanceof InferenceError && cause.cause.busy;
         const current = await getDrawing(drawing.id, doc.ownerId);
@@ -154,45 +133,86 @@ export async function processNextJob(shutdown: AbortSignal): Promise<boolean> {
             );
         }
     } finally {
-        clearInterval(heartbeat);
         if (!signal.aborted) {
             const cursor = job.cursor + (advance ? 1 : 0);
-            await db.drawing.DrawingModel.updateOne(
-                { ...owned, 'processingJob.leaseUntil': { $gt: new Date() } },
-                {
-                    $set: {
-                        'processingJob.status': cursor >= job.pages.length ? 'completed' : 'queued',
-                        'processingJob.cursor': cursor,
-                        'processingJob.attempts': backpressure ? Math.max(0, job.attempts - 1) : advance || !failed ? 0 : job.attempts,
-                        'processingJob.availableAt': new Date(Date.now() + (backpressure ? 30_000 : failed && !advance ? 5000 * job.attempts : 0)),
-                        'processingJob.lease': null,
-                        'processingJob.leaseUntil': null,
-                    },
+            await db.drawing.DrawingModel.updateOne(owned, {
+                $set: {
+                    'processingJob.status': cursor >= job.pages.length ? 'completed' : 'queued',
+                    'processingJob.cursor': cursor,
+                    'processingJob.attempts': backpressure ? Math.max(0, job.attempts - 1) : advance || !failed ? 0 : job.attempts,
+                    'processingJob.availableAt': new Date(Date.now() + (backpressure ? 30_000 : failed && !advance ? 5000 * job.attempts : 0)),
+                    'processingJob.lease': null,
                 },
-            );
+            });
         }
     }
-    return true;
 }
 
-export function startDrawingWorker() {
+export async function startDrawingWorker() {
     const controller = new AbortController();
-    const run = async () => {
-        while (!controller.signal.aborted) {
-            try {
-                if (await processNextJob(controller.signal)) continue;
-            } catch {
-                // Keep the durable claim for expiry recovery; never log provider data or credentials.
-                console.error('Drawing worker could not complete a polling cycle; it will retry.');
+    const agenda = new Agenda({
+        backend: new MongoBackend({ mongo: database, collection: QUEUE_COLLECTION }),
+        processEvery: '1 second',
+        maxConcurrency: Env.DRAWING_PROCESSING_CONCURRENCY + 1,
+        // Do not pre-lock a backlog that another backend could process.
+        lockLimit: Env.DRAWING_PROCESSING_CONCURRENCY + 1,
+    });
+    agenda.on('error', () => console.error('Drawing queue encountered an error; pending work remains durable.'));
+    agenda.on('fail', () => console.error('Drawing queue job failed; it will retry.'));
+    agenda.define<unknown>(
+        DRAWING_JOB,
+        async (job) => {
+            const data = JobDataZod.parse(job.attrs.data);
+            if (!controller.signal.aborted) await processDrawingStage(data, controller.signal);
+            const doc = await db.drawing.DrawingModel.findOne({ _id: data.drawingId, 'processingJob.id': data.runId }).select('processingJob').lean();
+            const progress = doc ? db.drawing.StoredJobZod.parse(doc.processingJob) : null;
+            if (!progress || progress.status === 'completed') job.disable();
+            else job.schedule(progress.availableAt);
+            await job.save();
+        },
+        {
+            concurrency: Env.DRAWING_PROCESSING_CONCURRENCY,
+            lockLimit: Env.DRAWING_PROCESSING_CONCURRENCY,
+            // Each stage has a 120s/240s provider deadline. Leave room for rasterization/storage.
+            lockLifetime: 10 * 60_000,
+            backoff: () => 5000,
+        },
+    );
+    agenda.define(
+        RECONCILE_JOB,
+        async (job) => {
+            let touchedAt = Date.now();
+            const pending = db.drawing.DrawingModel.find({ 'processingJob.status': { $in: ['queued', 'running'] } })
+                .select('processingJob')
+                .lean()
+                .cursor();
+            for await (const doc of pending) {
+                if (controller.signal.aborted) break;
+                if (Date.now() - touchedAt > 15_000) {
+                    await job.touch();
+                    touchedAt = Date.now();
+                }
+                const progress = db.drawing.StoredJobZod.parse(doc.processingJob);
+                await agenda
+                    .create(DRAWING_JOB, { drawingId: doc._id.toHexString(), runId: progress.id })
+                    .unique({ name: DRAWING_JOB, 'data.runId': progress.id }, { insertOnly: true })
+                    // Persist a next run before executing, so killed workers resume after lock expiry.
+                    .repeatEvery('1 second')
+                    .schedule(progress.availableAt)
+                    .save();
             }
-            await delay(2000, undefined, { signal: controller.signal }).catch(() => {});
-        }
-    };
-    const done = Promise.all(Array.from({ length: Env.DRAWING_PROCESSING_CONCURRENCY }, () => run()));
+        },
+        { concurrency: 1, lockLimit: 1, lockLifetime: 60_000 },
+    );
+    // Unique upserts alone do not guarantee uniqueness when multiple replicas reconcile.
+    await database.collection(QUEUE_COLLECTION).createIndex({ name: 1, 'data.runId': 1 }, { unique: true, partialFilterExpression: { name: DRAWING_JOB } });
+    await agenda.every('2 seconds', RECONCILE_JOB);
+    await agenda.start();
     return {
         stop: async () => {
             controller.abort();
-            await done;
+            // Wait for aborted handlers to settle before releasing their locks/DB connection.
+            await agenda.drain({ closeConnection: false });
         },
     };
 }
