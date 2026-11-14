@@ -411,3 +411,33 @@
 .sl-table-4 td {
     height: 60px;
 }
+
+/* Official Quiet table: aligned labels and a neutral, readable surface. */
+.sl-table-0 th {
+    background: var(--muted);
+}
+.sl-table-0 td {
+    height: 64px;
+    color: var(--foreground);
+}
+.sl-table-0 th,
+.sl-table-0 td {
+    padding-inline: 16px;
+}
+.sl-session-row {
+    cursor: pointer;
+}
+.sl-session-open {
+    display: block;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.sl-session-row:focus-within {
+    outline: 1px solid var(--foreground);
+    outline-offset: -1px;
+}

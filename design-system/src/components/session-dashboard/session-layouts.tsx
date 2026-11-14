@@ -141,29 +141,29 @@ export function SessionLayouts({
                                     <TableHead>Document</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Rooms</TableHead>
-                                    <TableHead>
-                                        <span className="sr-only">Open</span>
-                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {ordered.map((s, index) => (
-                                    <TableRow key={s.id} index={index}>
+                                    <TableRow key={s.id} index={index} className="sl-session-row" onClick={() => onOpen(s)}>
                                         <TableCell>
-                                            <Button variant="ghost" onClick={() => onOpen(s)}>
+                                            <button
+                                                type="button"
+                                                className="sl-session-open"
+                                                aria-label={`Open ${s.name}`}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    onOpen(s);
+                                                }}
+                                            >
                                                 {s.name}
-                                            </Button>
+                                            </button>
                                         </TableCell>
                                         <TableCell>{s.file}</TableCell>
                                         <TableCell>
                                             <span className={`sl-table-status ${s.status === 'Ready' ? 'is-ready' : 'needs-review'}`}>{s.status}</span>
                                         </TableCell>
                                         <TableCell>{s.rooms ?? '—'}</TableCell>
-                                        <TableCell>
-                                            <Button variant="ghost" aria-label={`Open ${s.name}`} onClick={() => onOpen(s)}>
-                                                <ArrowUpRight size={16} />
-                                            </Button>
-                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
