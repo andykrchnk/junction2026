@@ -125,7 +125,6 @@ export function DrawingChat({ id, previewDrawing }: Readonly<{ id: string; previ
                     <div ref={endRef} />
                 </div>
                 <div className="max-h-[50%] shrink-0 overflow-y-auto p-3">
-                    {previewDrawing && <p className="mb-3 text-xs text-muted-foreground">Local preview · Sign in to analyze and chat.</p>}
                     {clarification ? (
                         <fieldset disabled={busy || asking} className="min-w-0 border-0 p-0">
                             <legend className="text-primary mb-2 text-xs font-medium">More information needed</legend>
