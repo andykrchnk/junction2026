@@ -1,0 +1,28 @@
+:root {
+ --font-sans: 'Geist Variable', sans-serif;
+ --type-caption: .75rem;
+ --type-label: .875rem;
+ --type-body: 1rem;
+ --type-title: 1.5rem;
+ --type-heading: 2rem;
+ --type-display: clamp(2.5rem, 5vw, 4rem);
+ --leading-tight: 1.15;
+ --leading-body: 1.5;
+ --weight-regular: 400;
+ --weight-medium: 500;
+ --weight-semibold: 600;
+ --space-inline: 8px;
+ --space-control: 12px;
+ --space-group: 16px;
+ --space-stack: 24px;
+ --space-section: 32px;
+ --space-page: 64px;
+ --duration-fast: 120ms;
+ --duration-normal: 200ms;
+ --duration-slow: 320ms;
+ --ease-standard: cubic-bezier(.2, 0, 0, 1);
+}
+body { font-family: var(--font-sans); line-height: var(--leading-body); }
+
+/* Exact pixel spacing for all Tailwind padding, margin and gap utilities. */
+@theme { --spacing: 4px; }

@@ -1,0 +1,28 @@
+/* Experimental surface only: the production Button stays untouched. */
+.button-prototype > span[aria-hidden] {
+ background-image: linear-gradient(to bottom, rgb(255 255 255 / var(--prototype-sheen, .12)), transparent 65%, rgb(0 0 0 / .12));
+}
+.button-prototype::after {
+ content: '';
+ pointer-events: none;
+ position: absolute;
+ inset: 0;
+ box-shadow: inset 0 1px 0 rgb(255 255 255 / var(--prototype-edge, .4)), inset 1px 0 0 rgb(255 255 255 / .08), inset -1px 0 0 rgb(255 255 255 / .08), inset 0 -1px 0 rgb(0 0 0 / .2);
+}
+.button-prototype:active::after { box-shadow: inset 0 1px 0 rgb(255 255 255 / .16), inset 0 -1px 0 rgb(0 0 0 / .12); }
+
+/* Five isolated lighting studies. Shared geometry and interaction stay Fluid. */
+.button-study > span[aria-hidden] {
+ background-image: linear-gradient(180deg, rgb(255 255 255 / var(--study-sheen)) 0%, transparent var(--study-stop, 60%), rgb(0 0 0 / var(--study-shade)) 100%);
+}
+.button-study::after {
+ content: '';
+ pointer-events: none;
+ position: absolute;
+ inset: 0;
+ box-shadow: inset 0 1px 0 rgb(255 255 255 / var(--study-edge)), inset 0 -1px 0 rgb(0 0 0 / var(--study-bottom)), var(--study-shadow);
+}
+.button-study:active::after {
+ box-shadow: inset 0 1px 2px rgb(0 0 0 / .16), inset 0 1px 0 rgb(255 255 255 / .08);
+}
+.button-study:disabled::after { opacity: .4; }

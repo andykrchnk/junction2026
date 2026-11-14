@@ -1,8 +1,9 @@
+import { BrandLogo } from '@/components/ui/brand-logo';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, Link, useSearch } from '@tanstack/react-router';
 import { useUnit } from 'effector-react';
-import { Layers3, LogOut, Plus, FileStack } from 'lucide-react';
+import { LogOut, Plus, FileStack } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { $$drawings } from '@/features/drawings/model';
@@ -43,8 +44,7 @@ export function DashboardPage() {
         <div className="flex min-h-svh flex-col md:flex-row">
             <aside className="bg-card flex flex-col border-b p-5 md:sticky md:top-0 md:h-svh md:w-64 md:shrink-0 md:border-r md:border-b-0">
                 <Link to="/" search={{}} className="mb-6 flex items-center gap-3 text-xl font-semibold tracking-tight">
-                    <Layers3 className="text-primary size-6" />
-                    junction.
+                    <BrandLogo />
                 </Link>
                 <Button
                     leadingIcon={Plus}

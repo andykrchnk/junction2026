@@ -6,3 +6,6 @@ pnpm-lock.yaml
 **/routeTree.gen.ts
 .turbo
 research
+
+# Preserved registry/workshop sources are maintained in their own toolchain.
+design-system

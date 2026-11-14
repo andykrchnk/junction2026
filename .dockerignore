@@ -8,3 +8,7 @@
 **/.env.*
 research
 artifacts
+
+**/storybook-static
+
+.pnpm-store/
