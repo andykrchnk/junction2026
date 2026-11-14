@@ -84,6 +84,8 @@ const analyzeFx = createEffect(async (id: string) => {
 });
 const askFx = createEffect(async (input: { id: string; message: Drawing['messages'][number] }) => {
     try {
+        const drawing = await trpcClient.drawings.get.query({ id: input.id });
+        if (!drawing.analysis) await analyzeFx(input.id);
         return await trpcClient.drawings.ask.mutate({ id: input.id, message: { id: input.message.id, question: input.message.question } });
     } finally {
         await refresh(input.id);

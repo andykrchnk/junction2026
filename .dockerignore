@@ -8,6 +8,11 @@
 **/.env.*
 research
 artifacts
+.local
+datasets
+**/.venv
+**/weights
+**/results
 
 **/storybook-static
 

@@ -73,7 +73,9 @@ export function DashboardPage() {
         );
     return (
         <div className="flex min-h-svh flex-col md:flex-row">
-            <aside className="bg-card flex flex-col border-b p-5 md:sticky md:top-0 md:h-svh md:w-64 md:shrink-0 md:border-r md:border-b-0">
+            <aside
+                className={`bg-card ${id ? 'hidden md:flex' : 'flex'} flex-col border-b p-5 md:sticky md:top-0 md:h-svh md:w-64 md:shrink-0 md:border-r md:border-b-0`}
+            >
                 <Link to="/" search={{}} className="mb-6 flex items-center gap-3 text-xl font-semibold tracking-tight">
                     <BrandLogo />
                 </Link>

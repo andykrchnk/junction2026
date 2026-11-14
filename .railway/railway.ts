@@ -9,7 +9,6 @@ const appBuild = {
     dockerfilePath: 'apps/app/Dockerfile.railway',
     watchPatterns: [
         'apps/app/**',
-        'design-system/**',
         'apps/server/src/trpc/**',
         'apps/server/src/shared/trpc.ts',
         'packages/**',
@@ -31,7 +30,7 @@ export default defineRailway((context) => {
         build: appBuild,
         deploy: { ...restart, healthcheckPath: '/' },
         replicas: { [region]: 1 },
-        env: { PORT: '8080', VITE_API_URL: context.shared.API_URL },
+        env: { PORT: '8080', VITE_API_URL: context.shared.API_URL, VITE_TLDRAW_LICENSE_KEY: preserve() },
     });
     const server = service('@repo/server', {
         source,

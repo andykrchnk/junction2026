@@ -54,6 +54,43 @@ The backend normalizes image EXIF orientation and rasterizes each PDF page to PN
 
 To draw these geometries, fetch the matching authenticated `GET /api/drawings/:id/predictions/:page/image` and use the saved page width/height. Do not overlay pixel coordinates directly on a differently oriented or sized source image. The existing OpenAI observation overlay is separate; the NN property list is exposed for frontend integration, not silently converted to OpenAI observations. Chat receives detected counts and bounded candidate metadata, attributes them as predictions and reports incomplete page coverage. Full geometries and raw responses remain in MongoDB. Detection context is capped to leave room within MongoDB’s document limit.
 
+## Canvas workspace
+
+Drawings open in a tldraw viewer on the left and the existing chat on the right,
+starting at a 70/30 split. The divider supports pointer and keyboard resizing;
+small screens switch between Canvas and Chat. The viewer supports dragging to pan
+and gesture zoom, with an automatic initial fit and all PDF sheets side by side
+on one canvas. Drawing, media insertion and editing tools are disabled.
+Drag with the primary mouse button to pan, scroll/two-finger swipe to pan,
+and pinch or Ctrl/Cmd+wheel to zoom. With the canvas focused, `+`/`-` zoom
+and `0` fits all sheets. Canvas navigation stays available after Escape and
+does not move the locked blueprint or detection geometry.
+
+Completed detection pages display their exact normalized inference raster with
+room polygons, fixture boxes and optional junction points. Small floating layer
+toggles control visibility. Select an element to inspect its class, source sheet,
+uncalibrated model score and pixel area. These derived overlays are read directly
+from saved detection results, not copied into canvas snapshots; selection and
+layer visibility do not modify the saved canvas. Source raster coordinates map
+through each sheet's canvas position and scale, including multi-sheet layouts.
+
+Canvas documents are stored separately from analysis/chat fields on the drawing
+in MongoDB. Protected tRPC procedures enforce ownership and compare revisions
+before saving; conflicting writes retain a local recovery draft instead of
+overwriting the server. Saves debounce for one second, with a five-second flush
+while changes continue. Zoom, pan, current page and divider position stay in
+browser storage scoped to user and drawing. Failed saves expose retry and retain
+a browser recovery copy when storage is available. Older multi-page canvas documents
+are combined on opening, preserving their shapes. Undo history is not persisted.
+
+Set `VITE_TLDRAW_LICENSE_KEY` in `apps/app/.env` for local builds or in the Railway
+app service variables before a production build. This is a public SDK license
+key, not an API secret; the SDK requires an appropriate license for production.
+The Docker build and Railway IaC pass it through at build time. PDFs without
+detections are rasterized client-side using the existing PDF.js renderer. Saved
+canvas documents reference sheets rather than embedding raster bytes or expiring
+blob URLs; available detection rasters are fetched through the authenticated API.
+
 ## Verification
 
 ```sh
