@@ -13,18 +13,15 @@ export function AuthHero() {
             preset: mesh,
             clear: copyRef.current,
             charset: ' .:-=+YCIFSA#@',
-            ink: '#171717',
-            opacity: 0.45,
+            ink: 'var(--primary)',
+            opacity: 0.9,
+            cellSize: 12,
         });
         return () => backdrop.destroy();
     }, []);
 
     return (
-        <aside
-            ref={heroRef}
-            className="relative isolate hidden flex-col overflow-hidden p-12 text-white lg:flex"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 80%, black)' }}
-        >
+        <aside ref={heroRef} className="relative isolate hidden flex-col overflow-hidden p-12 text-primary lg:flex" style={{ backgroundColor: '#080808' }}>
             <Link to="/login" className="relative z-10 flex w-fit items-center" aria-label="Pirtoa home">
                 <BrandLogo />
             </Link>

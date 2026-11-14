@@ -47,7 +47,6 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
                     <Link to="/login" className="mb-14 flex items-center gap-2 text-lg font-semibold lg:hidden">
                         <BrandLogo />
                     </Link>
-                    <p className="text-primary mb-3 text-xs font-semibold tracking-[0.14em] uppercase">Your drawing workspace</p>
                     <h1 className="text-3xl font-medium tracking-tight">{mode === 'register' ? 'Start with a clearer view.' : 'Welcome back.'}</h1>
                     <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
                         {mode === 'register' ? 'Create an account to access your workspace.' : 'Sign in to continue to your workspace.'}
@@ -123,7 +122,6 @@ export function AuthForm(props: Readonly<AuthFormProps>) {
                             {mode === 'register' ? 'Sign in' : 'Create an account'}
                         </Link>
                     </p>
-                    <p className="text-muted-foreground mt-16 text-xs">Pirtoa · Construction intelligence</p>
                 </div>
             </main>
         </div>
