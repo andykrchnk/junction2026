@@ -65,7 +65,7 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                 {error?.message ?? 'Drawing not found.'}
             </p>
         );
-    const canvas = drawing.attachment ? (
+    const canvas = (
         <Suspense
             fallback={
                 <p role="status" className="m-auto p-6 text-sm">
@@ -75,10 +75,11 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         >
             <BlueprintCanvas drawing={drawing} userId={userId} />
         </Suspense>
-    ) : (
-        <div className="flex h-full items-center justify-center p-8 text-center" {...getRootProps()}>
+    );
+    const uploadOverlay = !drawing.attachment && (
+        <div className="pointer-events-none flex h-full items-center justify-center p-8 text-center">
             {localUrl ? (
-                <div className="flex h-full w-full flex-col gap-3">
+                <div className="pointer-events-auto flex h-full w-full flex-col gap-3">
                     <p className="text-xs text-muted-foreground">{localFile?.name} · Local preview, not analyzed</p>
                     {localFile?.type === 'application/pdf' ? (
                         <iframe title="Blueprint preview" src={localUrl} className="min-h-0 flex-1 w-full" />
@@ -87,7 +88,7 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                     )}
                 </div>
             ) : (
-                <div className="max-w-sm">
+                <div className="pointer-events-auto max-w-sm">
                     <FileText size={48} className="mx-auto mb-6 text-muted-foreground" aria-hidden />
                     <h2 className="text-xl font-medium">Upload your first blueprint</h2>
                     <p className="mt-3 text-sm text-muted-foreground">Drop a floor plan here, or choose a file to get started.</p>
@@ -106,11 +107,12 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         </div>
     );
     return (
-        <div className="relative flex h-full min-h-0 flex-1 bg-muted/30">
-            <SessionChatPanel drawing={drawing} previewDrawing={previewDrawing} />
-            <section aria-label="Blueprint canvas" className="relative min-h-0 min-w-0 flex-1">
+        <div className="relative isolate flex h-full min-h-0 flex-1 bg-muted/30" {...getRootProps()}>
+            <section aria-label="Blueprint canvas" className="absolute inset-0 z-0">
                 {canvas}
             </section>
+            <SessionChatPanel drawing={drawing} previewDrawing={previewDrawing} />
+            <div className="pointer-events-none relative z-10 min-h-0 min-w-0 flex-1">{uploadOverlay}</div>
         </div>
     );
 }

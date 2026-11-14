@@ -371,7 +371,7 @@ function CanvasEditor({
     );
 }
 
-export default function BlueprintCanvas({ drawing, userId }: Readonly<{ drawing: Drawing; userId: string }>) {
+function SavedBlueprintCanvas({ drawing, userId }: Readonly<{ drawing: Drawing; userId: string }>) {
     const storageKey = `junction:canvas:${userId}:${drawing.id}`;
     const [model] = useState(() => createCanvasModel(drawing.id, storageKey));
     const [preparation, setPreparation] = useState<Preparation>({ type: 'loading' });
@@ -411,4 +411,31 @@ export default function BlueprintCanvas({ drawing, userId }: Readonly<{ drawing:
             </p>
         );
     return <CanvasEditor key={drawing.id} drawing={drawing} model={model} storageKey={storageKey} {...preparation} />;
+}
+
+function EmptyBlueprintCanvas() {
+    const { resolvedTheme } = useTheme();
+    const [editor, setEditor] = useState<Editor | null>(null);
+    useEffect(() => {
+        editor?.user.updateUserPreferences({ colorScheme: resolvedTheme === 'dark' ? 'dark' : 'light' });
+    }, [editor, resolvedTheme]);
+    return (
+        <Tldraw
+            hideUi
+            initialState="hand"
+            licenseKey={config.TLDRAW_LICENSE_KEY}
+            options={{ maxPages: 1, camera: { isLocked: false, wheelBehavior: 'pan', panSpeed: 1, zoomSpeed: 1 } }}
+            onMount={(instance) => {
+                instance.updateInstanceState({ isReadonly: true });
+                instance.user.updateUserPreferences({ colorScheme: resolvedTheme === 'dark' ? 'dark' : 'light' });
+                instance.registerExternalContentHandler('files', async () => {});
+                instance.registerExternalContentHandler('url', async () => {});
+                setEditor(instance);
+            }}
+        />
+    );
+}
+
+export default function BlueprintCanvas(props: Readonly<{ drawing: Drawing; userId: string }>) {
+    return props.drawing.attachment ? <SavedBlueprintCanvas {...props} /> : <EmptyBlueprintCanvas />;
 }
