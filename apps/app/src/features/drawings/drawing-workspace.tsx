@@ -1,55 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import { AnimatePresence, MotionConfig } from 'motion/react';
 import { ArrowUp, FileUp, FileText, RefreshCw } from 'lucide-react';
-import type { Drawing } from '@repo/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage } from '@/components/ui/chat-message';
 import { trpc } from '@/shared/trpc';
-import { authenticatedFetch } from '@/shared/auth';
-import { config } from '@/shared/config';
 import { $$drawings } from './model';
-
-function BlueprintPreview({ drawing }: Readonly<{ drawing: Drawing }>) {
-    const [url, setUrl] = useState<string | null>(null);
-    const { data, isError } = useQuery({
-        queryKey: ['blueprint-file', drawing.id],
-        queryFn: async () => {
-            const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/file`);
-            if (!response.ok) throw new Error('Could not load blueprint.');
-            return response.blob();
-        },
-    });
-    useEffect(() => {
-        if (!data) return;
-        const objectUrl = URL.createObjectURL(data);
-        setUrl(objectUrl);
-        return () => URL.revokeObjectURL(objectUrl);
-    }, [data]);
-    return (
-        <details className="rounded-md border bg-card p-3">
-            <summary className="cursor-pointer text-sm">Original blueprint · {drawing.attachment?.name}</summary>
-            {url ? (
-                <div className="mt-3">
-                    <a href={url} download={drawing.attachment?.name} className="text-primary text-xs underline">
-                        Download original
-                    </a>
-                    {drawing.attachment?.mediaType === 'application/pdf' ? (
-                        <iframe title="Original blueprint" src={url} className="mt-2 h-[65svh] w-full" />
-                    ) : (
-                        <img alt="Original blueprint" src={url} className="mt-2 max-h-[65svh] w-full object-contain" />
-                    )}
-                </div>
-            ) : (
-                <p className="mt-2 text-sm" role="status">
-                    {isError ? 'Could not load blueprint. Reopen the session to retry.' : 'Loading blueprint…'}
-                </p>
-            )}
-        </details>
-    );
-}
+import { BlueprintPreview } from './blueprint-preview';
+import { AnalysisMetadata } from './analysis-metadata';
 
 export function DrawingWorkspace({ id }: Readonly<{ id: string }>) {
     const {
@@ -85,6 +45,8 @@ export function DrawingWorkspace({ id }: Readonly<{ id: string }>) {
         );
     const busy = drawing.busy || (activity[id] ?? 0) > 0;
     const pending = drawing.messages.find((message) => !message.answer);
+    const latestAnswer = drawing.messages.at(-1)?.answer;
+    const clarification = !pending && latestAnswer?.status === 'needs_clarification' ? latestAnswer.clarificationQuestion : null;
     const visibleError = error?.id === id ? error.message : drawing.error;
     const ask = (question: string) => {
         void $$drawings.askFx({ id, message: { id: crypto.randomUUID(), question, answer: null } }).catch(() => {});
@@ -96,7 +58,7 @@ export function DrawingWorkspace({ id }: Readonly<{ id: string }>) {
                     <p className="text-primary text-xs font-medium">Drawing workspace</p>
                     <h1 className="mt-2 break-words text-xl font-medium">{drawing.title}</h1>
                     <p className="text-muted-foreground mt-2 text-sm">
-                        {drawing.analysis ? 'Answers grounded in your saved blueprint analysis.' : 'One blueprint. A clearer starting point.'}
+                        {drawing.analysis ? 'Answers use your saved analysis and the details you provide.' : 'One blueprint. A clearer starting point.'}
                     </p>
                 </header>
                 {visibleError && (
@@ -156,19 +118,40 @@ export function DrawingWorkspace({ id }: Readonly<{ id: string }>) {
                                         Initial analysis · {drawing.analysis.observations.length} observations
                                     </summary>
                                     <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed">{drawing.analysis.summary}</p>
+                                    <AnalysisMetadata analysis={drawing.analysis} />
                                     <ul className="text-muted-foreground mt-3 list-disc space-y-1 pl-5 text-xs">
                                         {drawing.analysis.limitations.map((limitation, index) => (
                                             <li key={index}>{limitation}</li>
                                         ))}
                                     </ul>
+                                    {drawing.analysis.missingInformation.length > 0 && (
+                                        <div className="mt-4 text-sm">
+                                            <p className="font-medium">Missing information</p>
+                                            <ul className="mt-2 list-disc space-y-1 pl-5">
+                                                {drawing.analysis.missingInformation.map((item, index) => (
+                                                    <li key={index}>{item}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                     <div className="mt-4 space-y-3">
-                                        {drawing.analysis.observations.map((item) => (
-                                            <div key={item.id} id={`source-${item.id}`} className="scroll-mt-4 border-t pt-3 text-sm">
+                                        {drawing.analysis.observations.map((item, index) => (
+                                            <div key={index} className="border-t pt-3 text-sm">
                                                 <p className="font-medium">
-                                                    {item.id} · Page {item.page} · {item.location}
+                                                    Page {item.page} · {item.location}
                                                 </p>
                                                 <p className="mt-1">{item.fact}</p>
                                                 <p className="text-muted-foreground mt-1 text-xs">Evidence: {item.evidence}</p>
+                                                {item.assumptions.length > 0 && (
+                                                    <div className="mt-2 text-xs">
+                                                        <p className="font-medium">Assumptions · unverified</p>
+                                                        <ul className="mt-1 list-disc space-y-1 pl-5">
+                                                            {item.assumptions.map((assumption, index) => (
+                                                                <li key={index}>{assumption}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -181,18 +164,26 @@ export function DrawingWorkspace({ id }: Readonly<{ id: string }>) {
                                             </ChatMessage>,
                                             message.answer ? (
                                                 <ChatMessage key={`${message.id}-assistant`} from="assistant">
+                                                    {message.answer.status === 'cannot_determine' && (
+                                                        <p className="text-muted-foreground mb-2 text-xs font-medium">
+                                                            Cannot determine from available information
+                                                        </p>
+                                                    )}
                                                     {message.answer.text}
-                                                    {message.answer.sources.length > 0 && (
+                                                    {message.answer.status === 'needs_clarification' && message.answer.clarificationQuestion && (
+                                                        <div className="mt-3 border-t pt-3">
+                                                            <p className="text-primary text-xs font-medium">More information needed</p>
+                                                            <p className="mt-1">{message.answer.clarificationQuestion}</p>
+                                                        </div>
+                                                    )}
+                                                    {!!message.answer.userProvidedInformation?.length && (
                                                         <details className="mt-3 text-xs">
-                                                            <summary className="cursor-pointer text-primary">Source evidence</summary>
-                                                            {message.answer.sources.map((source) => {
-                                                                const item = drawing.analysis?.observations.find((observation) => observation.id === source);
-                                                                return item ? (
-                                                                    <p key={source} className="mt-2 text-muted-foreground">
-                                                                        {source} · Page {item.page}, {item.location}: {item.evidence}
-                                                                    </p>
-                                                                ) : null;
-                                                            })}
+                                                            <summary className="cursor-pointer text-muted-foreground">Information you provided</summary>
+                                                            <ul className="mt-2 list-disc space-y-1 pl-5">
+                                                                {message.answer.userProvidedInformation.map((information, index) => (
+                                                                    <li key={index}>{information}</li>
+                                                                ))}
+                                                            </ul>
                                                         </details>
                                                     )}
                                                 </ChatMessage>
@@ -225,14 +216,14 @@ export function DrawingWorkspace({ id }: Readonly<{ id: string }>) {
                                     }}
                                 >
                                     <label htmlFor="question" className="mb-2 block text-xs text-muted-foreground">
-                                        Ask about this drawing
+                                        {clarification ? 'Your reply to the clarification' : 'Ask about this drawing'}
                                     </label>
                                     <div className="flex items-center gap-2">
                                         <Input
                                             id="question"
                                             value={draft}
                                             onChange={(event) => $$drawings.draftChanged(event.target.value)}
-                                            placeholder="How much floor tiling do the toilets need?"
+                                            placeholder={clarification ?? 'How much floor tiling do the toilets need?'}
                                             maxLength={4000}
                                             disabled={busy || !!pending}
                                             autoComplete="off"
@@ -247,6 +238,11 @@ export function DrawingWorkspace({ id }: Readonly<{ id: string }>) {
                                             <ArrowUp className="size-4" />
                                         </Button>
                                     </div>
+                                    {clarification && (
+                                        <p className="text-primary mt-2 text-xs" role="status">
+                                            Waiting for your reply to continue answering.
+                                        </p>
+                                    )}
                                     <p className="text-muted-foreground mt-2 text-xs">
                                         Prototype analysis may miss details. Check quantities against the original drawing.
                                     </p>

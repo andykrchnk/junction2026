@@ -8,7 +8,8 @@
         "format": "prettier --write .",
         "check-types": "turbo run check-types",
         "format:check": "prettier --check .",
-        "check-infra": "tsc --noEmit -p .railway/tsconfig.json"
+        "check-infra": "tsc --noEmit -p .railway/tsconfig.json",
+        "prepare": "node -e \"if (require('node:fs').existsSync('.git')) require('node:child_process').execFileSync('git', ['config', 'core.hooksPath', '.githooks']);\""
     },
     "devDependencies": {
         "@typescript/native": "npm:typescript@7.0.2",
