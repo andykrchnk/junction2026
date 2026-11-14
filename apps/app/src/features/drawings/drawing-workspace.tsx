@@ -14,6 +14,7 @@ import { trpc } from '@/shared/trpc';
 
 const BlueprintCanvas = lazy(() => import('./blueprint-canvas'));
 export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: string; userId: string; previewDrawing?: Drawing }>) {
+    const { uploading, activity } = useUnit({ uploading: $$drawings.$uploading, activity: $$drawings.$activity });
     const {
         data: drawing,
         isPending,
@@ -23,13 +24,20 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
         enabled: !previewDrawing,
         initialData: previewDrawing,
         refetchInterval: (query) =>
-            query.state.data?.busy || query.state.data?.blueprints.some((blueprint) => blueprint.status.type === 'processing') ? 2000 : false,
+            query.state.data?.busy ||
+            (activity[id] ?? 0) > 0 ||
+            query.state.data?.blueprints.some(
+                (blueprint) =>
+                    blueprint.status.type === 'processing' ||
+                    [...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? [])].some((entity) => entity.enrichment.type === 'processing'),
+            )
+                ? 1000
+                : false,
     });
     const [canvasModel] = useState(() => createCanvasModel(id, `junction:canvas:${userId}:${id}`));
     const [localFile, setLocalFile] = useState<File | null>(null);
     const [localUrl, setLocalUrl] = useState('');
     const [uploadError, setUploadError] = useState('');
-    const uploading = useUnit($$drawings.$uploading);
     useEffect(() => {
         if (!localFile) return;
         const url = URL.createObjectURL(localFile);

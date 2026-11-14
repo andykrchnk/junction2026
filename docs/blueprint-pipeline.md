@@ -19,18 +19,60 @@ operations and the query cache supplies server state.
 3. Enrich all detected rooms, then fixtures, in batches of at most three requests.
    Each request includes an overview, padded contextual crop, target candidate,
    related candidates and sheet context. Results use the existing entity IDs.
+   `enrichment.result.details` stores windows, doors, furniture, related objects
+   and markings. Findings carry matched entity IDs or null, precise locations and
+   observed/inferred provenance. Door `connectedRoomIds:null` means supported
+   outside access; `[]` means unknown. Other values reference other rooms on the
+   same blueprint. Significant text, numbers, dimensions, areas, arrows and symbols
+   are transcribed with locations. IDs and reference categories are checked before
+   persistence.
+   The model returns structured findings, not a free-form paragraph. Code renders
+   `enrichment.result.description` deterministically from that JSON. The complete
+   structured findings remain available even if a long text rendering is bounded.
+   Room text is capped at 1000 characters; fixture text at 500, at complete-line
+   boundaries. Fixtures describe only themselves and direct relationships; room
+   contents belong to the room. Repeated identity, connections and generic missing
+   specifications are omitted. Model fields have separate concise output limits.
+   Finnish opening notation (for example `I15x12`) may be interpreted as an inferred
+   nominal modular size, never a verified frame or construction-opening measurement.
 4. Extract PPM candidates and create their annotations atomically, then resolve PPM
    using this blueprint and the shared conversation. Multiple incompatible scales
    on one sheet yield an unresolved result rather than a fabricated common scale.
+   Candidate extraction receives sheet notes and object markings plus canonical
+   detail crops. Length candidates retain canonical endpoints, real length, and
+   whether units are explicit, convention-based or user-provided. Server arithmetic
+   computes PPM; independent compatible references support the final estimate.
+   Convention-based dimensions remain labelled inferred, requiring confirmation.
+   Every localized clue creates a yellow annotation, including unresolved clues.
+   Its text uses a concise clue summary plus one calculation and unit basis;
+   supporting evidence remains on the candidate rather than being repeated in
+   the popover. Summaries retain the label, interpretation and consequential
+   uncertainty, including nominal-versus-frame/opening size distinctions.
+   Enriching entities invalidates previous calibration and generated PPM annotations
+   while preserving user comments. `drawings.analyze({id,retryPpm:true})` explicitly
+   retries calibration without repeating completed entity descriptions.
 5. Mark the blueprint ready only after every entity has a saved result, `misc` was
    assessed, and PPM extraction/resolution completed. Uncertain descriptions and an
    unresolved scale are valid completed results; failed requests are retryable.
 
 Each analysis mutation performs one bounded stage and checkpoints successful
-entities separately. Closing the browser pauses further scheduling; reopening or
+entities separately. Only the current batch is marked `enrichment.type:processing`
+before its requests start; queued objects stay pending. Each success is immediately
+checkpointed. One-second query polling refreshes the canvas and selected-object
+card while processing: a fixed-size, non-interactive indicator appears at each
+active object's centre, and disappears independently when it finishes. Closing
+the browser pauses further scheduling; reopening or
 resuming analysis continues missing work. No background queue is introduced.
 Owner checks, operation leases and layout revisions fence checkpoint writes.
-Inference and analysis cannot change a layout concurrently.
+Inference and analysis cannot change a layout concurrently. Expired leases expose
+interrupted entity work as retryable failures instead of leaving a permanent
+spinner. Existing generic enrichment results remain readable (`details:null`)
+and are upgraded on the next analysis flow; earlier prompt versions are upgraded
+too. Only complete detailed results from the current prompt version are reused.
+Processing/failure checkpoints retain `previousResult` so an upgrade failure does
+not erase an existing description. No schema migration is needed for these additive
+fields; the earlier blueprint-context migration is still required for pre-blueprint
+records.
 
 The original inference output remains provenance. Agent interpretations never
 replace geometry or source measurements. Attributes distinguish visible evidence

@@ -16,9 +16,21 @@ export const PpmCandidateZod = z.object({
     page: z.number().int().positive(),
     description: z.string(),
     evidence: z.string(),
-    boundingBox: BoundingBoxZod.nullable(),
+    boundingBox: BoundingBoxZod.nullable().describe(
+        'Tight box around the printed clue label or scale-bar symbol in full-page normalized coordinates, not the measurement span. Null if unlocatable.',
+    ),
     estimatedPpm: z.number().positive().nullable(),
     calculation: z.string().nullable(),
+    measurement: z
+        .object({
+            start: z.object({ x: z.number().finite().nonnegative(), y: z.number().finite().nonnegative() }),
+            end: z.object({ x: z.number().finite().nonnegative(), y: z.number().finite().nonnegative() }),
+            realLengthMetres: z.number().finite().positive(),
+            unitBasis: z.enum(['explicit', 'convention', 'user']),
+            interpretation: z.string().min(1).max(500),
+        })
+        .nullable()
+        .default(null),
 });
 export const PpmCandidatesZod = z.array(PpmCandidateZod);
 export type PpmCandidate = z.infer<typeof PpmCandidateZod>;
@@ -45,18 +57,74 @@ export const EntityAttributeZod = z.object({
     evidence: z.string().max(2000),
     source: z.enum(['observed', 'inferred']),
 });
+const EntityFindingZod = z.object({
+    objectId: z.string().min(1).nullable().describe('Exact detected entity ID when matched; null for an unmatched visible finding.'),
+    description: z.string().min(1).max(500),
+    location: z.string().min(1).max(300).describe('Precise location relative to the target and image orientation.'),
+    source: z.enum(['observed', 'inferred']),
+});
+export const EntityFindingsZod = z.object({
+    windows: z.array(EntityFindingZod).max(80),
+    doors: z
+        .array(
+            EntityFindingZod.extend({
+                connectedRoomIds: z
+                    .array(z.string().min(1))
+                    .max(12)
+                    .nullable()
+                    .describe('Other connected room IDs. Null only for confirmed outside access; empty array when the connection is unknown.'),
+            }),
+        )
+        .max(80),
+    furniture: z.array(EntityFindingZod).max(100),
+    relatedObjects: z
+        .array(EntityFindingZod.extend({ relationship: z.enum(['inside', 'adjacent', 'outside', 'overlapping', 'connected', 'unknown']) }))
+        .max(100),
+    markings: z
+        .array(
+            z.object({
+                kind: z.enum(['text', 'number', 'dimension', 'area', 'arrow', 'symbol', 'other']),
+                text: z.string().max(500).nullable().describe('Exact legible transcription, including original units; null when unreadable or non-textual.'),
+                description: z.string().min(1).max(500),
+                location: z.string().min(1).max(300),
+                objectId: z.string().min(1).nullable(),
+            }),
+        )
+        .max(120),
+});
 export const EntityDescriptionZod = z.object({
-    description: z.string().min(1).max(3000),
+    description: z.string().min(1).max(24000),
     name: z.string().min(1).max(200).nullable(),
     interpretedClass: z.string().min(1).max(200).nullable(),
     attributes: z.array(EntityAttributeZod).max(40),
     evidence: z.array(z.string().max(2000)).max(20),
     uncertainties: z.array(z.string().max(2000)).max(20),
+    details: EntityFindingsZod.nullable().default(null),
+});
+const ConciseFindingZod = EntityFindingZod.extend({ description: z.string().min(1).max(160), location: z.string().min(1).max(80) });
+export const EntityStructuredDescriptionZod = EntityDescriptionZod.omit({ description: true }).extend({
+    name: z.string().min(1).max(60).nullable(),
+    interpretedClass: z.string().min(1).max(60).nullable(),
+    attributes: z
+        .array(EntityAttributeZod.extend({ value: z.union([z.string().max(180), z.number().finite(), z.boolean()]), evidence: z.string().max(180) }))
+        .max(8),
+    evidence: z.array(z.string().max(180)).max(2),
+    uncertainties: z.array(z.string().max(140)).max(2),
+    details: EntityFindingsZod.extend({
+        windows: z.array(ConciseFindingZod).max(80),
+        doors: z.array(ConciseFindingZod.extend({ connectedRoomIds: EntityFindingsZod.shape.doors.element.shape.connectedRoomIds })).max(80),
+        furniture: z.array(ConciseFindingZod).max(100),
+        relatedObjects: z.array(ConciseFindingZod.extend({ relationship: EntityFindingsZod.shape.relatedObjects.element.shape.relationship })).max(100),
+        markings: z
+            .array(EntityFindingsZod.shape.markings.element.extend({ description: z.string().min(1).max(120), location: z.string().min(1).max(80) }))
+            .max(120),
+    }),
 });
 export const EntityEnrichmentZod = z.discriminatedUnion('type', [
     z.object({ type: z.literal('pending') }),
+    z.object({ type: z.literal('processing'), startedAt: z.string(), previousResult: EntityDescriptionZod.nullable().default(null) }),
     z.object({ type: z.literal('complete'), result: EntityDescriptionZod, model: z.string(), promptVersion: z.string(), updatedAt: z.string() }),
-    z.object({ type: z.literal('failed'), error: z.string() }),
+    z.object({ type: z.literal('failed'), error: z.string(), previousResult: EntityDescriptionZod.nullable().default(null) }),
 ]);
 export const LayoutRoomZod = ProcessingPredictionZod.shape.rooms.element.extend({ enrichment: EntityEnrichmentZod });
 export const LayoutFixtureZod = ProcessingPredictionZod.shape.fixtures.element.omit({ room_ids: true }).extend({
@@ -79,6 +147,30 @@ export const BlueprintLayoutZod = z
         if (layout.fixtures.some((fixture) => fixture.roomIds.some((id) => !rooms.has(id)))) {
             ctx.addIssue({ code: 'custom', message: 'Unknown layout room association.' });
         }
+        const entities = new Map([...layout.rooms, ...layout.fixtures].map((entity) => [entity.id, entity]));
+        const fixtures = new Set(layout.fixtures.map((fixture) => fixture.id));
+        [...layout.rooms, ...layout.fixtures].forEach((entity) => {
+            const details = entity.enrichment.type === 'complete' ? entity.enrichment.result.details : null;
+            if (!details) return;
+            const findings = [...details.windows, ...details.doors, ...details.furniture, ...details.relatedObjects, ...details.markings];
+            if (findings.some((finding) => finding.objectId !== null && !entities.has(finding.objectId))) {
+                ctx.addIssue({ code: 'custom', message: 'Object findings reference an unknown layout entity.' });
+            }
+            if (
+                details.windows.some(
+                    (finding) => finding.objectId !== null && (!fixtures.has(finding.objectId) || entities.get(finding.objectId)?.class !== 'Window'),
+                ) ||
+                details.doors.some(
+                    (finding) => finding.objectId !== null && (!fixtures.has(finding.objectId) || entities.get(finding.objectId)?.class !== 'Door'),
+                ) ||
+                details.furniture.some((finding) => finding.objectId !== null && !fixtures.has(finding.objectId))
+            ) {
+                ctx.addIssue({ code: 'custom', message: 'Object findings reference an incompatible entity class.' });
+            }
+            if (details.doors.some((door) => door.connectedRoomIds?.some((id) => !rooms.has(id) || id === entity.id))) {
+                ctx.addIssue({ code: 'custom', message: 'Door findings reference an unknown or identical room.' });
+            }
+        });
     });
 const BlueprintStageZod = z.enum(['inference', 'misc', 'entities', 'ppm']);
 export const BlueprintStatusZod = z.discriminatedUnion('type', [
@@ -131,3 +223,19 @@ export type BlueprintStatus = z.infer<typeof BlueprintStatusZod>;
 export type LayoutRoom = z.infer<typeof LayoutRoomZod>;
 export type LayoutFixture = z.infer<typeof LayoutFixtureZod>;
 export type EntityDescription = z.infer<typeof EntityDescriptionZod>;
+export type EntityStructuredDescription = z.infer<typeof EntityStructuredDescriptionZod>;
+export type EntityFindings = z.infer<typeof EntityFindingsZod>;
+export const ENTITY_ENRICHMENT_PROMPT_VERSION = 'blueprint-entities-v3';
+export function hasDetailedEntityDescription(entity: Pick<LayoutRoom | LayoutFixture, 'enrichment'>): boolean {
+    return (
+        entity.enrichment.type === 'complete' &&
+        entity.enrichment.promptVersion === ENTITY_ENRICHMENT_PROMPT_VERSION &&
+        entity.enrichment.result.details !== null
+    );
+}
+export function blueprintNeedsAnalysis(blueprint: Blueprint): boolean {
+    return (
+        blueprint.status.type !== 'ready' ||
+        (!!blueprint.layout && [...blueprint.layout.rooms, ...blueprint.layout.fixtures].some((entity) => !hasDetailedEntityDescription(entity)))
+    );
+}

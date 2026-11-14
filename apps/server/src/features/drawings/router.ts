@@ -16,7 +16,7 @@ import { db } from '../../db';
 import { protectedProcedure, t } from '../../shared/trpc';
 import { Env } from '../../shared/env';
 import { answer } from './agent';
-import { processBlueprint } from './blueprint-processing';
+import { processBlueprint, resetBlueprintPpm } from './blueprint-processing';
 import { detectDrawing } from './detection';
 import { scanCommentsRouter } from './comments';
 
@@ -144,7 +144,7 @@ export const drawingRouter = t.router({
         .output(DrawingZod)
         .mutation(({ input, ctx }) => detectDrawing({ id: input.id, ownerId: ctx.user.id, page: input.page })),
     analyze: protectedProcedure
-        .input(DrawingIdZod)
+        .input(DrawingIdZod.extend({ retryPpm: z.boolean().optional() }))
         .output(DrawingZod)
         .mutation(({ input, ctx }) =>
             processDrawing(input.id, ctx.user.id, async (drawing, signal, lease) => {
@@ -152,7 +152,12 @@ export const drawingRouter = t.router({
                 if (drawing.blueprints.some((blueprint) => !blueprint.layout || !blueprint.raster)) {
                     throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Complete inference for every blueprint before starting analysis.' });
                 }
-                await processBlueprint({ drawing, signal, lease, ownerId: ctx.user.id });
+                if (input.retryPpm) {
+                    for (const blueprint of drawing.blueprints) {
+                        await resetBlueprintPpm({ drawingId: drawing.id, ownerId: ctx.user.id, lease, blueprintId: blueprint.id });
+                    }
+                }
+                await processBlueprint({ drawing: input.retryPpm ? await getDrawing(input.id, ctx.user.id) : drawing, signal, lease, ownerId: ctx.user.id });
                 return {};
             }),
         ),

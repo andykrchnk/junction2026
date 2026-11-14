@@ -60,11 +60,28 @@ export function DrawingDto(data: unknown) {
     const inferenceBusy = doc.inferenceLease !== null && doc.inferenceLeaseUntil !== null && doc.inferenceLeaseUntil.getTime() > Date.now();
     const error = !busy && doc.lease ? 'Processing was interrupted. Please retry.' : doc.error;
     const blueprints = doc.blueprints.map((blueprint) => {
-        if (blueprint.status.type !== 'processing') return blueprint;
+        const recoverEntity = <T extends LayoutRoom | LayoutFixture>(entity: T) =>
+            !busy && entity.enrichment.type === 'processing'
+                ? {
+                      ...entity,
+                      enrichment: {
+                          type: 'failed' as const,
+                          error: 'Object analysis was interrupted. Retry to resume.',
+                          previousResult: entity.enrichment.previousResult,
+                      },
+                  }
+                : entity;
+        const recovered = {
+            ...blueprint,
+            layout: blueprint.layout
+                ? { ...blueprint.layout, rooms: blueprint.layout.rooms.map(recoverEntity), fixtures: blueprint.layout.fixtures.map(recoverEntity) }
+                : null,
+        };
+        if (blueprint.status.type !== 'processing') return recovered;
         const active = blueprint.status.stage === 'inference' ? inferenceBusy : busy;
         return active
-            ? blueprint
-            : { ...blueprint, status: { type: 'partial' as const, stage: blueprint.status.stage, error: 'Processing was interrupted. Retry to resume.' } };
+            ? recovered
+            : { ...recovered, status: { type: 'partial' as const, stage: blueprint.status.stage, error: 'Processing was interrupted. Retry to resume.' } };
     });
     const ready = blueprints.length > 0 && blueprints.every((blueprint) => blueprint.status.type === 'ready');
     const failed = blueprints.some((blueprint) => blueprint.status.type === 'failed' || blueprint.status.type === 'partial');
