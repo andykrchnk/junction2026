@@ -1,6 +1,7 @@
 import { createEffect, createEvent, createStore, sample } from 'effector';
 import { readonly } from 'patronum';
-import { MAX_FILE_BYTES, UploadErrorZod, type Drawing, type UpdateDrawingUpload } from '@repo/types';
+import { blueprintNeedsAnalysis, hasDetailedEntityDescription, MAX_FILE_BYTES, UploadErrorZod, type Drawing, type UpdateDrawingUpload } from '@repo/types';
+import { TRPCClientError } from '@trpc/client';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import { queryClient, trpc, trpcClient } from '@/shared/trpc';
@@ -54,19 +55,26 @@ const uploadFx = createEffect(async ({ id, file }: { id: string; file: File }) =
     await refresh(id);
     return id;
 });
-async function waitForInference(params: { id: string; deadline: number }): Promise<Drawing> {
+function isProcessing(drawing: Drawing): boolean {
+    return (
+        drawing.busy ||
+        drawing.blueprints.some(
+            (blueprint) =>
+                blueprint.status.type === 'processing' ||
+                [...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? [])].some((entity) => entity.enrichment.type === 'processing'),
+        )
+    );
+}
+async function waitForProcessing(params: { id: string; deadline: number }): Promise<Drawing> {
     const drawing = await trpcClient.drawings.get.query({ id: params.id });
     queryClient.setQueryData(trpc.drawings.get.queryOptions({ id: params.id }).queryKey, drawing);
-    if (
-        !drawing.blueprints.some((blueprint) => blueprint.status.type === 'processing' && blueprint.status.stage === 'inference') ||
-        Date.now() >= params.deadline
-    )
-        return drawing;
-    await new Promise<void>((resolve) => setTimeout(resolve, Math.min(2000, Math.max(0, params.deadline - Date.now()))));
-    return waitForInference(params);
+    if (!isProcessing(drawing)) return drawing;
+    if (Date.now() >= params.deadline) throw new Error('This drawing is still being processed. Wait a moment, then retry.');
+    await new Promise<void>((resolve) => setTimeout(resolve, Math.min(1000, Math.max(0, params.deadline - Date.now()))));
+    return waitForProcessing(params);
 }
 const inferFx = createEffect(async (id: string) => {
-    const drawing = await waitForInference({ id, deadline: Date.now() + 300_000 });
+    const drawing = await waitForProcessing({ id, deadline: Date.now() + 300_000 });
     if (!drawing.blueprints.length || drawing.blueprints.some((blueprint) => blueprint.status.type === 'processing' && blueprint.status.stage === 'inference'))
         return drawing;
     // The service accepts one image at a time. Persist each page before requesting the next.
@@ -89,7 +97,7 @@ const inferFx = createEffect(async (id: string) => {
 const analyzeFx = createEffect(async (id: string) => {
     try {
         const drawing = await trpcClient.drawings.get.query({ id });
-        if (!drawing.blueprints.length || drawing.blueprints.every((blueprint) => blueprint.status.type === 'ready')) return drawing;
+        if (!drawing.blueprints.length || !drawing.blueprints.some(blueprintNeedsAnalysis)) return drawing;
         const detected = await inferFx(id);
         const incomplete = detected.blueprints.find((blueprint) => !blueprint.layout || !blueprint.raster);
         if (incomplete) {
@@ -105,13 +113,20 @@ const analyzeFx = createEffect(async (id: string) => {
             );
         }
         let current = detected;
-        while (current.blueprints.some((blueprint) => blueprint.status.type !== 'ready')) {
-            const blueprint = current.blueprints.find((item) => item.status.type !== 'ready');
-            const completed = [...(blueprint?.layout?.rooms ?? []), ...(blueprint?.layout?.fixtures ?? [])].filter(
-                (entity) => entity.enrichment.type === 'complete',
-            ).length;
+        while (current.blueprints.some(blueprintNeedsAnalysis)) {
+            if (isProcessing(current)) current = await waitForProcessing({ id, deadline: Date.now() + 300_000 });
+            const blueprint = current.blueprints.find(blueprintNeedsAnalysis);
+            if (!blueprint) break;
+            const completed = [...(blueprint?.layout?.rooms ?? []), ...(blueprint?.layout?.fixtures ?? [])].filter(hasDetailedEntityDescription).length;
             stageChanged({ id, label: `Reviewing sheet ${blueprint?.pageNumber ?? 1} · ${completed} objects described` });
-            current = await trpcClient.drawings.analyze.mutate({ id });
+            try {
+                current = await trpcClient.drawings.analyze.mutate({ id });
+            } catch (cause) {
+                if (!(cause instanceof TRPCClientError) || cause.data?.code !== 'CONFLICT') throw cause;
+                const latest = await trpcClient.drawings.get.query({ id });
+                if (!isProcessing(latest) && latest.blueprints.some(blueprintNeedsAnalysis)) throw cause;
+                current = isProcessing(latest) ? await waitForProcessing({ id, deadline: Date.now() + 300_000 }) : latest;
+            }
             queryClient.setQueryData(trpc.drawings.get.queryOptions({ id }).queryKey, current);
         }
         return current;
@@ -122,7 +137,7 @@ const analyzeFx = createEffect(async (id: string) => {
 const askFx = createEffect(async (input: { id: string; message: Drawing['messages'][number] }) => {
     try {
         const drawing = await trpcClient.drawings.get.query({ id: input.id });
-        if (!drawing.blueprints.length || drawing.blueprints.some((blueprint) => blueprint.status.type !== 'ready')) await analyzeFx(input.id);
+        if (!drawing.blueprints.length || drawing.blueprints.some(blueprintNeedsAnalysis)) await analyzeFx(input.id);
         stageChanged({ id: input.id, label: 'Reviewing blueprint evidence' });
         return await trpcClient.drawings.ask.mutate({ id: input.id, message: { id: input.message.id, question: input.message.question } });
     } finally {
@@ -132,7 +147,7 @@ const askFx = createEffect(async (input: { id: string; message: Drawing['message
 
 sample({ clock: stageChanged, source: $stages, fn: (stages, { id, label }) => ({ ...stages, [id]: label }), target: $stages });
 sample({ clock: uploadFx, fn: ({ id }) => ({ id, label: 'Uploading blueprint' }), target: stageChanged });
-sample({ clock: inferFx, fn: (id) => ({ id, label: 'Detecting rooms and objects' }), target: stageChanged });
+sample({ clock: inferFx, fn: (id) => ({ id, label: 'Preparing blueprint' }), target: stageChanged });
 sample({ clock: askFx, source: $outgoing, fn: (outgoing, { id, message }) => ({ ...outgoing, [id]: message }), target: $outgoing });
 sample({ clock: askFx.done, source: $outgoing, fn: (outgoing, { params }) => ({ ...outgoing, [params.id]: undefined }), target: $outgoing });
 sample({ clock: askFx, source: $id, filter: (id, params) => id === params.id, fn: () => '', target: $draft });

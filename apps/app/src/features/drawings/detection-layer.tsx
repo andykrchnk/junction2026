@@ -5,12 +5,14 @@ import { useUnit } from 'effector-react';
 import { createShapeId, useEditor, useValue } from 'tldraw';
 import { getDetectedObjectColor, type DetectedProperty, type Drawing, type PredictionPage } from '@repo/types';
 import { Tooltip, TooltipProvider } from '@repo/design-system/components/ui/tooltip';
+import { remixIcons } from '@repo/design-system/lib/icons-remix';
 import { formatDetectedObjectTooltip } from './detected-object-tooltip';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import type { CanvasModel } from './canvas/model';
 
 export const DetectionContext = createContext<{ drawing: Drawing; model: CanvasModel } | null>(null);
+const LoaderCircle = remixIcons.loader;
 
 function tooltipTextColor(color: string): string {
     const luminance = [0.2126, 0.7152, 0.0722].reduce((total, weight, index) => {
@@ -32,6 +34,8 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
     const shape = useValue('blueprint sheet', () => editor.getShape(createShapeId(`blueprint-${page.page}`)), [editor, page.page]);
     const zoom = useValue('geometry zoom', () => editor.getZoomLevel(), [editor]);
     const { selected, visibility, hiddenObjects } = useUnit({ selected: model.$selection, visibility: model.$visibility, hiddenObjects: model.$hiddenObjects });
+    const blueprint = drawing.blueprints.find((item) => item.pageNumber === page.page);
+    const entities = new Map([...(blueprint?.layout?.rooms ?? []), ...(blueprint?.layout?.fixtures ?? [])].map((entity) => [entity.id, entity]));
     const [url, setUrl] = useState<string | null>(null);
     const { data: raster, isError } = useQuery({
         queryKey: ['prediction-raster', drawing.id, page.rasterFileId],
@@ -76,6 +80,14 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
                                 additive ? model.selectionToggled({ page: page.page, index }) : model.selected({ page: page.page, index });
                             const color = getDetectedObjectColor(property);
                             const tooltip = formatDetectedObjectTooltip({ drawing, page, property, index });
+                            const processing = entities.get(property.id)?.enrichment.type === 'processing';
+                            const center =
+                                property.centroid ??
+                                (property.bbox
+                                    ? [(property.bbox[0] + property.bbox[2]) / 2, (property.bbox[1] + property.bbox[3]) / 2]
+                                    : property.geometry.type === 'Point'
+                                      ? property.geometry.coordinates
+                                      : null);
                             const common = {
                                 'data-detected-object': true,
                                 'data-detected-page': page.page,
@@ -96,24 +108,42 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
                                 vectorEffect: 'non-scaling-stroke',
                             };
                             return (
-                                <Tooltip
-                                    key={index}
-                                    content={tooltip}
-                                    bubbleStyle={{ backgroundColor: color, color: tooltipTextColor(color) }}
-                                    contentClassName="z-[300000] pointer-events-none"
-                                    disableHoverablePopup
-                                >
-                                    {property.geometry.type !== 'Point' ? (
-                                        <path {...common} d={polygonPath(property.geometry)} fillRule="evenodd" />
-                                    ) : (
-                                        <circle
-                                            {...common}
-                                            cx={property.geometry.coordinates[0]}
-                                            cy={property.geometry.coordinates[1]}
-                                            r={3 / (zoom * Math.max(scaleX, scaleY))}
-                                        />
+                                <g key={property.id}>
+                                    <Tooltip
+                                        content={tooltip}
+                                        bubbleStyle={{ backgroundColor: color, color: tooltipTextColor(color) }}
+                                        contentClassName="z-[300000] pointer-events-none"
+                                        disableHoverablePopup
+                                    >
+                                        {property.geometry.type !== 'Point' ? (
+                                            <path {...common} d={polygonPath(property.geometry)} fillRule="evenodd" />
+                                        ) : (
+                                            <circle
+                                                {...common}
+                                                cx={property.geometry.coordinates[0]}
+                                                cy={property.geometry.coordinates[1]}
+                                                r={3 / (zoom * Math.max(scaleX, scaleY))}
+                                            />
+                                        )}
+                                    </Tooltip>
+                                    {processing && center && (
+                                        <g
+                                            transform={`translate(${center[0]} ${center[1]}) scale(${1 / (zoom * scaleX)} ${1 / (zoom * scaleY)})`}
+                                            style={{ pointerEvents: 'none' }}
+                                        >
+                                            <foreignObject x={-12} y={-12} width={24} height={24}>
+                                                <div
+                                                    role="status"
+                                                    aria-label={`Describing ${property.label}, sheet ${page.page}`}
+                                                    className="flex size-6 items-center justify-center"
+                                                    style={{ color, pointerEvents: 'none' }}
+                                                >
+                                                    <LoaderCircle size={20} className="animate-spin motion-reduce:animate-none" />
+                                                </div>
+                                            </foreignObject>
+                                        </g>
                                     )}
-                                </Tooltip>
+                                </g>
                             );
                         })}
                     </g>
