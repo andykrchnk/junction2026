@@ -9,6 +9,8 @@ import {
     RenameDrawingZod,
     AskDrawingZod,
     StopDrawingChatZod,
+    AdjustDrawingPpmZod,
+    StoredPpmResultZod,
     DetectDrawingZod,
     DrawingIdZod,
     ReviewDrawingContextZod,
@@ -21,6 +23,7 @@ import {
     UpdateEntityClassZod,
 } from '@repo/types';
 import { db } from '../../db';
+import { layoutProperties } from '../../db/drawing.schema';
 import { protectedProcedure, t } from '../../shared/trpc';
 import { answer } from './agent';
 import { acknowledgeCanvasAction, createToolTrace } from './tool-trace';
@@ -31,6 +34,58 @@ import { scanCommentsRouter } from './comments';
 import { updateEntityClass } from './entity-class';
 
 export const drawingRouter = t.router({
+    adjustPpm: protectedProcedure
+        .input(AdjustDrawingPpmZod)
+        .output(DrawingZod)
+        .mutation(async ({ input, ctx }) => {
+            const doc = await db.drawing.DrawingModel.findOne({ _id: input.id, ownerId: ctx.user.id }).lean();
+            if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Drawing not found.' });
+            const drawing = db.drawing.DrawingDto(doc);
+            if (drawing.busy) throw new TRPCError({ code: 'CONFLICT', message: 'Wait for processing to finish before adjusting the scale.' });
+            const blueprint = drawing.blueprints.find((item) => item.id === input.blueprintId);
+            if (!blueprint?.layout || !blueprint.raster)
+                throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Room and fixture detection must finish before adjusting the scale.' });
+            if (blueprint.layout.revision !== input.layoutRevision)
+                throw new TRPCError({ code: 'CONFLICT', message: 'The detected objects changed. Reload the drawing and try again.' });
+            const entity = layoutProperties(blueprint.layout).find((item) => item.id === input.entityId);
+            const pixelArea = entity?.areaPixels;
+            if (!entity || pixelArea === null || pixelArea === undefined || !Number.isFinite(pixelArea) || pixelArea <= 0)
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Choose a detected object with a measurable polygon area.' });
+            const value = Math.sqrt(pixelArea / input.areaSquareMetres);
+            if (!Number.isFinite(value) || value <= 0) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Enter an area that produces a valid scale.' });
+            const ppm = StoredPpmResultZod.parse({
+                value,
+                message: `User calibration: ${entity.label} area ${input.areaSquareMetres} m² corresponds to ${Number(pixelArea.toPrecision(6))} px². PPM = √(pixel area ÷ area in m²) ≈ ${Number(value.toPrecision(6))} px/m. Applies to sheet ${blueprint.pageNumber}; the polygon boundary remains an estimate.`,
+                calibration: {
+                    method: 'area',
+                    pixelArea,
+                    realAreaSquareMetres: input.areaSquareMetres,
+                    usedCandidateIndexes: [],
+                    basis: `User-provided area for detected object ${input.entityId}: ${input.areaSquareMetres} m².`,
+                    scope: `Sheet ${blueprint.pageNumber}, canonical raster ${blueprint.raster.width} × ${blueprint.raster.height} px. Assumes one scale for this floor-plan view.`,
+                },
+                userCalibration: { entityId: input.entityId, areaSquareMetres: input.areaSquareMetres, pixelArea, createdAt: new Date().toISOString() },
+            });
+            const now = new Date();
+            const saved = await db.drawing.DrawingModel.updateOne(
+                {
+                    _id: input.id,
+                    ownerId: ctx.user.id,
+                    'processingJob.status': { $nin: ['queued', 'running'] },
+                    blueprints: { $elemMatch: { id: input.blueprintId, 'layout.revision': input.layoutRevision, 'raster.fileId': blueprint.raster.fileId } },
+                    $and: [
+                        { $or: [{ lease: null }, { leaseUntil: { $lte: now } }] },
+                        { $or: [{ inferenceLease: null }, { inferenceLeaseUntil: { $lte: now } }] },
+                    ],
+                },
+                {
+                    $set: { 'blueprints.$.ppm': ppm },
+                    $pull: { 'blueprints.$.comments': { source: 'ppm', id: { $regex: '^ppm:door:' }, page: blueprint.pageNumber } },
+                },
+            );
+            if (!saved.matchedCount) throw new TRPCError({ code: 'CONFLICT', message: 'The drawing changed or processing started. Reload and try again.' });
+            return getDrawing(input.id, ctx.user.id);
+        }),
     acknowledgeCanvasAction: protectedProcedure
         .input(AcknowledgeCanvasActionZod)
         .output(CanvasActionAcknowledgmentZod)

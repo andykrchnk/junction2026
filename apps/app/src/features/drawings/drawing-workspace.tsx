@@ -14,6 +14,7 @@ import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { trpc } from '@/shared/trpc';
 import { EntityClassEditor } from './entity-class-editor';
+import { PpmAdjustmentMenu } from './ppm-adjustment-menu';
 
 const BlueprintCanvas = lazy(() => import('./blueprint-canvas'));
 export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: string; userId: string; previewDrawing?: Drawing }>) {
@@ -149,9 +150,11 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                     {visibleError}
                 </p>
             )}
-            <section aria-label="Blueprint canvas" className="absolute inset-0 z-0">
-                {canvas}
-            </section>
+            <PpmAdjustmentMenu drawing={drawing}>
+                <section aria-label="Blueprint canvas" className="absolute inset-0 z-0">
+                    {canvas}
+                </section>
+            </PpmAdjustmentMenu>
             <SessionChatPanel
                 commentsModel={commentsModel}
                 drawing={drawing}

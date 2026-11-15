@@ -73,6 +73,14 @@ export const StoredPpmResultZod = z.object({
     // Saved results from before evidence tracking contain only a value and explanation.
     calibration: PpmCalibrationZod.optional(),
     doorFallback: PpmDoorFallbackZod.optional(),
+    userCalibration: z
+        .object({
+            entityId: z.string().min(1),
+            areaSquareMetres: z.number().finite().positive(),
+            pixelArea: z.number().finite().positive(),
+            createdAt: z.iso.datetime(),
+        })
+        .optional(),
 });
 export type AgentPpmResult = z.infer<typeof AgentPpmResultZod>;
 export type StoredPpmResult = z.infer<typeof StoredPpmResultZod>;

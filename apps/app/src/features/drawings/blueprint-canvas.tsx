@@ -606,7 +606,7 @@ function CanvasEditor({
                             initialState="hand"
                             licenseKey={config.TLDRAW_LICENSE_KEY}
                             options={canvasOptions}
-                            components={{ OnTheCanvas: CanvasLayers, Grid: SquareGrid, Background: CanvasBackground }}
+                            components={{ OnTheCanvas: CanvasLayers, Grid: SquareGrid, Background: CanvasBackground, ContextMenu: null }}
                         />
                     </DetectionContext.Provider>
                 </CommentsContext.Provider>
