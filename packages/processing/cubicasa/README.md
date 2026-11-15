@@ -311,3 +311,17 @@ occupied until inference finishes, preventing oversubscription.
 Worker logs include a generated request ID, model, and elapsed inference time;
 credentials and drawing contents are not logged. Tune capacity for GPU memory
 and drawing sizes; increasing it is not a guarantee of linear speedup.
+
+### CPU polygon reconstruction
+
+Neural inference runs on the GPU, but the official polygonizer runs on the CPU.
+Dense fixture candidates previously caused repeated linear membership searches
+inside a pairwise loop. Fixture suppression now uses sets for membership and a
+list for output order, retaining the original pair traversal and area ties.
+Wall tracing computes the class raster once per reconstruction instead of
+calling `argmax` for every visited pixel. Room classification no longer copies
+the full segmentation raster for each polygon.
+
+These caches belong to one reconstruction; concurrent requests do not share
+mutable postprocessing state. The optimizations do not reduce input resolution,
+cap candidate counts, change detection thresholds, or simplify output geometry.
