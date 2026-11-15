@@ -220,7 +220,7 @@ export function BlueprintLayersPanel({
                                                     if (!items.length) return null;
                                                     return (
                                                         <div key={type} className="relative">
-                                                            <div className="absolute right-2 top-1 z-10">
+                                                            <div className="absolute right-2 top-0 z-20 flex h-11 items-center">
                                                                 <VisibilityToggle
                                                                     visible={
                                                                         visibility[type] &&
@@ -279,7 +279,7 @@ export function BlueprintLayersPanel({
                                                                                     );
                                                                                 return (
                                                                                     <div key={category} className="relative">
-                                                                                        <div className="absolute right-2 top-1 z-10">
+                                                                                        <div className="absolute right-2 top-0 z-20 flex h-11 items-center">
                                                                                             <VisibilityToggle
                                                                                                 visible={visible}
                                                                                                 label={`${category} category`}
