@@ -68,7 +68,59 @@ def image_part(image):
     }
 
 
-def context(target, image, ocr, overview):
+def room_fixture_context(room, fixtures):
+    verified = []
+    unresolved_count = 0
+    for fixture in fixtures:
+        if fixture.get("decision") == "removed":
+            continue
+        fraction = (
+            room["geometry"].intersection(fixture["geometry"]).area
+            / fixture["geometry"].area
+        )
+        # Require most of the fixture to lie inside the room. Mere adjacency or
+        # a small overlap must not import another room's functional evidence.
+        if fraction <= 0.5:
+            continue
+        resolution = fixture.get("verification", {})
+        if resolution.get("resolution") != "resolved":
+            unresolved_count += 1
+            continue
+        verified.append(
+            {
+                "class": fixture["class"],
+                "class_score": resolution["selected_class_score"],
+                "existence_score": resolution["existence_score"],
+                "class_basis": resolution["class_basis"],
+                "bounds": list(fixture["geometry"].bounds),
+                "fraction_inside_room": fraction,
+            }
+        )
+    verified.sort(key=lambda item: item["class_score"], reverse=True)
+    return {
+        "verified": verified[:64],
+        "verified_count": len(verified),
+        "unresolved_count": unresolved_count,
+    }
+
+
+def crop_parts(image, geom, bounds):
+    clean = image.crop(bounds)
+    marked = clean.copy()
+    draw = ImageDraw.Draw(marked)
+    for poly in list(geom.geoms) if geom.geom_type == "MultiPolygon" else [geom]:
+        for ring in [poly.exterior, *poly.interiors]:
+            draw.line(
+                [(x - bounds[0], y - bounds[1]) for x, y in ring.coords],
+                fill="#c000b5",
+                width=2,
+            )
+    clean.thumbnail((1600, 1600))
+    marked.thumbnail((1600, 1600))
+    return [image_part(clean), image_part(marked)]
+
+
+def context(target, image, ocr, overview, *, closeup=False):
     geom = target["geometry"]
     x0, y0, x1, y1 = geom.bounds
     pad = (
@@ -82,18 +134,6 @@ def context(target, image, ocr, overview):
         min(image.width, int(x1 + pad + 1)),
         min(image.height, int(y1 + pad + 1)),
     )
-    clean = image.crop(bounds)
-    marked = clean.copy()
-    draw = ImageDraw.Draw(marked)
-    for poly in list(geom.geoms) if geom.geom_type == "MultiPolygon" else [geom]:
-        for ring in [poly.exterior, *poly.interiors]:
-            draw.line(
-                [(x - bounds[0], y - bounds[1]) for x, y in ring.coords],
-                fill="#c000b5",
-                width=2,
-            )
-    clean.thumbnail((1600, 1600))
-    marked.thumbnail((1600, 1600))
     tokens = []
     for token in ocr:
         cx = sum(p[0] for p in token.polygon) / len(token.polygon)
@@ -107,32 +147,29 @@ def context(target, image, ocr, overview):
                     "center_in_target": geom.covers(Point(cx, cy)),
                 }
             )
-    parts = [image_part(clean), image_part(marked), overview]
-    return parts, tokens, bounds
-
-
-def room_fixtures(room, targets):
-    """Supply scored fixture decisions substantially inside this room."""
-    result = []
-    for fixture in targets:
-        verification = fixture.get("fixture_verification")
-        if (
-            fixture["kind"] != "fixture"
-            or not verification
-            or verification["class"] == "No Icon"
-            or fixture.get("decision") == "removed"
-        ):
-            continue
-        geometry = fixture["geometry"]
-        overlap = room["geometry"].intersection(geometry).area / geometry.area
-        if overlap < 0.5:
-            continue
-        result.append(
-            {
-                **verification,
-                "accepted": bool(fixture.get("accepted_classification")),
-                "bounds": list(geometry.bounds),
-                "fraction_inside_room": overlap,
-            }
+    parts = [*crop_parts(image, geom, bounds), overview]
+    if closeup:
+        # Crop from the source, not the resized contextual image, so small basin
+        # and seating details survive a second look at large fixture candidates.
+        detail_pad = max(24, 0.25 * max(x1 - x0, y1 - y0))
+        detail_bounds = (
+            max(0, int(x0 - detail_pad)),
+            max(0, int(y0 - detail_pad)),
+            min(image.width, int(x1 + detail_pad + 1)),
+            min(image.height, int(y1 + detail_pad + 1)),
         )
-    return result
+        parts = [
+            {
+                "type": "text",
+                "text": (
+                    "Close-up from the source image, clean then magenta target; "
+                    "followed by contextual clean/marked crops and sheet overview. "
+                    "Distinguish tubs, shower trays/screens, sauna seating and cabinets. "
+                    "If views remain unclear "
+                    "choose ambiguous."
+                ),
+            },
+            *crop_parts(image, geom, detail_bounds),
+            *parts,
+        ]
+    return parts, tokens, bounds

@@ -40,7 +40,8 @@ curl --fail http://127.0.0.1:8002/v1/process \
 - `schemas.py`: public response and worker-boundary validation.
 - `taxonomy.py`: loads the authoritative class constants from CubiCasa's
   `model/segmentation_net.py` through AST, without importing Torch. Docker copies
-  that source file; there is no independently maintained class list.
+  that source file. Service-only fixture output adds `Shower Cabin` without changing
+  the geometry-worker classes or pretrained channels.
 - `pipeline.py`: model orchestration, deadlines, private artifacts and fallback.
 - `clients/`: private worker and Gemini transports with boundary validation.
 - `stages/`: target crops, explicit annotations, verifier questions, decision rules,
@@ -49,14 +50,13 @@ curl --fail http://127.0.0.1:8002/v1/process \
 CubiCasa detail and PaddleOCR run sequentially to bound concurrent GPU demand.
 Workers retain their loaded weights. The API admits one standardized processing
 request at a time; further calls receive 503 with Retry-After. Gemini runs at most
-four concurrent requests. Fixtures complete first, then rooms receive fixture class
-suggestions, acceptance status, uncalibrated class/evidence/existence scores and bounds for fixtures with at least
-50% of their area inside the room. Removed, failed, skipped and No Icon
-decisions are excluded. Unaccepted suggestions require independent image support;
-the public fixture acceptance gates are unchanged. Empty context does not establish that fixtures are absent.
-Both stages share the target cap and deadline; fixture work can exhaust the window
-before rooms run. One contextual request per candidate combines class,
-name and measurement questions. Each question is independent; code combines answers.
+the configured number of concurrent requests (default eight). Fixtures, including
+close-up rechecks, complete before room verification. Each room receives only
+verified fixture classes substantially inside it; unresolved proposals are counted
+without passing their labels. Both stages share the target cap and deadline, with
+fixtures prioritized. One contextual request per candidate combines class, name
+and measurement questions. Disputed or uncertain bathtub/sauna/shower/closet
+candidates receive at most one close-up recheck within the same scheduling window.
 Verification is capped at 500 targets, 20 measurement candidates per target and a
 180-second scheduling window plus up to 30 seconds for in-flight calls. Worker
 requests each have a 180-second I/O timeout; this is not a 180-second total-request SLA.
@@ -66,7 +66,9 @@ unknown measurements. Response headers identify degraded processing.
 ## Output semantics
 
 Room output classes use the service vocabulary: the 12 CubiCasa room/structure
-classes plus Sauna and Balcony. Fixture classes retain the 11-icon CubiCasa vocabulary. Worker
+classes plus Sauna and Balcony. Fixture classes extend the CubiCasa icon vocabulary with `Shower Cabin`, covering
+verified shower enclosures, cubicles and trays. A tray-only drawing does not establish
+that a separate enclosure exists. Worker
 validation still accepts only the original CubiCasa classes. Structural/background predictions are not returned as rooms. `No Icon`
 is an internal removal decision, not an extra fixture object. Only explicitly supported classes
 are accepted from Gemini or workers. Classification never changes the geometry. The geometry worker applies bounded
@@ -108,8 +110,10 @@ pixels, with a 26MiB multipart-envelope limit enforced before body parsing. Unsu
 formats return 415 and corrupt/multi-frame images return 422. A failed or invalid
 geometry worker response returns 502. OCR failure retains geometry but returns null
 names/measurements. Gemini failure retains baseline classifications and null enrichment.
-A successful partial result includes `X-Processing-Degraded` with `ocr`, `gemini`, or
-`verification_limit`; the public JSON shape does not change.
+A successful partial result includes `X-Processing-Degraded` with `ocr`, `gemini`,
+`verification_limit`, or `fixture_uncertainty`; the public JSON shape does not change.
+`fixture_uncertainty` marks retained fixture classes that could not be verified. Their
+baseline labels remain in the response; per-fixture diagnostics stay private.
 
 Private per-request worker predictions, Gemini responses, decisions and final output
 are stored in `.local/processing-pipeline/artifacts`, outside the public API and Git.
@@ -118,8 +122,7 @@ verification and normalization, including elapsed time when a timed stage fails.
 `PIPELINE_GEMINI_WORKERS` controls independent verification requests (default 8,
 integer 1–16, validated at startup). Set it on this service; use 4 for the previous
 parallelism. Each request still handles one target, fixtures finish before rooms,
-and the original evidence, acceptance rules, target budget and deadline remain
-unchanged. Tune concurrency against provider quotas; this is independent of the
+and the shared target budget and deadline remain unchanged. Tune concurrency against provider quotas; this is independent of the
 server's drawing/entity concurrency limits.
 The detail worker's optional `CUBICASA_DOOR_CONTRAST=true` mode supplies additional
 doors through the existing review-only contract. These proposals start removed
@@ -145,6 +148,22 @@ Gemini credential and the live worker containers before deployment.
 
 ## Room-use resolution
 
+Decisions completes fixture verification, including any close-up rechecks, before
+starting room verification. Each room receives a stable `fixture_context` snapshot
+of retained fixtures with more than half their geometry inside that room. Mere
+adjacency and small overlaps do not supply functional evidence from neighboring
+rooms. The public fixture-to-room relationships keep their existing overlap/adjacency
+semantics; the stricter majority rule is only for room-use evidence.
+
+The snapshot includes the final verified class, class/existence scores, evidence
+basis, bounds and fraction inside the room. At most 64 verified fixtures are sent,
+highest class score first, with the full verified count. Unresolved candidates are
+counted separately without passing their unverified class labels. Removed candidates
+are excluded. Missing or unresolved fixtures never establish absence. Verified
+fixtures support room use alongside printed labels and visible context; they do
+not impose a deterministic room class or override contradictory drawing evidence.
+These snapshots remain in private decision artifacts; the public JSON is unchanged.
+
 Decisions resolves room use from the associated printed label and visual context,
 independently of outline quality. One class-choice question selects a supported room class or abstains with
 `ambiguous` or `conflicting_room_uses`; the selected outcome and a structured
@@ -152,12 +171,44 @@ evidence basis are recorded internally. A resolved
 class with a supporting basis is applied without the previous fixed class/evidence/
 whole-space score gates. Structural classes and inconsistent decisions are not
 applied to rooms. Ambiguous, conflicting, missing, or failed verification retains
-the original class and score. Fixture and measurement gates are unchanged.
+the original class and score. Measurement gates are unchanged.
 
 Resolution, basis, and geometry diagnostics remain in private decision artifacts.
 The public response is unchanged. A relabelled room uses the verifier's selected-
 class score, which remains uncalibrated and is not geometry confidence. There are
 no translation dictionaries or label-matching rules.
+
+## Bathtub, sauna-bench and shower-cabin verification
+
+Fixture verification separates presence from class and records a structured evidence
+basis. Bathtub criteria include basin/rim details, drains, taps and multilingual
+fixture labels; sauna-bench criteria include seating tiers, slats and supporting
+sauna context. Shower-cabin criteria include drains, trays, fittings and screens;
+closet criteria require storage details rather than a rectangular outline alone.
+Room use alone cannot establish a fixture class. Unreadable or
+indistinguishable symbols can resolve to internal `ambiguous`, never a public class.
+
+For non-opening candidates involving Bathtub, Sauna Bench or Shower Cabin, a class score of at
+least 0.9 and direct symbol/associated-label evidence can establish the type when
+fixture presence is more likely than absence. Generic evidence and presence scores
+are retained as diagnostics rather than requiring both to exceed the old thresholds.
+Other fixture corrections, removals, doors/windows and recovered openings retain
+their conservative gates. These scores remain uncalibrated.
+
+A disagreement with the detector or an uncertain bathtub/bench/shower/closet result receives a
+second look: clean and marked source-image close-ups plus the surrounding crops and
+sheet overview. A strong first result can survive a less certain close-up only when
+the latter favors the same class over all alternatives combined, indicates fixture
+presence and supplies direct evidence. Confident contradictions between views retain
+the baseline and record `conflicting_views`. Failed or budget-limited rechecks also
+retain the baseline and mark uncertainty. Geometry is never changed by verification.
+
+Before deployment, compare manually reviewed tubs, real sauna benches, showers and
+ambiguous linework across drawing styles. Include detector misses and false proposals,
+not only successful crops, and count unresolved retained labels separately from
+verified classes. A development comparison is not a held-out accuracy estimate.
+Verification can relabel an existing geometry candidate as `Shower Cabin`, but it
+cannot recover a shower that the geometry worker did not propose.
 
 ## Unspecified rooms and recovered openings
 

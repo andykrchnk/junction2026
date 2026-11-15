@@ -36,6 +36,7 @@ export const DETECTED_OBJECT_COLORS = {
         'Fire Place': '#f04408',
         Bathtub: '#5355ed',
         Chimney: '#bb7900',
+        'Shower Cabin': '#0891b2',
     },
     junction: {
         'Structural junction': '#b32be0',

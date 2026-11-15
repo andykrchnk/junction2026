@@ -4,7 +4,7 @@ import math
 from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from shapely.geometry import shape
-from taxonomy import RoomClass, ServiceRoomClass, IconClass
+from taxonomy import RoomClass, ServiceRoomClass, IconClass, FixtureClass
 
 Score = Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
 Number = Annotated[float, Field(allow_inf_nan=False)]
@@ -66,7 +66,7 @@ class Room(Model):
 
 class Fixture(Model):
     id: str
-    class_: IconClass = Field(alias="class")
+    class_: FixtureClass = Field(alias="class")
     confidence: Score
     room_ids: list[str]
     geometry: Geometry
