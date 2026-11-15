@@ -5,6 +5,8 @@ import { z } from 'zod';
 import {
     CanvasStateZod,
     DrawingZod,
+    DeleteEntityZod,
+    type DeleteEntity,
     type UpdateEntityClass,
     type CanvasState,
     type SaveCanvas,
@@ -63,6 +65,7 @@ export function createCanvasModel(id: string, storageKey: string) {
     const $classResult = createStore<
         { type: 'idle' } | { type: 'saved'; blueprintId: string; entityId: string } | { type: 'error'; blueprintId: string; entityId: string; message: string }
     >({ type: 'idle' });
+    const $deleteError = createStore<{ blueprintId: string; entityId: string; message: string } | null>(null);
     const savedVisibility = VisibilityZod.safeParse(readLocal(`${storageKey}:layers`));
     const $visibility = createStore(savedVisibility.success ? savedVisibility.data : { room: true, icon: true, junction: false });
     const loadFx = createEffect(async () => CanvasStateZod.parse(await trpcClient.drawings.getCanvas.query({ id })));
@@ -77,6 +80,40 @@ export function createCanvasModel(id: string, storageKey: string) {
             queryClient.invalidateQueries(trpc.drawings.list.queryFilter()),
         ]);
         return drawing;
+    });
+
+    const deleteEntityFx = createEffect(async ({ input }: { input: DeleteEntity; object: ObjectSelection }) => {
+        const drawing = DrawingZod.parse(await trpcClient.drawings.deleteEntity.mutate(DeleteEntityZod.parse(input)));
+        queryClient.setQueryData(trpc.drawings.get.queryKey({ id }), drawing);
+        queryClient.setQueryData(
+            trpc.drawings.comments.list.queryKey({ drawingId: id }),
+            drawing.blueprints.flatMap((blueprint) => blueprint.comments).filter((comment) => !comment.deletedAt),
+        );
+        await Promise.all([
+            queryClient.invalidateQueries(trpc.drawings.get.queryFilter({ id })),
+            queryClient.invalidateQueries(trpc.drawings.list.queryFilter()),
+            queryClient.invalidateQueries(trpc.drawings.comments.list.queryFilter({ drawingId: id })),
+        ]);
+        return drawing;
+    });
+
+    sample({ clock: [$selection, deleteEntityFx], fn: () => null, target: $deleteError });
+    sample({
+        clock: deleteEntityFx.fail,
+        fn: ({ params, error }) => ({ blueprintId: params.input.blueprintId, entityId: params.input.entityId, message: error.message }),
+        target: $deleteError,
+    });
+    sample({ clock: deleteEntityFx.done, fn: () => null, target: [selected, $focus, $anchor, $sheetFocus, $agentVisibility] });
+    sample({
+        clock: deleteEntityFx.done,
+        source: $hiddenObjects,
+        fn: (hidden, { params: { object } }) =>
+            hidden.flatMap((key) => {
+                const [page, index] = key.split(':').map(Number);
+                if (page !== object.page || index < object.index) return [key];
+                return index === object.index ? [] : [`${page}:${index - 1}`];
+            }),
+        target: $hiddenObjects,
     });
 
     sample({ clock: [$selection, updateEntityClassFx], fn: () => ({ type: 'idle' as const }), target: $classResult });
@@ -252,6 +289,9 @@ export function createCanvasModel(id: string, storageKey: string) {
         agentSelectionCleared,
         agentSelectionApplied,
         $agentSelectionRequestId: readonly($agentSelectionRequestId),
+        deleteEntityFx,
+        $deleteError: readonly($deleteError),
+        $deletingEntity: readonly(deleteEntityFx.pending),
         updateEntityClassFx,
         $classResult: readonly($classResult),
         $classPending: readonly(updateEntityClassFx.pending),
