@@ -8,8 +8,9 @@ import { blueprintFiles } from './files';
 import { prepareRaster, RasterPreparationError } from './raster';
 import { InferenceError, predictRaster } from './inference';
 import { storeDrawingCovers, deleteUnreferencedDrawingCovers } from './covers';
+import { blueprintJobFilter, type BlueprintJobLease } from './blueprint-job';
 
-type DetectDrawingParams = { id: string; ownerId: string; page: number; job?: { lease: string; signal: AbortSignal } };
+type DetectDrawingParams = { id: string; ownerId: string; page: number; job?: BlueprintJobLease & { signal: AbortSignal } };
 
 async function readDrawing(params: Pick<DetectDrawingParams, 'id' | 'ownerId'>) {
     const doc = await db.drawing.DrawingModel.findOne({ _id: params.id, ownerId: params.ownerId }).lean();
@@ -54,9 +55,7 @@ export async function detectDrawing(params: DetectDrawingParams) {
     if (!target) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid blueprint page.' });
     if (target.layout && target.raster) return ensureDrawingCovers({ drawing: current, ownerId: params.ownerId });
 
-    const jobFilter = params.job
-        ? { 'processingJob.lease': params.job.lease, 'processingJob.status': 'running' }
-        : { 'processingJob.status': { $nin: ['queued', 'running'] } };
+    const jobFilter = params.job ? blueprintJobFilter(params.job) : { 'processingJob.status': { $nin: ['queued', 'running'] } };
     const availableLease = {
         $and: [
             { $or: [{ inferenceLease: null }, { inferenceLeaseUntil: { $lte: new Date() } }] },
@@ -64,21 +63,20 @@ export async function detectDrawing(params: DetectDrawingParams) {
         ],
     };
     const lease = crypto.randomUUID();
-    const doc = await db.drawing.DrawingModel.findOneAndUpdate(
-        { _id: params.id, ownerId: params.ownerId, ...jobFilter, ...availableLease },
-        {
-            $set: {
-                inferenceLease: lease,
-                inferenceLeaseUntil: new Date(Date.now() + Env.INFERENCE_TIMEOUT_MS + 30_000),
-            },
-        },
-        { returnDocument: 'after' },
-    ).lean();
+    const doc = params.job
+        ? await db.drawing.DrawingModel.findOne({ _id: params.id, ownerId: params.ownerId, ...jobFilter }).lean()
+        : await db.drawing.DrawingModel.findOneAndUpdate(
+              { _id: params.id, ownerId: params.ownerId, ...jobFilter, ...availableLease },
+              { $set: { inferenceLease: lease, inferenceLeaseUntil: new Date(Date.now() + Env.INFERENCE_TIMEOUT_MS + 30_000) } },
+              { returnDocument: 'after' },
+          ).lean();
     if (!doc) throw new TRPCError({ code: 'CONFLICT', message: 'Detection is already running for this drawing. Wait and retry.' });
 
     const drawing = db.drawing.DrawingDto(doc);
     const signal = AbortSignal.any([AbortSignal.timeout(Env.INFERENCE_TIMEOUT_MS), ...(params.job ? [params.job.signal] : [])]);
-    const ownedLease = { _id: params.id, ownerId: params.ownerId, ...jobFilter, inferenceLease: lease };
+    const ownedLease = { _id: params.id, ownerId: params.ownerId, ...jobFilter, ...(params.job ? {} : { inferenceLease: lease }) };
+    const releaseLease = params.job ? {} : { inferenceLease: null, inferenceLeaseUntil: null };
+    const validLease = () => (params.job ? blueprintJobFilter(params.job) : { inferenceLeaseUntil: { $gt: new Date() } });
     const blueprint = drawing.blueprints.find((item) => item.pageNumber === params.page);
     if (!blueprint) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid blueprint page.' });
     const ownedBlueprint = { ...ownedLease, 'blueprints.id': blueprint.id };
@@ -89,23 +87,25 @@ export async function detectDrawing(params: DetectDrawingParams) {
     try {
         // Another request may have completed this page between the initial read and lease acquisition.
         if (blueprint.layout && blueprint.raster) {
-            await db.drawing.DrawingModel.updateOne(ownedLease, { $set: { inferenceLease: null, inferenceLeaseUntil: null } });
+            if (!params.job) await db.drawing.DrawingModel.updateOne(ownedLease, { $set: releaseLease });
             outcome = 'completed';
             return ensureDrawingCovers({ drawing: await readDrawing(params), ownerId: params.ownerId });
         }
         if (!Env.INFERENCE_BASE_URL || !Env.INFERENCE_API_KEY) {
-            await db.drawing.DrawingModel.updateOne(ownedBlueprint, {
-                $set: {
-                    'blueprints.$.status': { type: 'not_configured', stage: 'inference' },
-                    inferenceLease: null,
-                    inferenceLeaseUntil: null,
+            await db.drawing.DrawingModel.updateOne(
+                { ...ownedBlueprint, ...validLease() },
+                {
+                    $set: {
+                        'blueprints.$.status': { type: 'not_configured', stage: 'inference' },
+                        ...releaseLease,
+                    },
                 },
-            });
+            );
             outcome = 'not_configured';
             return readDrawing(params);
         }
         const started = await db.drawing.DrawingModel.updateOne(
-            { ...ownedBlueprint, inferenceLeaseUntil: { $gt: new Date() } },
+            { ...ownedBlueprint, ...validLease() },
             { $set: { 'blueprints.$.status': { type: 'processing', stage: 'inference' } } },
         );
         if (!started.matchedCount) throw new TRPCError({ code: 'CONFLICT', message: 'Detection expired. Please retry.' });
@@ -154,14 +154,19 @@ export async function detectDrawing(params: DetectDrawingParams) {
             }
             signal.throwIfAborted();
             const saved = await db.drawing.DrawingModel.updateOne(
-                { ...ownedBlueprint, inferenceLeaseUntil: { $gt: new Date() } },
+                {
+                    ...ownedBlueprint,
+                    ...validLease(),
+                    $expr: {
+                        $lte: [{ $add: [{ $bsonSize: '$$ROOT' }, BSON.calculateObjectSize({ layout, raster: rasterRecord })] }, 12 * 1024 * 1024],
+                    },
+                },
                 {
                     $set: {
                         'blueprints.$.layout': layout,
                         'blueprints.$.raster': rasterRecord,
                         'blueprints.$.status': { type: 'uploaded' },
-                        inferenceLease: null,
-                        inferenceLeaseUntil: null,
+                        ...releaseLease,
                     },
                 },
             );
@@ -182,18 +187,20 @@ export async function detectDrawing(params: DetectDrawingParams) {
             cause instanceof TRPCError || cause instanceof InferenceError || cause instanceof RasterPreparationError
                 ? cause.message
                 : 'Detection failed or timed out. Please retry.';
-        await db.drawing.DrawingModel.updateOne(ownedBlueprint, {
-            $set: {
-                'blueprints.$.status':
-                    cause instanceof InferenceError && cause.busy
-                        ? { type: 'pending', stage: 'inference' }
-                        : cause instanceof InferenceError && cause.rejectionCode
-                          ? { type: 'rejected', stage: 'inference', error: message, code: cause.rejectionCode }
-                          : { type: 'failed', stage: 'inference', error: message },
-                inferenceLease: null,
-                inferenceLeaseUntil: null,
+        await db.drawing.DrawingModel.updateOne(
+            { ...ownedBlueprint, ...validLease() },
+            {
+                $set: {
+                    'blueprints.$.status':
+                        cause instanceof InferenceError && cause.busy
+                            ? { type: 'pending', stage: 'inference' }
+                            : cause instanceof InferenceError && cause.rejectionCode
+                              ? { type: 'rejected', stage: 'inference', error: message, code: cause.rejectionCode }
+                              : { type: 'failed', stage: 'inference', error: message },
+                    ...releaseLease,
+                },
             },
-        });
+        );
         throw new TRPCError({ code: cause instanceof TRPCError ? cause.code : 'INTERNAL_SERVER_ERROR', message, cause });
     } finally {
         console.info('Blueprint detection stage', {

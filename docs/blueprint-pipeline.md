@@ -55,16 +55,16 @@ operations and the query cache supplies server state.
    assessed, and PPM extraction/resolution completed. Uncertain descriptions and an
    unresolved scale are valid completed results; failed requests are retryable.
 
-Each analysis mutation performs one bounded stage and checkpoints successful
+Each page job performs one bounded stage per invocation and checkpoints successful
 entities separately. Only the current batch is marked `enrichment.type:processing`
 before its requests start; queued objects stay pending. Each success is immediately
 checkpointed. One-second query polling refreshes the canvas and selected-object
 card while processing: a fixed-size, non-interactive indicator appears at each
 active object's centre, and disappears independently when it finishes. Closing
-the browser pauses further scheduling; reopening or
-resuming analysis continues missing work. No background queue is introduced.
-Owner checks, operation leases and layout revisions fence checkpoint writes.
-Inference and analysis cannot change a layout concurrently. Expired leases expose
+the browser does not pause scheduling: Agenda runs each blueprint page independently,
+including pages within the same session, under the existing worker concurrency limit.
+Owner checks, page-specific leases and layout revisions fence checkpoint writes.
+Inference and analysis cannot change the same page's layout concurrently. Expired leases expose
 interrupted entity work as retryable failures instead of leaving a permanent
 spinner. Existing generic enrichment results remain readable (`details:null`)
 and are upgraded on the next analysis flow; earlier prompt versions are upgraded

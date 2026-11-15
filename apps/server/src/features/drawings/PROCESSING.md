@@ -3,47 +3,66 @@
 PDF/image upload stores `processingJob` progress on the drawing in the same
 MongoDB update that attaches its pages. This is also the durable queue handoff:
 an Agenda reconciliation job scans pending runs every two seconds and creates
-an Agenda job for each run. A crash after upload but before enqueueing cannot lose
+an Agenda job for each blueprint page in a run. A crash after upload but before enqueueing cannot lose
 work. GridFS uploads are preserved when a failed write acknowledgement leaves
 attachment ownership uncertain.
 
 Agenda 6.2.8 with `@agendajs/mongo-backend` 4.0.5 uses the existing Atlas connection
 and the `drawingJobs` collection. No Redis, separate database or open browser is
 required. Agenda owns polling, locks, concurrency and job scheduling. A unique
-index on the run ID prevents duplicate jobs across backend replicas; insert-only
+index on the run ID and page prevents duplicate jobs across backend replicas; insert-only
 reconciliation never overwrites an active job. Explicit retries create a new run
 ID, so an older job cannot process the replacement run.
 
-`DRAWING_PROCESSING_CONCURRENCY` sets the drawing concurrency per backend instance
+`DRAWING_PROCESSING_CONCURRENCY` sets the blueprint-page concurrency per backend instance
 (default 15, integer 1–32; restart after changing it). Agenda reserves one additional
-slot for reconciliation. Each drawing job executes one bounded stage at a time;
-pages within a drawing remain sequential. Multiple replicas add their configured
+slot for reconciliation. Each page job executes one bounded stage at a time;
+pages in the same drawing can run concurrently. Multiple replicas add their configured
 capacity. The limit applies to document stages, not individual downstream calls:
 entity enrichment can run multiple requests within a stage, and the GPU service
 queues admitted inference behind one execution per GPU worker. The target of 15
-active blueprints applies across separate drawing jobs, not pages of one PDF.
-Same-PDF parallelism needs changes to the drawing-wide lease and durable cursor
-and is outside this change.
+active blueprints applies across all sessions, including pages of one PDF.
+Each page has its own write token, deadline, retry count and next-run time inside
+the drawing's `processingJob.tasks`. Task positions are append-only within a run;
+uploads append new page tasks atomically without replacing active claims.
 
-Progress, page cursor and saved inference/entity checkpoints remain on the drawing.
-Rejected pages advance immediately. Other stage failures get up to three attempts
-with backoff before advancing and retaining the error. Inference backpressure
+Progress and saved inference/entity checkpoints remain on the drawing.
+Page checkpoints update their task and aggregate completion count atomically,
+without replacing another page's work. Chat and manual context reviews still use
+the drawing-wide foreground lease and cannot run during queued page processing.
+Rejected pages complete their job immediately. Other stage failures get up to three attempts
+with backoff before completing that page job and retaining the error. Inference backpressure
 (503) reschedules one second later without spending the failure budget.
 Missing provider configuration leaves explicit partial/not-configured status and
 continues. Finishing means all selected pages were attempted, not all succeeded.
+Failed or expired pages do not block siblings. Document-size limits are checked
+again in the atomic result write so parallel saves cannot bypass the BSON budget.
 
 Agenda persists a recurring next run before executing each stage, and the handler
 reschedules it from the saved checkpoint. Completed or superseded jobs are disabled
-and retained in `drawingJobs`. A crash resumes after Agenda's ten-minute lock expires;
-this exceeds the existing 120s/240s provider deadlines and allows raster/storage
-work. Each invocation replaces the drawing's write token, fencing late results
+and retained in `drawingJobs`. Expired page claims are recovered by reconciliation;
+Agenda also retains a six-minute lock lifetime as a fallback. This
+exceeds the existing 120s/240s provider deadlines and allows raster/storage
+work. Each invocation replaces the page's write token, fencing late results
 from a replaced worker. Graceful shutdown aborts active provider work and drains
 Agenda before closing the shared connection. External calls remain at-least-once:
 a crash before saving a result can repeat a call. Saved inference and completed
 entity checkpoints are reused.
 
+Existing session-level runs are upgraded after their active stage leases expire
+or finish. Their completed-page cursor is preserved as completed tasks, remaining
+pages retain their saved checkpoints and the current page retains its retry count.
+The upgraded run receives a fresh ID to fence old jobs. Page-based runs stay
+active in storage until all tasks finish, so legacy workers cannot claim them as
+queued session jobs during a rolling deployment. Legacy Agenda records are
+disabled; the new worker schedules only `process-blueprint` records. Completed
+legacy runs remain readable without migration.
+
 The frontend polls drawing queries and renders public `processing` progress and
-per-page statuses. Upload and page-open do not trigger processing loops.
+per-page statuses. `completed` counts finished page jobs; `currentPage` and its
+timing/retry fields describe one active (or next queued) page for compatibility.
+Per-page statuses and processing activity show all parallel work. Internal task
+tokens are never included in the public DTO. Upload and page-open do not trigger processing loops.
 `drawings.analyze` queues incomplete pages; `drawings.detect` queues a selected
 page. Both return promptly and enforce ownership. Retrying an active drawing does
 not replace its run. Explicit retries may retry rejected pages without erasing

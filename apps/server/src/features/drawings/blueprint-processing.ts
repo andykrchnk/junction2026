@@ -10,6 +10,7 @@ import { resolvePpm } from './ppm-resolution-agent';
 import { createPpmComments } from './ppm-comments';
 import { createDoorPpmComment } from './door-ppm-fallback';
 import { DeadlineError, withDeadline } from './deadline';
+import { blueprintJobFilter, type BlueprintJobLease } from './blueprint-job';
 
 type ProcessBlueprintParams = Readonly<{
     drawing: Drawing;
@@ -17,7 +18,7 @@ type ProcessBlueprintParams = Readonly<{
     signal: AbortSignal;
     lease: string;
     blueprintId?: string;
-    jobLease?: string;
+    job?: BlueprintJobLease;
     review?: 'notes' | 'scale';
 }>;
 
@@ -27,15 +28,13 @@ function previousDescription(entity: LayoutRoom | LayoutFixture) {
 }
 
 // Reset calibration without replacing user comments that may be written concurrently.
-export async function resetBlueprintPpm(params: Readonly<{ drawingId: string; ownerId: string; lease: string; blueprintId: string; jobLease?: string }>) {
+export async function resetBlueprintPpm(params: Readonly<{ drawingId: string; ownerId: string; lease: string; blueprintId: string; job?: BlueprintJobLease }>) {
     const result = await db.drawing.DrawingModel.updateOne(
         {
             _id: params.drawingId,
             ownerId: params.ownerId,
-            lease: params.lease,
-            leaseUntil: { $gt: new Date() },
+            ...(params.job ? blueprintJobFilter(params.job) : { lease: params.lease, leaseUntil: { $gt: new Date() } }),
             'blueprints.id': params.blueprintId,
-            ...(params.jobLease ? { 'processingJob.lease': params.jobLease, 'processingJob.status': 'running' } : {}),
         },
         {
             $set: { 'blueprints.$.ppm': null, 'blueprints.$.ppmCandidates': null, 'blueprints.$.status': { type: 'pending', stage: 'ppm' } },
@@ -51,13 +50,13 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
     const blueprint = drawing.blueprints.find((item) => (params.blueprintId ? item.id === params.blueprintId : blueprintNeedsAnalysis(item)));
     if (!blueprint) return;
     if (!blueprint.raster || !blueprint.layout) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Complete inference before blueprint analysis.' });
-    const owned = {
+    const layoutRevision = blueprint.layout.revision;
+    const ownership = () => ({
         _id: drawing.id,
         ownerId,
-        ...(params.jobLease ? { 'processingJob.lease': params.jobLease, 'processingJob.status': 'running' } : {}),
-        lease,
-        blueprints: { $elemMatch: { id: blueprint.id, 'layout.revision': blueprint.layout.revision } },
-    };
+        ...(params.job ? blueprintJobFilter(params.job) : { lease, leaseUntil: { $gt: new Date() } }),
+        blueprints: { $elemMatch: { id: blueprint.id, 'layout.revision': layoutRevision } },
+    });
     const root = `blueprints.$`;
     const save = async (fields: Record<string, unknown>, comments: ScanComments = [], processingPath?: string) => {
         signal.throwIfAborted();
@@ -67,11 +66,12 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
             throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: 'Blueprint context exceeds this session’s supported size.' });
         }
         signal.throwIfAborted();
+        const owned = ownership();
         const result = await db.drawing.DrawingModel.updateOne(
             {
                 ...owned,
                 ...(processingPath ? { blueprints: { $elemMatch: { ...owned.blueprints.$elemMatch, [processingPath]: 'processing' } } } : {}),
-                leaseUntil: { $gt: new Date() },
+                $expr: { $lte: [{ $add: [{ $bsonSize: '$$ROOT' }, BSON.calculateObjectSize({ fields, comments })] }, 15 * 1024 * 1024] },
             },
             {
                 $set: Object.fromEntries(Object.entries(fields).map(([path, value]) => [`${root}.${path}`, value])),
@@ -148,7 +148,7 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
         }
         if (stage === 'entities') {
             if (blueprint.ppm !== null || blueprint.ppmCandidates !== null) {
-                await resetBlueprintPpm({ drawingId: drawing.id, ownerId, lease, blueprintId: blueprint.id, jobLease: params.jobLease });
+                await resetBlueprintPpm({ drawingId: drawing.id, ownerId, lease, blueprintId: blueprint.id, job: params.job });
                 await save({ status: { type: 'processing', stage: 'entities' } });
             }
             const rooms = blueprint.layout.rooms.map((entity, index) => ({ kind: 'room' as const, collection: 'rooms', entity, index }));
@@ -233,7 +233,7 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
         const error = cause instanceof TRPCError || cause instanceof DeadlineError ? cause.message : 'Blueprint analysis failed or timed out. Retry to resume.';
         const failedActivity = activity ? { ...activity, status: 'failed', updatedAt: new Date().toISOString() } : undefined;
         await db.drawing.DrawingModel.updateOne(
-            { ...owned, leaseUntil: { $gt: new Date() } },
+            ownership(),
             // A review preserves the last completed context until its replacement is saved.
             {
                 $set: {

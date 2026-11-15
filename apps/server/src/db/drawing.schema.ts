@@ -41,11 +41,9 @@ const schema = new mongoose.Schema(
 schema.index({ ownerId: 1, updatedAt: -1 });
 schema.index({ 'processingJob.status': 1 });
 
-export const StoredJobZod = z.object({
-    id: z.string().uuid(),
+export const StoredPageJobZod = z.object({
+    page: z.number().int().positive(),
     status: z.enum(['queued', 'running', 'completed']),
-    pages: z.array(z.number().int().positive()).min(1),
-    cursor: z.number().int().nonnegative(),
     attempts: z.number().int().nonnegative(),
     availableAt: z.date(),
     lease: z.string().nullable(),
@@ -53,10 +51,30 @@ export const StoredJobZod = z.object({
     startedAt: z.date().nullable().optional(),
     lastError: z.string().nullable().optional(),
 });
+export const StoredJobZod = StoredPageJobZod.omit({ page: true }).extend({
+    id: z.string().uuid(),
+    pages: z.array(z.number().int().positive()).min(1),
+    cursor: z.number().int().nonnegative(),
+    // Missing on runs created before page-level scheduling; the worker upgrades them.
+    tasks: z.array(StoredPageJobZod).optional(),
+});
+export function createPageProcessingJob(page: number) {
+    return StoredPageJobZod.parse({
+        page,
+        status: 'queued',
+        attempts: 0,
+        availableAt: new Date(),
+        lease: null,
+        leaseUntil: null,
+        startedAt: null,
+        lastError: null,
+    });
+}
 export function createProcessingJob(pages: number[]) {
     return StoredJobZod.parse({
         id: crypto.randomUUID(),
-        status: 'queued',
+        // Only page tasks are claimable. Legacy session workers claim queued runs.
+        status: 'running',
         pages,
         cursor: 0,
         attempts: 0,
@@ -65,6 +83,7 @@ export function createProcessingJob(pages: number[]) {
         leaseUntil: null,
         startedAt: null,
         lastError: null,
+        tasks: pages.map(createPageProcessingJob),
     });
 }
 
@@ -95,8 +114,10 @@ export function DrawingDto(data: unknown) {
     const inferenceBusy = doc.inferenceLease !== null && doc.inferenceLeaseUntil !== null && doc.inferenceLeaseUntil.getTime() > Date.now();
     const error = !jobBusy && !busy && doc.lease ? 'Processing was interrupted. Please retry.' : doc.error;
     const blueprints = doc.blueprints.map((blueprint) => {
+        const task = job?.tasks?.find((task) => task.page === blueprint.pageNumber);
+        const pageBusy = task?.status === 'running' && task.leaseUntil != null && task.leaseUntil.getTime() > Date.now();
         const recoverEntity = <T extends LayoutRoom | LayoutFixture>(entity: T) =>
-            !busy && entity.enrichment.type === 'processing'
+            !busy && !pageBusy && entity.enrichment.type === 'processing'
                 ? {
                       ...entity,
                       enrichment: {
@@ -113,7 +134,7 @@ export function DrawingDto(data: unknown) {
                 : null,
         };
         if (blueprint.status.type !== 'processing') return recovered;
-        const active = blueprint.status.stage === 'inference' ? inferenceBusy : busy;
+        const active = pageBusy || (blueprint.status.stage === 'inference' ? inferenceBusy : busy);
         if (!active && jobBusy) return { ...blueprint, status: { type: 'pending' as const, stage: blueprint.status.stage } };
         return active
             ? recovered
@@ -123,6 +144,7 @@ export function DrawingDto(data: unknown) {
     const failed = blueprints.some(
         (blueprint) => blueprint.status.type === 'failed' || blueprint.status.type === 'partial' || blueprint.status.type === 'rejected',
     );
+    const activeTask = job?.tasks?.find((task) => task.status === 'running') ?? job?.tasks?.find((task) => task.status === 'queued');
     return DrawingZod.parse({
         id: doc._id.toHexString(),
         title: doc.title,
@@ -135,14 +157,14 @@ export function DrawingDto(data: unknown) {
         busy: jobBusy || busy || inferenceBusy,
         processing: job
             ? {
-                  status: job.status,
-                  completed: Math.min(job.cursor, job.pages.length),
+                  status: job.tasks ? (activeTask?.status ?? 'completed') : job.status,
+                  completed: job.tasks ? job.tasks.filter((task) => task.status === 'completed').length : Math.min(job.cursor, job.pages.length),
                   total: job.pages.length,
-                  currentPage: job.pages[job.cursor] ?? null,
-                  attempts: job.attempts,
-                  availableAt: job.availableAt.toISOString(),
-                  startedAt: job.startedAt?.toISOString() ?? null,
-                  lastError: job.lastError ?? null,
+                  currentPage: job.tasks ? (activeTask?.page ?? null) : (job.pages[job.cursor] ?? null),
+                  attempts: activeTask?.attempts ?? job.attempts,
+                  availableAt: (activeTask?.availableAt ?? job.availableAt).toISOString(),
+                  startedAt: (activeTask?.startedAt ?? job.startedAt)?.toISOString() ?? null,
+                  lastError: activeTask?.lastError ?? job.lastError ?? null,
               }
             : null,
         error,

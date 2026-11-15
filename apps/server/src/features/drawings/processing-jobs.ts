@@ -6,16 +6,18 @@ import { MongoIdZod, blueprintNeedsAnalysis } from '@repo/types';
 import { database } from '../../db/connection';
 import { db } from '../../db';
 import { Env } from '../../shared/env';
-import { getDrawing, processDrawing } from './operations';
+import { getDrawing } from './operations';
 import { detectDrawing } from './detection';
 import { processBlueprint } from './blueprint-processing';
 import { InferenceError } from './inference';
 import { withDeadline } from './deadline';
+import { blueprintJobFilter } from './blueprint-job';
 
-const DRAWING_JOB = 'process-drawing';
+const DRAWING_JOB = 'process-blueprint';
+const LEGACY_DRAWING_JOB = 'process-drawing';
 const RECONCILE_JOB = 'enqueue-pending-drawings';
 const QUEUE_COLLECTION = 'drawingJobs';
-const JobDataZod = z.object({ drawingId: MongoIdZod, runId: z.string().uuid() });
+const JobDataZod = z.object({ drawingId: MongoIdZod, runId: z.string().uuid(), page: z.number().int().positive() });
 const MAX_ATTEMPTS = 3;
 
 // Progress doubles as an outbox record, atomically committed with uploaded pages.
@@ -58,112 +60,185 @@ export async function enqueueDrawing(id: string, ownerId: string, page?: number,
     return getDrawing(id, ownerId);
 }
 
-// Recover the outbox record first, fencing the old handler before releasing its Agenda lock.
-export async function recoverExpiredDrawingJob(id: string) {
-    const doc = await db.drawing.DrawingModel.findOne({ _id: id, 'processingJob.status': { $in: ['queued', 'running'] } }).lean();
-    if (!doc) return false;
-    const progress = db.drawing.StoredJobZod.parse(doc.processingJob);
-    if (progress.status === 'queued') {
-        // A process may die after checkpointing/requeueing but before Agenda unlocks.
-        // Give newly locked jobs time to make their queued -> running claim first.
-        if ([doc.leaseUntil, doc.inferenceLeaseUntil].some((date) => date && date.getTime() > Date.now())) return false;
-        const orphan = await database.collection(QUEUE_COLLECTION).findOne({
-            name: DRAWING_JOB,
-            'data.runId': progress.id,
-            lockedAt: { $lte: new Date(Date.now() - 10_000) },
-        });
-        if (!orphan) return false;
-        const result = await database
-            .collection(QUEUE_COLLECTION)
-            .updateOne({ _id: orphan._id, lockedAt: orphan.lockedAt }, { $set: { lockedAt: null, nextRunAt: progress.availableAt, disabled: false } });
-        return result.modifiedCount > 0;
-    }
-    const deadlines = [progress.leaseUntil, doc.leaseUntil, doc.inferenceLeaseUntil].filter((value): value is Date => value instanceof Date);
-    const expiresAt = deadlines.length ? Math.min(...deadlines.map((value) => value.getTime())) : doc.updatedAt.getTime() + 300_000;
-    if (expiresAt > Date.now()) return false;
-    const drawing = db.drawing.DrawingDto(doc);
-    const page = progress.pages[progress.cursor];
-    const blueprint = drawing.blueprints.find((item) => item.pageNumber === page);
-    const saved = !blueprint || !blueprintNeedsAnalysis(blueprint);
-    const exhausted = !saved && progress.attempts >= MAX_ATTEMPTS;
-    const cursor = progress.cursor + (saved || exhausted ? 1 : 0);
-    const completed = cursor >= progress.pages.length;
-    const message = exhausted
-        ? 'Processing timed out repeatedly. Retry incomplete pages to resume from saved results.'
-        : 'Processing was interrupted. Retrying from saved results.';
-    const stage = blueprint && 'stage' in blueprint.status ? blueprint.status.stage : blueprint?.layout ? 'ppm' : 'inference';
-    const blueprintIndex = drawing.blueprints.findIndex((item) => item.id === blueprint?.id);
-    const recovered = await db.drawing.DrawingModel.updateOne(
+// Aggregate the current tasks in the same update as a page checkpoint. A sibling
+// may finish or an upload may append pages while this worker is awaiting a provider.
+const summarizeJob = {
+    $set: {
+        'processingJob.status': {
+            $cond: [
+                { $allElementsTrue: [{ $map: { input: '$processingJob.tasks', as: 'task', in: { $eq: ['$$task.status', 'completed'] } } }] },
+                'completed',
+                'running',
+            ],
+        },
+        'processingJob.cursor': { $size: { $filter: { input: '$processingJob.tasks', as: 'task', cond: { $eq: ['$$task.status', 'completed'] } } } },
+    },
+};
+
+function pageCheckpoint(page: number, fields: Record<string, unknown>) {
+    return {
+        $set: {
+            'processingJob.tasks': {
+                $map: {
+                    input: '$processingJob.tasks',
+                    as: 'task',
+                    in: { $cond: [{ $eq: ['$$task.page', page] }, { $mergeObjects: ['$$task', { $literal: fields }] }, '$$task'] },
+                },
+            },
+        },
+    };
+}
+
+async function upgradeLegacyJob(id: string) {
+    const doc = await db.drawing.DrawingModel.findOne({ _id: id, 'processingJob.tasks': { $exists: false } }).lean();
+    if (!doc || !doc.processingJob) return;
+    const previous = db.drawing.StoredJobZod.parse(doc.processingJob);
+    if (previous.status === 'completed') return;
+    const now = new Date();
+    // Let a pre-upgrade worker finish its active stage before moving the run.
+    if ([previous.leaseUntil, doc.leaseUntil, doc.inferenceLeaseUntil].some((deadline) => deadline && deadline > now)) return;
+    if (previous.status === 'running' && !previous.leaseUntil && doc.updatedAt.getTime() + 300_000 > now.getTime()) return;
+    const tasks = previous.pages.map((page, index) => ({
+        ...db.drawing.createPageProcessingJob(page),
+        status: index < previous.cursor ? 'completed' : 'queued',
+        attempts: index === previous.cursor ? previous.attempts : 0,
+    }));
+    await db.drawing.DrawingModel.updateOne(
         {
             _id: doc._id,
-            'processingJob.id': progress.id,
-            'processingJob.lease': progress.lease,
-            'processingJob.status': 'running',
-            ...(progress.leaseUntil ? { 'processingJob.leaseUntil': progress.leaseUntil } : {}),
+            'processingJob.id': previous.id,
+            'processingJob.pages': previous.pages,
+            'processingJob.status': previous.status,
+            'processingJob.lease': previous.lease,
+            'processingJob.tasks': { $exists: false },
+            $and: [
+                { $or: [{ leaseUntil: null }, { leaseUntil: { $lte: now } }] },
+                { $or: [{ inferenceLeaseUntil: null }, { inferenceLeaseUntil: { $lte: now } }] },
+            ],
         },
         {
             $set: {
-                'processingJob.status': completed ? 'completed' : 'queued',
-                'processingJob.cursor': cursor,
-                'processingJob.lease': null,
-                'processingJob.leaseUntil': null,
-                'processingJob.startedAt': null,
-                'processingJob.availableAt': new Date(),
-                'processingJob.attempts': saved || exhausted ? 0 : progress.attempts,
-                'processingJob.lastError': saved ? null : message,
+                // A fresh ID fences jobs scheduled by the old, session-level worker.
+                processingJob: { ...previous, id: crypto.randomUUID(), status: 'running', lease: null, leaseUntil: null, startedAt: null, tasks },
                 lease: null,
                 leaseUntil: null,
                 inferenceLease: null,
                 inferenceLeaseUntil: null,
-                error: exhausted ? message : null,
-                ...(exhausted && blueprint
-                    ? {
-                          [`blueprints.${blueprintIndex}.status`]: { type: 'failed', stage, error: message },
-                          ...(blueprint.processingActivity
-                              ? {
-                                    [`blueprints.${blueprintIndex}.processingActivity`]: {
-                                        ...blueprint.processingActivity,
-                                        status: 'failed',
-                                        updatedAt: new Date().toISOString(),
-                                    },
-                                }
-                              : {}),
-                      }
-                    : {}),
+                error: null,
             },
         },
     );
-    if (!recovered.matchedCount) return false;
-    // A lock acquired by a newer invocation must not be released by this recovery.
-    const cutoff = progress.startedAt ?? doc.updatedAt;
-    const queueJob = await database.collection(QUEUE_COLLECTION).findOne({ name: DRAWING_JOB, 'data.runId': progress.id, lockedAt: { $lte: cutoff } });
-    if (queueJob)
-        await database
-            .collection(QUEUE_COLLECTION)
-            .updateOne(
-                { _id: queueJob._id, lockedAt: queueJob.lockedAt },
-                { $set: { lockedAt: null, nextRunAt: completed ? null : new Date(), disabled: completed } },
-            );
-    return true;
 }
 
-// Agenda schedules jobs; persisted per-stage leases fence both claims and saved results.
+// Fence an expired page before unlocking its Agenda record. Other pages continue.
+export async function recoverExpiredDrawingJob(id: string) {
+    await upgradeLegacyJob(id);
+    const doc = await db.drawing.DrawingModel.findOne({ _id: id, 'processingJob.status': { $in: ['queued', 'running'] } }).lean();
+    if (!doc) return false;
+    const progress = db.drawing.StoredJobZod.parse(doc.processingJob);
+    if (!progress.tasks) return false;
+    let recovered = false;
+    for (const [index, task] of progress.tasks.entries()) {
+        if (task.status === 'completed') continue;
+        if (task.status === 'running' && task.leaseUntil && task.leaseUntil.getTime() > Date.now()) continue;
+        if (task.status === 'queued' && [doc.leaseUntil, doc.inferenceLeaseUntil].some((date) => date && date.getTime() > Date.now())) continue;
+        let completed = false;
+        if (task.status === 'running') {
+            const blueprint = doc.blueprints.find((item) => item.pageNumber === task.page);
+            const saved = !blueprint || !blueprintNeedsAnalysis(blueprint);
+            const exhausted = !saved && task.attempts >= MAX_ATTEMPTS;
+            completed = saved || exhausted;
+            const message = exhausted
+                ? 'Processing timed out repeatedly. Retry incomplete pages to resume from saved results.'
+                : 'Processing was interrupted. Retrying from saved results.';
+            const root = `processingJob.tasks.${index}`;
+            const stage = blueprint && 'stage' in blueprint.status ? blueprint.status.stage : blueprint?.layout ? 'ppm' : 'inference';
+            const result = await db.drawing.DrawingModel.updateOne(
+                {
+                    _id: doc._id,
+                    'processingJob.id': progress.id,
+                    [`${root}.page`]: task.page,
+                    [`${root}.status`]: 'running',
+                    [`${root}.lease`]: task.lease,
+                    [`${root}.leaseUntil`]: task.leaseUntil ?? null,
+                },
+                [
+                    {
+                        $set: {
+                            ...pageCheckpoint(task.page, {
+                                status: completed ? 'completed' : 'queued',
+                                lease: null,
+                                leaseUntil: null,
+                                startedAt: null,
+                                availableAt: new Date(),
+                                lastError: saved ? null : message,
+                            }).$set,
+                            ...(exhausted && blueprint
+                                ? {
+                                      blueprints: {
+                                          $map: {
+                                              input: '$blueprints',
+                                              as: 'blueprint',
+                                              in: {
+                                                  $cond: [
+                                                      { $eq: ['$$blueprint.pageNumber', task.page] },
+                                                      { $mergeObjects: ['$$blueprint', { $literal: { status: { type: 'failed', stage, error: message } } }] },
+                                                      '$$blueprint',
+                                                  ],
+                                              },
+                                          },
+                                      },
+                                  }
+                                : {}),
+                        },
+                    },
+                    summarizeJob,
+                ],
+                { updatePipeline: true },
+            );
+            if (!result.matchedCount) continue;
+            recovered = true;
+        }
+        const queueJob = await database.collection(QUEUE_COLLECTION).findOne({
+            name: DRAWING_JOB,
+            'data.runId': progress.id,
+            'data.page': task.page,
+            lockedAt: { $lte: task.status === 'running' ? (task.startedAt ?? doc.updatedAt) : new Date(Date.now() - 10_000) },
+        });
+        if (queueJob) {
+            const result = await database
+                .collection(QUEUE_COLLECTION)
+                .updateOne(
+                    { _id: queueJob._id, lockedAt: queueJob.lockedAt },
+                    { $set: { lockedAt: null, nextRunAt: completed ? null : task.availableAt, disabled: completed } },
+                );
+            recovered ||= result.modifiedCount > 0;
+        }
+    }
+    return recovered;
+}
+
+// Each Agenda record owns one blueprint; each invocation executes one bounded stage.
 async function processDrawingStage(data: z.infer<typeof JobDataZod>, signal: AbortSignal) {
     if (signal.aborted) return;
     const current = await db.drawing.DrawingModel.findOne({ _id: data.drawingId, 'processingJob.id': data.runId }).lean();
     if (!current) return;
-    const previous = db.drawing.StoredJobZod.parse(current.processingJob);
-    const target = db.drawing.DrawingDto(current).blueprints.find((item) => item.pageNumber === previous.pages[previous.cursor]);
+    const progress = db.drawing.StoredJobZod.parse(current.processingJob);
+    const index = progress.tasks?.findIndex((task) => task.page === data.page) ?? -1;
+    if (index < 0) return;
+    const target = current.blueprints.find((item) => item.pageNumber === data.page);
     const inference = target && (!target.layout || !target.raster);
     const stageTimeout = inference ? Env.INFERENCE_TIMEOUT_MS + 30_000 : 120_000;
     const startedAt = new Date();
     const token = crypto.randomUUID();
+    const root = `processingJob.tasks.${index}`;
     const doc = await db.drawing.DrawingModel.findOneAndUpdate(
         {
             _id: data.drawingId,
             'processingJob.id': data.runId,
-            'processingJob.status': 'queued',
-            'processingJob.availableAt': { $lte: startedAt },
+            [`${root}.page`]: data.page,
+            [`${root}.status`]: 'queued',
+            [`${root}.availableAt`]: { $lte: startedAt },
             $and: [
                 { $or: [{ lease: null }, { leaseUntil: { $lte: startedAt } }] },
                 { $or: [{ inferenceLease: null }, { inferenceLeaseUntil: { $lte: startedAt } }] },
@@ -172,71 +247,62 @@ async function processDrawingStage(data: z.infer<typeof JobDataZod>, signal: Abo
         {
             $set: {
                 'processingJob.status': 'running',
-                'processingJob.lease': token,
-                'processingJob.startedAt': startedAt,
-                'processingJob.leaseUntil': new Date(startedAt.getTime() + stageTimeout + 30_000),
+                [`${root}.status`]: 'running',
+                [`${root}.lease`]: token,
+                [`${root}.startedAt`]: startedAt,
+                [`${root}.leaseUntil`]: new Date(startedAt.getTime() + stageTimeout + 30_000),
+                // The claim only matches absent/expired foreground leases.
                 lease: null,
                 leaseUntil: null,
                 inferenceLease: null,
                 inferenceLeaseUntil: null,
+                activeChatMessageId: null,
                 error: null,
             },
-            $inc: { 'processingJob.attempts': 1 },
+            $inc: { [`${root}.attempts`]: 1 },
         },
         { returnDocument: 'after' },
     ).lean();
     if (!doc) return;
     const drawing = db.drawing.DrawingDto(doc);
-    const job = db.drawing.StoredJobZod.parse(doc.processingJob);
-    const owned = { _id: drawing.id, ownerId: doc.ownerId, 'processingJob.lease': token, 'processingJob.status': 'running' };
-    const page = job.pages[job.cursor];
+    const task = db.drawing.StoredJobZod.parse(doc.processingJob).tasks?.[index];
+    if (!task) throw new Error('Claimed blueprint job is missing.');
+    const job = { runId: data.runId, page: data.page, index, lease: token };
+    const ownership = () => ({ _id: drawing.id, ownerId: doc.ownerId, ...blueprintJobFilter(job) });
     let advance = false;
     let failed = false;
     let backpressure = false;
     let lastError: string | null = null;
     try {
-        if (page === undefined) {
-            advance = true;
-            return;
-        }
-        const blueprint = drawing.blueprints.find((item) => item.pageNumber === page);
+        const blueprint = drawing.blueprints.find((item) => item.pageNumber === data.page);
         if (!blueprint || !blueprintNeedsAnalysis(blueprint)) {
             advance = true;
             return;
         }
-        if (job.attempts > MAX_ATTEMPTS) throw new Error('Repeatedly interrupted processing');
+        if (task.attempts > MAX_ATTEMPTS) throw new Error('Repeatedly interrupted processing');
         if (!blueprint.layout || !blueprint.raster) {
             const updated = await withDeadline({
                 signal,
                 timeoutMs: stageTimeout,
                 label: 'Object detection',
-                run: (stageSignal) => detectDrawing({ id: drawing.id, ownerId: doc.ownerId, page, job: { lease: token, signal: stageSignal } }),
+                run: (stageSignal) => detectDrawing({ id: drawing.id, ownerId: doc.ownerId, page: data.page, job: { ...job, signal: stageSignal } }),
             });
-            advance = updated.blueprints.find((item) => item.pageNumber === page)?.status.type === 'not_configured';
+            advance = updated.blueprints.find((item) => item.pageNumber === data.page)?.status.type === 'not_configured';
         } else if (!Env.OPENAI_API_KEY) {
             await db.drawing.DrawingModel.updateOne(
-                { ...owned, 'blueprints.id': blueprint.id },
+                { ...ownership(), 'blueprints.id': blueprint.id },
                 { $set: { 'blueprints.$.status': { type: 'partial', stage: 'misc', error: 'Analysis is not configured. Inference results are saved.' } } },
             );
             advance = true;
         } else {
-            const updated = await processDrawing(
-                drawing.id,
-                doc.ownerId,
-                async (currentDrawing, stageSignal, lease) => {
-                    await processBlueprint({
-                        drawing: currentDrawing,
-                        ownerId: doc.ownerId,
-                        signal: stageSignal,
-                        lease,
-                        blueprintId: blueprint.id,
-                        jobLease: token,
-                    });
-                    return {};
-                },
-                { lease: token, signal },
-            );
-            advance = updated.blueprints.find((item) => item.pageNumber === page)?.status.type === 'ready';
+            await withDeadline({
+                signal,
+                timeoutMs: stageTimeout,
+                label: 'Blueprint analysis',
+                run: (stageSignal) => processBlueprint({ drawing, ownerId: doc.ownerId, signal: stageSignal, lease: token, blueprintId: blueprint.id, job }),
+            });
+            const updated = await getDrawing(drawing.id, doc.ownerId);
+            advance = updated.blueprints.find((item) => item.pageNumber === data.page)?.status.type === 'ready';
         }
     } catch (cause) {
         failed = true;
@@ -245,39 +311,30 @@ async function processDrawingStage(data: z.infer<typeof JobDataZod>, signal: Abo
             : 'Processing failed or timed out. Retrying from saved results.';
         backpressure = cause instanceof TRPCError && cause.cause instanceof InferenceError && cause.cause.busy;
         const currentDrawing = await getDrawing(drawing.id, doc.ownerId);
-        const blueprint = currentDrawing.blueprints.find((item) => item.pageNumber === page);
-        advance = !backpressure && (blueprint?.status.type === 'rejected' || job.attempts >= MAX_ATTEMPTS);
+        const blueprint = currentDrawing.blueprints.find((item) => item.pageNumber === data.page);
+        advance = !backpressure && (blueprint?.status.type === 'rejected' || task.attempts >= MAX_ATTEMPTS);
         if (advance && blueprint && blueprint.status.type !== 'rejected') {
             lastError = 'Processing failed repeatedly. Retry incomplete pages to resume from saved results.';
             const stage = 'stage' in blueprint.status ? blueprint.status.stage : blueprint.layout ? 'ppm' : 'inference';
             await db.drawing.DrawingModel.updateOne(
-                { ...owned, 'blueprints.id': blueprint.id },
-                { $set: { 'blueprints.$.status': { type: 'failed', stage, error: lastError }, error: lastError } },
+                { ...ownership(), 'blueprints.id': blueprint.id },
+                { $set: { 'blueprints.$.status': { type: 'failed', stage, error: lastError } } },
             );
         }
     } finally {
-        const cursor = job.cursor + (advance ? 1 : 0);
         await db.drawing.DrawingModel.updateOne(
-            owned,
+            ownership(),
             [
-                {
-                    $set: {
-                        'processingJob.status': { $cond: [{ $gte: [cursor, { $size: '$processingJob.pages' }] }, 'completed', 'queued'] },
-                        'processingJob.cursor': cursor,
-                        'processingJob.attempts': backpressure ? Math.max(0, job.attempts - 1) : advance || !failed ? 0 : job.attempts,
-                        'processingJob.availableAt': new Date(
-                            Date.now() + (signal.aborted ? 0 : backpressure ? 1000 : failed && !advance ? 5000 * job.attempts : 0),
-                        ),
-                        'processingJob.lease': null,
-                        'processingJob.leaseUntil': null,
-                        'processingJob.startedAt': null,
-                        'processingJob.lastError': lastError,
-                        lease: null,
-                        leaseUntil: null,
-                        inferenceLease: null,
-                        inferenceLeaseUntil: null,
-                    },
-                },
+                pageCheckpoint(data.page, {
+                    status: advance ? 'completed' : 'queued',
+                    attempts: backpressure ? Math.max(0, task.attempts - 1) : advance || !failed ? 0 : task.attempts,
+                    availableAt: new Date(Date.now() + (signal.aborted ? 0 : backpressure ? 1000 : failed && !advance ? 5000 * task.attempts : 0)),
+                    lease: null,
+                    leaseUntil: null,
+                    startedAt: null,
+                    lastError,
+                }),
+                summarizeJob,
             ],
             { updatePipeline: true },
         );
@@ -294,15 +351,21 @@ export async function startDrawingWorker() {
     });
     agenda.on('error', () => console.error('Drawing queue encountered an error; pending work remains durable.'));
     agenda.on('fail', () => console.error('Drawing queue job failed; it will retry.'));
+    // Old records remain for history, but only page-level jobs run on this worker.
+    await database.collection(QUEUE_COLLECTION).updateMany({ name: LEGACY_DRAWING_JOB }, { $set: { disabled: true } });
+    agenda.define(LEGACY_DRAWING_JOB, async (job) => {
+        job.disable();
+        await job.save();
+    });
     agenda.define<unknown>(
         DRAWING_JOB,
         async (job) => {
             const data = JobDataZod.parse(job.attrs.data);
             if (!controller.signal.aborted) await processDrawingStage(data, controller.signal);
             const doc = await db.drawing.DrawingModel.findOne({ _id: data.drawingId, 'processingJob.id': data.runId }).select('processingJob').lean();
-            const progress = doc ? db.drawing.StoredJobZod.parse(doc.processingJob) : null;
-            if (!progress || progress.status === 'completed') job.disable();
-            else job.schedule(progress.availableAt);
+            const task = doc ? db.drawing.StoredJobZod.parse(doc.processingJob).tasks?.find((task) => task.page === data.page) : null;
+            if (!task || task.status === 'completed') job.disable();
+            else job.schedule(task.availableAt);
             await job.save();
         },
         { concurrency: Env.DRAWING_PROCESSING_CONCURRENCY, lockLimit: Env.DRAWING_PROCESSING_CONCURRENCY, lockLifetime: 6 * 60_000, backoff: () => 5000 },
@@ -324,18 +387,23 @@ export async function startDrawingWorker() {
                 await recoverExpiredDrawingJob(doc._id.toHexString());
                 const current = await db.drawing.DrawingModel.findById(doc._id).select('processingJob').lean();
                 const progress = current ? db.drawing.StoredJobZod.parse(current.processingJob) : null;
-                if (!progress || progress.status === 'completed') continue;
-                await agenda
-                    .create(DRAWING_JOB, { drawingId: doc._id.toHexString(), runId: progress.id })
-                    .unique({ name: DRAWING_JOB, 'data.runId': progress.id }, { insertOnly: true })
-                    .repeatEvery('1 second')
-                    .schedule(progress.availableAt)
-                    .save();
+                if (!progress || progress.status === 'completed' || !progress.tasks) continue;
+                for (const task of progress.tasks) {
+                    if (task.status === 'completed') continue;
+                    await agenda
+                        .create(DRAWING_JOB, { drawingId: doc._id.toHexString(), runId: progress.id, page: task.page })
+                        .unique({ name: DRAWING_JOB, 'data.runId': progress.id, 'data.page': task.page }, { insertOnly: true })
+                        .repeatEvery('1 second')
+                        .schedule(task.availableAt)
+                        .save();
+                }
             }
         },
         { concurrency: 1, lockLimit: 1, lockLifetime: 60_000 },
     );
-    await database.collection(QUEUE_COLLECTION).createIndex({ name: 1, 'data.runId': 1 }, { unique: true, partialFilterExpression: { name: DRAWING_JOB } });
+    await database
+        .collection(QUEUE_COLLECTION)
+        .createIndex({ name: 1, 'data.runId': 1, 'data.page': 1 }, { unique: true, partialFilterExpression: { name: DRAWING_JOB } });
     await agenda.every('2 seconds', RECONCILE_JOB);
     await agenda.start();
     return {
