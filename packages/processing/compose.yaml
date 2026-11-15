@@ -43,6 +43,7 @@ services:
         environment:
             INFERENCE_DEVICE: cuda
             INFERENCE_LOCAL_MODEL: cubicasa-detail
+            INFERENCE_CONCURRENCY: ${GEOMETRY_CONCURRENCY:-3}
         volumes:
             - ./packages/processing/cubicasa/weights:/app/weights:ro
         networks: [inference]

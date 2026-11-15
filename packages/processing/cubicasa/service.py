@@ -4,6 +4,8 @@ import asyncio
 import hmac
 import io
 import json
+import logging
+import time
 import secrets
 import urllib.error
 import urllib.request
@@ -40,9 +42,17 @@ async def lifespan(app: FastAPI):
     if device not in {"auto", "cpu", "mps", "cuda"}:
         raise RuntimeError("INFERENCE_DEVICE must be auto, cpu, mps or cuda")
     app.state.api_key = api_key
-    app.state.inference_lock = asyncio.Lock()
     local_model = os.environ.get("INFERENCE_LOCAL_MODEL", "cubicasa")
     app.state.local_model = local_model
+    try:
+        concurrency = int(os.environ.get("INFERENCE_CONCURRENCY", "1"))
+    except ValueError:
+        raise RuntimeError("INFERENCE_CONCURRENCY must be an integer from 1 to 8") from None
+    if not 1 <= concurrency <= 8:
+        raise RuntimeError("INFERENCE_CONCURRENCY must be an integer from 1 to 8")
+    if local_model == "paddleocr" and concurrency != 1:
+        raise RuntimeError("PaddleOCR requires INFERENCE_CONCURRENCY=1")
+    app.state.inference_capacity = asyncio.Semaphore(concurrency)
     app.state.segmentor = await run_in_threadpool(
         load_adapter, local_model, None if device == "auto" else device
     )
@@ -195,13 +205,19 @@ def proxy_prediction(
                 },
             )
     except urllib.error.HTTPError as error:
-        code = error.code if error.code in {413, 415, 422, 503} else 502
+        code = error.code if error.code in {413, 415, 422, 503, 504} else 502
         raise HTTPException(
             code,
             "Model worker rejected inference",
             headers={"Retry-After": "5"} if code == 503 else None,
         ) from error
-    except (urllib.error.URLError, TimeoutError, ValueError) as error:
+    except TimeoutError as error:
+        raise HTTPException(504, "Model worker timed out") from error
+    except urllib.error.URLError as error:
+        if isinstance(error.reason, TimeoutError):
+            raise HTTPException(504, "Model worker timed out") from error
+        raise HTTPException(502, "Model worker unavailable") from error
+    except ValueError as error:
         raise HTTPException(
             502, "Model worker unavailable or returned invalid data"
         ) from error
@@ -218,30 +234,42 @@ async def predictions(
         "paddleocr",
     ] = "cubicasa",
 ):
-    lock = request.app.state.inference_lock
-    # Admitted pages wait here without occupying an inference thread.
-    # Release this worker before the pipeline starts remote verification.
-    async with lock:
-        try:
-            data = await image.read(MAX_UPLOAD_BYTES + 1)
-            if len(data) > MAX_UPLOAD_BYTES:
-                raise HTTPException(413, "Upload exceeds 25 MiB")
-            if model == request.app.state.local_model:
-                return await run_in_threadpool(
-                    predict, request.app.state.segmentor, data, response_format
-                )
-            backend = request.app.state.backends.get(model)
-            if backend is None:
+    try:
+        data = await image.read(MAX_UPLOAD_BYTES + 1)
+        if len(data) > MAX_UPLOAD_BYTES:
+            raise HTTPException(413, "Upload exceeds 25 MiB")
+        if model == request.app.state.local_model:
+            capacity = request.app.state.inference_capacity
+            # No await between checking capacity and acquiring it: excess work
+            # returns to the caller's durable queue instead of timing out here.
+            if capacity.locked():
                 raise HTTPException(
-                    503, "Selected model is not available for raster inference"
+                    503, "Model worker busy; retry later", headers={"Retry-After": "5"}
                 )
-            return await run_in_threadpool(
-                proxy_prediction,
-                backend,
-                request.app.state.api_key,
-                data,
-                response_format,
-                model,
+            async with capacity:
+                started = time.monotonic()
+                request_id = secrets.token_hex(8)
+                logger = logging.getLogger("uvicorn.error")
+                logger.info("Inference started id=%s model=%s", request_id, model)
+                try:
+                    return await run_in_threadpool(
+                        predict, request.app.state.segmentor, data, response_format
+                    )
+                finally:
+                    logger.info(
+                        "Inference finished id=%s model=%s seconds=%.3f",
+                        request_id, model, time.monotonic() - started,
+                    )
+        backend = request.app.state.backends.get(model)
+        if backend is None:
+            raise HTTPException(
+                503, "Selected model is not available for raster inference"
             )
-        finally:
-            await image.close()
+        # The destination worker owns its own capacity; forwarding must not
+        # hold the local model's inference slot.
+        return await run_in_threadpool(
+            proxy_prediction, backend, request.app.state.api_key,
+            data, response_format, model,
+        )
+    finally:
+        await image.close()

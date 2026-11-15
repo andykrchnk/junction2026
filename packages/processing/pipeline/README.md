@@ -115,7 +115,9 @@ by the caller. No human review is required by the API.
 Invalid authentication returns 401; raster uploads are limited to 25MiB and 40M
 pixels, with a 26MiB multipart-envelope limit enforced before body parsing. Unsupported
 formats return 415 and corrupt/multi-frame images return 422. A failed or invalid
-geometry worker response returns 502. OCR failure retains geometry but returns null
+geometry worker response returns 502. A busy geometry worker returns 503 with
+`Retry-After: 5`, allowing the backend queue to retry without waiting behind a
+worker lock. A geometry HTTP timeout returns 504. OCR failure retains geometry but returns null
 names/measurements. Gemini failure retains baseline classifications and null enrichment.
 A successful partial result includes `X-Processing-Degraded` with `ocr`, `gemini`,
 `verification_limit`, or `fixture_uncertainty`; the public JSON shape does not change.
