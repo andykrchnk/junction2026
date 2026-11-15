@@ -227,6 +227,13 @@ export const DrawingNoteZod = z.object({
     boundingBox: BoundingBoxZod.nullable().optional(),
 });
 export const BlueprintMiscZod = z.array(DrawingNoteZod).max(100);
+export const BlueprintActivityZod = z.object({
+    step: z.string().min(1).max(150),
+    startedAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    status: z.enum(['running', 'completed', 'failed']),
+    history: z.array(z.object({ step: z.string().min(1).max(150), startedAt: z.iso.datetime(), finishedAt: z.iso.datetime() })).max(20),
+});
 export const BlueprintZod = z
     .object({
         id: z.string().min(1),
@@ -239,6 +246,7 @@ export const BlueprintZod = z
         layout: BlueprintLayoutZod.nullable(),
         misc: BlueprintMiscZod.nullable(),
         status: BlueprintStatusZod,
+        processingActivity: BlueprintActivityZod.optional(),
     })
     .superRefine((blueprint, ctx) => {
         if ((blueprint.layout === null) !== (blueprint.raster === null)) {

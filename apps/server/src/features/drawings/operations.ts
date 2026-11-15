@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import type { Drawing } from '@repo/types';
 import { db } from '../../db';
 import { Env } from '../../shared/env';
+import { DeadlineError, withDeadline } from './deadline';
 
 export async function getDrawing(id: string, ownerId: string) {
     const doc = await db.drawing.DrawingModel.findOne({ _id: id, ownerId }).select('-canvasDocument -canvasRevision').lean();
@@ -50,11 +51,12 @@ export async function processDrawing(
           }, 750)
         : null;
     try {
-        const change = await operation(
-            db.drawing.DrawingDto(doc),
-            AbortSignal.any([AbortSignal.timeout(120_000), controller.signal, ...(job ? [job.signal] : [])]),
-            lease,
-        );
+        const change = await withDeadline({
+            signal: AbortSignal.any([controller.signal, ...(job ? [job.signal] : [])]),
+            timeoutMs: 120_000,
+            label: chatMessageId ? 'Chat response' : 'Blueprint analysis',
+            run: (signal) => operation(db.drawing.DrawingDto(doc), signal, lease),
+        });
         const result = await db.drawing.DrawingModel.updateOne(
             { _id: id, ownerId, ...jobFilter, lease, leaseUntil: { $gt: new Date() } },
             { $set: { ...change, lease: null, leaseUntil: null, activeChatMessageId: null, error: null } },
@@ -70,7 +72,7 @@ export async function processDrawing(
             });
             if (stopped) return getDrawing(id, ownerId);
         }
-        const message = cause instanceof TRPCError ? cause.message : 'Processing failed or timed out. Please retry.';
+        const message = cause instanceof TRPCError || cause instanceof DeadlineError ? cause.message : 'Processing failed or timed out. Please retry.';
         await db.drawing.DrawingModel.updateOne(
             { _id: id, ownerId, ...jobFilter, lease },
             { $set: { lease: null, leaseUntil: null, activeChatMessageId: null, error: message } },

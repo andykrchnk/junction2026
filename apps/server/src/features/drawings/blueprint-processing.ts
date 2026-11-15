@@ -9,6 +9,7 @@ import { estimatePpm } from './ppm-agent';
 import { resolvePpm } from './ppm-resolution-agent';
 import { createPpmComments } from './ppm-comments';
 import { createDoorPpmComment } from './door-ppm-fallback';
+import { DeadlineError, withDeadline } from './deadline';
 
 type ProcessBlueprintParams = Readonly<{
     drawing: Drawing;
@@ -89,12 +90,44 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
                 : [...blueprint.layout.rooms, ...blueprint.layout.fixtures].some((entity) => !hasDetailedEntityDescription(entity))
                   ? 'entities'
                   : 'ppm';
+    let activity = blueprint.processingActivity;
+    let hasReportedProgress = false;
+    const reportProgress = async (step: string) => {
+        const now = new Date().toISOString();
+        const history =
+            hasReportedProgress && activity?.status === 'running'
+                ? [...activity.history, { step: activity.step, startedAt: activity.startedAt, finishedAt: now }].slice(-20)
+                : (activity?.history ?? []);
+        activity = { step, startedAt: now, updatedAt: now, status: 'running', history };
+        hasReportedProgress = true;
+        await save({ processingActivity: activity });
+    };
+    const finishProgress = async () => {
+        if (!activity) return;
+        const now = new Date().toISOString();
+        activity = {
+            ...activity,
+            updatedAt: now,
+            status: 'completed',
+            history: [...activity.history, { step: activity.step, startedAt: activity.startedAt, finishedAt: now }].slice(-20),
+        };
+        await save({ processingActivity: activity });
+    };
     const startedAt = performance.now();
     let succeeded = false;
     let attemptedEntities = 0;
     let completedEntities = 0;
     try {
         await save({ status: { type: 'processing', stage } });
+        await reportProgress(
+            stage === 'misc'
+                ? 'Reading drawing notes'
+                : stage === 'entities'
+                  ? 'Describing rooms and fixtures'
+                  : blueprint.ppmCandidates === null
+                    ? 'Reading scale clues'
+                    : 'Resolving scale',
+        );
         const chunks: Buffer[] = [];
         for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(blueprint.raster.fileId))) {
             signal.throwIfAborted();
@@ -109,6 +142,7 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
                 'layout.limitations': [...new Set([...blueprint.layout.limitations, ...context.limitations])],
                 status: params.review === 'notes' ? { type: 'ready' } : { type: 'pending', stage: 'entities' },
             });
+            await finishProgress();
             succeeded = true;
             return;
         }
@@ -166,33 +200,47 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Some entity analyses failed. Completed results are saved; retry to resume.' });
             }
             await save({ status: { type: 'pending', stage: 'entities' } });
+            await finishProgress();
             succeeded = true;
             return;
         }
         const pages = [{ page: blueprint.pageNumber, width: blueprint.raster.width, height: blueprint.raster.height, bytes }];
         if (blueprint.ppmCandidates === null) {
-            const candidates = await estimatePpm({ pages, blueprint, signal });
+            const candidates = await withDeadline({
+                signal,
+                timeoutMs: 90_000,
+                label: 'Reading scale clues',
+                run: (stepSignal) => estimatePpm({ pages, blueprint, signal: stepSignal }),
+            });
             await save(
                 { ppmCandidates: candidates, status: { type: 'pending', stage: 'ppm' } },
                 createPpmComments({ candidates, createdAt: new Date().toISOString() }),
             );
+            await finishProgress();
             succeeded = true;
             return;
         }
         if (blueprint.ppm === null) {
-            const ppm = await resolvePpm({ blueprint, messages: drawing.messages, pages, signal });
+            const ppm = await resolvePpm({ blueprint, messages: drawing.messages, pages, signal, onProgress: reportProgress });
             await save({ ppm, status: { type: 'ready' } }, createDoorPpmComment({ ppm, width: blueprint.raster.width, height: blueprint.raster.height }));
         } else {
             await save({ status: { type: 'ready' } });
         }
+        await finishProgress();
         succeeded = true;
     } catch (cause) {
         // Even an expired/aborted call must leave a retryable checkpoint, without changing completed entities.
-        const error = cause instanceof TRPCError ? cause.message : 'Blueprint analysis failed or timed out. Retry to resume.';
+        const error = cause instanceof TRPCError || cause instanceof DeadlineError ? cause.message : 'Blueprint analysis failed or timed out. Retry to resume.';
+        const failedActivity = activity ? { ...activity, status: 'failed', updatedAt: new Date().toISOString() } : undefined;
         await db.drawing.DrawingModel.updateOne(
             { ...owned, leaseUntil: { $gt: new Date() } },
             // A review preserves the last completed context until its replacement is saved.
-            { $set: { [`${root}.status`]: params.review ? { type: 'ready' } : { type: 'partial', stage, error } } },
+            {
+                $set: {
+                    [`${root}.status`]: params.review ? { type: 'ready' } : { type: 'partial', stage, error },
+                    ...(failedActivity ? { [`${root}.processingActivity`]: failedActivity } : {}),
+                },
+            },
         );
         throw new TRPCError({ code: cause instanceof TRPCError ? cause.code : 'INTERNAL_SERVER_ERROR', message: error, cause });
     } finally {

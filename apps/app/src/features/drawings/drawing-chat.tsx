@@ -102,6 +102,7 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
     const ask = (message: Drawing['messages'][number]) => {
         if (!drawing.blueprints.length || busy || asking || submissionsRef.current.has(id)) return;
         submissionsRef.current.add(id);
+        $$drawings.draftChanged('');
         void $$drawings
             .askFx({ id, message })
             .catch(() => {})
@@ -138,7 +139,7 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                             <DrawingProgress
                                 drawing={drawing}
                                 busy={busy}
-                                stage={stages[id]}
+                                stage={stages[id] ?? undefined}
                                 onRetry={
                                     previewDrawing
                                         ? undefined
@@ -199,7 +200,9 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                                     ) : null,
                                 ])}
                             </AnimatePresence>
-                            {busy && !pending && drawing.blueprints.length > 0 && <DrawingActivity label={stages[id] ?? 'Reviewing your question'} />}
+                            {!pending && drawing.blueprints.length > 0 && (activity[id] ?? 0) > 0 && (
+                                <DrawingActivity label={stages[id] ?? 'Starting analysis'} />
+                            )}
                             {visibleError && (
                                 <p role="alert" className="text-sm text-destructive">
                                     {visibleError}

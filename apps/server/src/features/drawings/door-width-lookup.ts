@@ -2,6 +2,7 @@ import { Agent, run, setTracingDisabled, user, webSearchTool } from '@openai/age
 import { PpmDoorFallbackZod } from '@repo/types';
 import { z } from 'zod';
 import { config } from '../../shared/config';
+import { withDeadline } from './deadline';
 
 const ContextZod = PpmDoorFallbackZod.shape.context;
 const SourceZod = PpmDoorFallbackZod.shape.sources.element;
@@ -27,7 +28,7 @@ const MessageItemZod = z.object({
         }),
     ),
 });
-type LookupDoorWidthParams = { context: z.infer<typeof ContextZod>; signal: AbortSignal };
+type LookupDoorWidthParams = { context: z.infer<typeof ContextZod>; signal: AbortSignal; onProgress?: (step: string) => Promise<void> };
 type LookupDoorWidthReturn = { method: 'reference' | 'default'; widthMm: number; sources: z.infer<typeof SourceZod>[]; assumptions: string[] };
 
 setTracingDisabled(true);
@@ -50,6 +51,7 @@ export async function lookupDoorWidth(params: LookupDoorWidthParams): Promise<Lo
         assumptions: [...assumptions, 'The wall opening is assumed to be 900 mm wide; this is not a measured or confirmed dimension.'],
     });
     if (!context.country?.trim()) return defaults(['The drawing country could not be identified reliably, so no regional door-size reference was selected.']);
+    await params.onProgress?.('Searching door-size references');
     try {
         const agent = new Agent({
             name: 'Door opening width reference lookup',
@@ -65,9 +67,11 @@ export async function lookupDoorWidth(params: LookupDoorWidthParams): Promise<Lo
 Use primary manufacturer sizing catalogues or official standards with directly readable width evidence. Distinguish wall/rough construction opening from frame width, leaf width and clear passage. A legal minimum clear width is NOT the typical actual wall opening and cannot support the chosen width. Do not convert a leaf/frame/clear width to an opening width without explicit matching source dimensions. Reject retailer blogs, forum claims, search-only guesses and inaccessible tables. Country must match. If a drawing year is known, explain evidence that the reference applies to that period; a modern catalogue alone cannot establish historic dimensions. Unknown building/door type or year must be disclosed, never invented. A source can establish a typical size only, not the actual size of this particular door.
 Return openingWidthMm only if at least one consulted primary source directly supports that wall-opening width and its applicability. Otherwise return null. List at most six actually consulted sources with exact URLs, titles and concise evidence explaining why each supports or fails to support the selection. Set supportsChosenOpeningWidth true only for sources directly supporting the selected width and context. Record all consequential applicability assumptions. Never fabricate URLs, dimensions or historical requirements.`,
         });
-        const result = await run(agent, [user(JSON.stringify(context))], {
-            signal: AbortSignal.any([params.signal, AbortSignal.timeout(25_000)]),
-            maxTurns: 3,
+        const result = await withDeadline({
+            signal: params.signal,
+            timeoutMs: 25_000,
+            label: 'Searching door-size references',
+            run: (signal) => run(agent, [user(JSON.stringify(context))], { signal, maxTurns: 3 }),
         });
         const output = LookupOutputZod.parse(result.finalOutput);
         const retrieved = result.rawResponses.flatMap((response) =>

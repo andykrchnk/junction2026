@@ -4,12 +4,14 @@ import { z } from 'zod';
 import { config } from '../../shared/config';
 import { openingNotationInstructions, ppmDetailImages } from './ppm-images';
 import { resolveDoorPpm } from './door-ppm-fallback';
+import { withDeadline } from './deadline';
 
 type ResolvePpmParams = {
     blueprint: Blueprint;
     messages: Drawing['messages'];
     pages: ReadonlyArray<Readonly<{ page: number; width: number; height: number; bytes: Buffer }>>;
     signal: AbortSignal;
+    onProgress?: (step: string) => Promise<void>;
 };
 
 const PpmResolutionOutputZod = z
@@ -67,12 +69,18 @@ Also return doorFallbackAllowed outside result: true ONLY for a fail caused by a
             ]),
         ),
     ];
-    const output = await run(agent, input, { signal: params.signal, maxTurns: 1 });
+    const output = await withDeadline({
+        signal: params.signal,
+        timeoutMs: 45_000,
+        label: 'Resolving scale',
+        run: (signal) => run(agent, input, { signal, maxTurns: 1 }),
+    });
     const { result, doorFallbackAllowed } = PpmResolutionOutputZod.parse(output.finalOutput);
     if (result.type === 'fail') {
         if (doorFallbackAllowed) return resolveDoorPpm({ ...params, failureMessage: result.message });
         return StoredPpmResultZod.parse({ message: result.message });
     }
+    await params.onProgress?.('Calculating PPM');
     const calibration = result.calibration;
     const indexes = calibration.usedCandidateIndexes;
     if (new Set(indexes).size !== indexes.length || indexes.some((index) => !params.blueprint.ppmCandidates?.[index])) {

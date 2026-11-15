@@ -1,5 +1,5 @@
 import { getDetectedObjectColor, hasDetailedEntityDescription, type Blueprint, type Drawing, type LayoutRoom, type LayoutFixture } from '@repo/types';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useUnit } from 'effector-react';
 import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
 import { Button } from '@repo/design-system/components/ui/button';
@@ -25,6 +25,11 @@ const stageLabels = {
     entities: 'Reviewing rooms and fixtures',
     ppm: 'Estimating scale',
 };
+
+function elapsedTime(milliseconds: number): string {
+    const seconds = Math.max(0, Math.floor(milliseconds / 1000));
+    return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+}
 
 function ObjectProgress({
     object,
@@ -75,11 +80,24 @@ function BlueprintProgress({
     onSelect,
     drawingId,
     busy,
-}: Readonly<{ blueprint: Blueprint; objects: LayerObject[]; onSelect: (object: LayerObject) => void; drawingId: string; busy: boolean }>) {
+    now,
+    stageStartedAt,
+}: Readonly<{
+    blueprint: Blueprint;
+    objects: LayerObject[];
+    onSelect: (object: LayerObject) => void;
+    drawingId: string;
+    busy: boolean;
+    now: number;
+    stageStartedAt?: string | null;
+}>) {
     const entities = [...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? [])];
     const completed = entities.filter(hasDetailedEntityDescription).length;
     const status = blueprint.status;
     const failed = status.type === 'partial' || status.type === 'failed';
+    const activity = blueprint.processingActivity;
+    const active = busy && status.type === 'processing' && activity?.status === 'running';
+    const startedAt = active ? activity.startedAt : busy && status.type === 'processing' ? stageStartedAt : null;
     if (status.type === 'rejected')
         return (
             <Trace>
@@ -105,10 +123,34 @@ function BlueprintProgress({
                             ? 'Waiting for analysis'
                             : status.type === 'not_configured'
                               ? 'Inference unavailable'
-                              : stageLabels[status.stage]}
+                              : active
+                                ? activity.step
+                                : stageLabels[status.stage]}
+                    {startedAt && <span className="ml-2 tabular-nums">{elapsedTime(now - Date.parse(startedAt))}</span>}
                 </TraceTitle>
             </TraceLine>
             {!blueprint.layout && <p className="text-xs">Waiting for room and fixture detection.</p>}
+            {activity && activity.history.length > 0 && (
+                <ProgressStep title="Completed steps" status={undefined} detail={`${activity.history.length}`}>
+                    <Trace aria-label={`Completed steps for sheet ${blueprint.pageNumber}`}>
+                        {activity.history.map((entry, index) => (
+                            <TraceLine key={`${entry.startedAt}-${index}`}>
+                                <TraceTitle>
+                                    {entry.step}
+                                    <span className="ml-2 tabular-nums text-xs">{elapsedTime(Date.parse(entry.finishedAt) - Date.parse(entry.startedAt))}</span>
+                                </TraceTitle>
+                            </TraceLine>
+                        ))}
+                    </Trace>
+                </ProgressStep>
+            )}
+            {activity?.status === 'failed' && status.type !== 'ready' && (
+                <TraceLine status="error">
+                    <TraceTitle>
+                        {activity.step} · failed after {elapsedTime(Date.parse(activity.updatedAt) - Date.parse(activity.startedAt))}
+                    </TraceTitle>
+                </TraceLine>
+            )}
             <DrawingNotes blueprint={blueprint} drawingId={drawingId} busy={busy} />
             {(['room', 'icon'] as const).map((type) => {
                 const items = objects.filter((object) => object.property.type === type);
@@ -175,14 +217,22 @@ function BlueprintProgress({
 
 export function DrawingProgress({ drawing, busy, stage, onRetry }: Readonly<{ drawing: Drawing; busy: boolean; stage?: string; onRetry?: () => void }>) {
     const [open, setOpen] = useState<boolean>();
+    const [now, setNow] = useState<number>(() => Date.now());
+    useEffect(() => {
+        if (!busy) return;
+        const timer = window.setInterval(() => setNow(Date.now()), 1000);
+        return () => window.clearInterval(timer);
+    }, [busy]);
     const selectObject = useUnit($$drawings.canvasSelectionRequested);
     const blueprints = drawing.blueprints;
     const ready = blueprints.length > 0 && blueprints.every((blueprint) => blueprint.status.type === 'ready');
     const objects = layerObjects(blueprints);
+    const retrying = drawing.processing?.status === 'queued' && (drawing.processing.attempts ?? 0) > 0;
+    const retryAt = drawing.processing?.availableAt ? Date.parse(drawing.processing.availableAt) : now;
     const label = ready
         ? 'Blueprint context saved'
         : drawing.processing && drawing.processing.status !== 'completed'
-          ? `Processing pages · ${drawing.processing.completed} / ${drawing.processing.total} finished`
+          ? `${retrying ? 'Retrying analysis' : 'Processing pages'} · ${drawing.processing.completed} / ${drawing.processing.total} finished`
           : busy
             ? (stage ?? 'Preparing your blueprint')
             : drawing.processing?.status === 'completed'
@@ -205,12 +255,23 @@ export function DrawingProgress({ drawing, busy, stage, onRetry }: Readonly<{ dr
                         </TraceLine>
                     </TraceCollapsibleTrigger>
                     <TraceCollapsibleContent className="space-y-4 text-sm">
+                        {retrying && (
+                            <p role="status" className="text-xs text-muted-foreground">
+                                {retryAt > now ? `Retrying in ${elapsedTime(retryAt - now)}.` : 'Retrying from the saved checkpoint…'} Completed results are
+                                saved.
+                            </p>
+                        )}
+                        {drawing.processing?.status === 'running' && (drawing.processing.attempts ?? 0) > 1 && (
+                            <p className="text-xs text-muted-foreground">Attempt {drawing.processing.attempts} · resuming saved results</p>
+                        )}
                         {blueprints.map((blueprint) => (
                             <BlueprintProgress
                                 key={blueprint.id}
                                 blueprint={blueprint}
                                 drawingId={drawing.id}
                                 busy={busy}
+                                now={now}
+                                stageStartedAt={drawing.processing?.currentPage === blueprint.pageNumber ? drawing.processing.startedAt : null}
                                 objects={objects.filter((object) => object.page === blueprint.pageNumber)}
                                 onSelect={({ page, index }) => selectObject({ id: drawing.id, page, index })}
                             />

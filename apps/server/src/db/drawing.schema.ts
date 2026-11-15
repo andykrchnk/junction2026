@@ -49,9 +49,23 @@ export const StoredJobZod = z.object({
     attempts: z.number().int().nonnegative(),
     availableAt: z.date(),
     lease: z.string().nullable(),
+    leaseUntil: z.date().nullable().optional(),
+    startedAt: z.date().nullable().optional(),
+    lastError: z.string().nullable().optional(),
 });
 export function createProcessingJob(pages: number[]) {
-    return StoredJobZod.parse({ id: crypto.randomUUID(), status: 'queued', pages, cursor: 0, attempts: 0, availableAt: new Date(), lease: null });
+    return StoredJobZod.parse({
+        id: crypto.randomUUID(),
+        status: 'queued',
+        pages,
+        cursor: 0,
+        attempts: 0,
+        availableAt: new Date(),
+        lease: null,
+        leaseUntil: null,
+        startedAt: null,
+        lastError: null,
+    });
 }
 
 type StoredDrawing = mongoose.InferSchemaType<typeof schema>;
@@ -120,7 +134,16 @@ export function DrawingDto(data: unknown) {
         messages: doc.messages,
         busy: jobBusy || busy || inferenceBusy,
         processing: job
-            ? { status: job.status, completed: Math.min(job.cursor, job.pages.length), total: job.pages.length, currentPage: job.pages[job.cursor] ?? null }
+            ? {
+                  status: job.status,
+                  completed: Math.min(job.cursor, job.pages.length),
+                  total: job.pages.length,
+                  currentPage: job.pages[job.cursor] ?? null,
+                  attempts: job.attempts,
+                  availableAt: job.availableAt.toISOString(),
+                  startedAt: job.startedAt?.toISOString() ?? null,
+                  lastError: job.lastError ?? null,
+              }
             : null,
         error,
         status: ready ? 'ready' : !blueprints.length ? 'empty' : jobBusy || busy || inferenceBusy ? 'analyzing' : error || failed ? 'failed' : 'uploaded',

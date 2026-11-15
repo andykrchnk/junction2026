@@ -156,6 +156,10 @@ export const DrawingJobProgressZod = z.object({
     completed: z.number().int().nonnegative(),
     total: z.number().int().positive(),
     currentPage: z.number().int().positive().nullable(),
+    attempts: z.number().int().nonnegative().optional(),
+    availableAt: z.iso.datetime().optional(),
+    startedAt: z.iso.datetime().nullable().optional(),
+    lastError: z.string().nullable().optional(),
 });
 export const DrawingZod = DrawingSummaryZod.extend({
     processing: DrawingJobProgressZod.nullable().optional(),
