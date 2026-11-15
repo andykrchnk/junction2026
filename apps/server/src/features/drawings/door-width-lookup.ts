@@ -60,7 +60,7 @@ export async function lookupDoorWidth(params: LookupDoorWidthParams): Promise<Lo
             modelSettings: {
                 maxTokens: 2200,
                 toolChoice: 'required',
-                providerData: { include: ['web_search_call.action.sources'] },
+                providerData: { service_tier: 'fast', include: ['web_search_call.action.sources'] },
             },
             tools: [webSearchTool({ searchContextSize: 'medium', externalWebAccess: true })],
             outputType: LookupOutputZod,
