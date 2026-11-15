@@ -4,7 +4,8 @@ Copyright (c) 2019 CubiCasa.
 Source: https://github.com/CubiCasa/CubiCasa5k/blob/
 c34440266665a11f4484eb06cd2e4b7d72ad76c1/floortrans/post_prosessing.py
 Compatibility changes: SciPy mode keepdims; Shapely multipart .geoms iteration;
-hash-based wall membership preserving upstream traversal and tie-breaking.
+hash-based wall/icon membership, cached wall labels, and polygon reads without
+full-image copies, preserving upstream traversal and tie-breaking.
 The upstream algorithm is otherwise retained. See ../NOTICE.md.
 """
 
@@ -28,8 +29,10 @@ def get_wall_polygon(wall_heatmaps, room_segmentation, threshold, wall_classes, 
     types = [] 
     wall_lines_new = []
     
+    # Wall scans revisit the same pixels many times; classify each pixel once.
+    room_labels = np.argmax(room_segmentation, axis=0)
     for indx, i in enumerate(wall_lines):
-        res = extract_wall_polygon(i, wall_points, room_segmentation, wall_classes)
+        res = extract_wall_polygon(i, wall_points, room_segmentation, wall_classes, room_labels)
         if res is not None:
             wall_width, polygon = res
             walls = np.append(walls, [polygon], axis=0)
@@ -712,11 +715,10 @@ def extract_opening_polygon(wall_polygons, door_points, door_lines, size):
     return opening_polygons
 
 def get_polygon_class(polygon, segmentation, remove_layers=[]):
-    seg_copy = np.copy(segmentation)
-    size = seg_copy.shape
+    size = segmentation.shape
 
     jj, ii = draw.polygon(polygon[:, 1], polygon[:, 0], shape=size)
-    area = seg_copy[jj, ii]
+    area = segmentation[jj, ii]
     values, counts = np.unique(area, return_counts=True)
     if len(counts) != 0:
         ind = np.argmax(counts)
@@ -786,35 +788,40 @@ def get_wall_seg(wall_polygons, size):
 
 
 def drop_big_icons(icons, icon_points):
-    remaining_icons = icons
-    bad_icons = []
+    # Preserve pair order, ties and the upstream survivor insertion order.
+    # Linear list membership inside the pair loop made dense proposals cubic.
+    bad_icons = set()
     remaining_icons = []
+    remaining_seen = set()
+    areas = {}
+
+    def keep(icon):
+        if icon not in remaining_seen:
+            remaining_icons.append(icon)
+            remaining_seen.add(icon)
+
+    def area(icon):
+        if icon not in areas:
+            areas[icon] = get_icon_area(icon, icon_points)
+        return areas[icon]
+
     for icon1, icon2 in combinations(icons, 2):
         if icon1 not in bad_icons and icon2 not in bad_icons:
             if icons_same_corner(icon1, icon2):
-                area1 = get_icon_area(icon1, icon_points)
-                area2 = get_icon_area(icon2, icon_points)
-                if area1 <= area2:
+                if area(icon1) <= area(icon2):
                     good_icon = icon1
-                    bad_icons.append(icon2)
+                    bad_icons.add(icon2)
                 else:
                     good_icon = icon2
-                    bad_icons.append(icon1)
-
-                if good_icon not in remaining_icons:
-                    remaining_icons.append(good_icon)
+                    bad_icons.add(icon1)
+                keep(good_icon)
         else:
-            if icon1 not in remaining_icons and icon1 not in bad_icons:
-                remaining_icons.append(icon1)
-            if icon2 not in remaining_icons and icon2 not in bad_icons:
-                remaining_icons.append(icon2)
+            if icon1 not in bad_icons:
+                keep(icon1)
+            if icon2 not in bad_icons:
+                keep(icon2)
 
-    res = []
-    for icon in remaining_icons:
-        if icon not in bad_icons:
-            res.append(icon)
-
-    return res
+    return [icon for icon in remaining_icons if icon not in bad_icons]
 
 
 def icons_same_corner(icon1, icon2):
@@ -869,8 +876,10 @@ def walls_same_corner(wall1, wall2, wall_points):
     return False
 
 
-def extract_wall_polygon(wall, wall_points, segmentation, seg_class):
+def extract_wall_polygon(wall, wall_points, segmentation, seg_class, labels=None):
     _, max_height, max_width = segmentation.shape
+    if labels is None:
+        labels = np.argmax(segmentation, axis=0)
     x1 = wall_points[wall[0]][0]
     x2 = wall_points[wall[1]][0]
     y1 = wall_points[wall[0]][1]
@@ -891,7 +900,7 @@ def extract_wall_polygon(wall, wall_points, segmentation, seg_class):
             while con and i0 < max_width-1:
                 i1 = i0 + 1
                 j1 = j0
-                pxl_class = get_pxl_class(int(np.floor(i1)), int(np.floor(j1)), segmentation)
+                pxl_class = labels[int(np.floor(j1)), int(np.floor(i1))]
                 if pxl_class in seg_class:
                     w_pos += 1
                 else:
@@ -904,7 +913,7 @@ def extract_wall_polygon(wall, wall_points, segmentation, seg_class):
             while con and i0 > 0:
                 i1 = i0 - 1
                 j1 = j0
-                pxl_class = get_pxl_class(int(np.floor(i1)), int(np.floor(j1)), segmentation)
+                pxl_class = labels[int(np.floor(j1)), int(np.floor(i1))]
                 if pxl_class in seg_class:
                     w_neg += 1
                 else:
@@ -947,7 +956,7 @@ def extract_wall_polygon(wall, wall_points, segmentation, seg_class):
             while con and j0 < max_height-1:
                 i1 = i0
                 j1 = j0 + 1
-                pxl_class = get_pxl_class(int(np.floor(i1)), int(np.floor(j1)), segmentation)
+                pxl_class = labels[int(np.floor(j1)), int(np.floor(i1))]
                 if pxl_class in seg_class:
                     w_pos += 1
                 else:
@@ -960,7 +969,7 @@ def extract_wall_polygon(wall, wall_points, segmentation, seg_class):
             while con and j0 > 0:
                 i1 = i0
                 j1 = j0 - 1
-                pxl_class = get_pxl_class(int(np.floor(i1)), int(np.floor(j1)), segmentation)
+                pxl_class = labels[int(np.floor(j1)), int(np.floor(i1))]
                 if pxl_class in seg_class:
                     w_neg += 1
                 else:
