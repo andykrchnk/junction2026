@@ -2,6 +2,7 @@ import { authenticatedFetch } from '@/shared/auth';
 import { QueryClient } from '@tanstack/react-query';
 import { createTRPCClient, httpLink, httpSubscriptionLink, splitLink } from '@trpc/client';
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
+import { EventSource } from 'eventsource';
 import type { AppRouter } from '@repo/server/router';
 import { config } from '@/shared/config';
 
@@ -10,7 +11,11 @@ export const trpcClient = createTRPCClient<AppRouter>({
     links: [
         splitLink({
             condition: (operation) => operation.type === 'subscription',
-            true: httpSubscriptionLink({ url: `${config.API_URL}/api/trpc`, eventSourceOptions: { withCredentials: true } }),
+            true: httpSubscriptionLink({
+                url: `${config.API_URL}/api/trpc`,
+                EventSource,
+                eventSourceOptions: { withCredentials: true, fetch: authenticatedFetch },
+            }),
             false: httpLink({ url: `${config.API_URL}/api/trpc`, fetch: authenticatedFetch }),
         }),
     ],

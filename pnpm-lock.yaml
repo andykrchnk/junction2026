@@ -80,6 +80,9 @@ importers:
       effector-react:
         specifier: ^23.3.0
         version: 23.3.0(effector@23.4.4)(react@19.3.1)
+      eventsource:
+        specifier: 3.0.7
+        version: 3.0.7
       lucide-react:
         specifier: ^0.561.0
         version: 0.561.0(react@19.3.1)
@@ -8709,13 +8712,11 @@ snapshots:
 
   eventemitter3@4.0.7: {}
 
-  eventsource-parser@3.1.1:
-    optional: true
+  eventsource-parser@3.1.1: {}
 
   eventsource@3.0.7:
     dependencies:
       eventsource-parser: 3.1.1
-    optional: true
 
   exsolve@1.2.0: {}
 
