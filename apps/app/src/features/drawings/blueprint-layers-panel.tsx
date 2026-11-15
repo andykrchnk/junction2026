@@ -38,11 +38,20 @@ export function BlueprintLayersPanel({
     preview,
     onUpload,
     uploading,
-}: Readonly<{ drawing: Drawing; model: CanvasModel; preview: boolean; onUpload?: () => void; uploading?: boolean }>) {
+    collapsed,
+    setCollapsed,
+}: Readonly<{
+    drawing: Drawing;
+    model: CanvasModel;
+    preview: boolean;
+    onUpload?: () => void;
+    uploading?: boolean;
+    collapsed: boolean;
+    setCollapsed: (collapsed: boolean) => void;
+}>) {
     const container = useRef<HTMLDivElement>(null);
     const reducedMotion = useReducedMotion();
     const [height, setHeight] = useState(600);
-    const [collapsed, setCollapsed] = useState(false);
     const [collapsedSheets, setCollapsedSheets] = useState<string[]>([]);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
     const expandGroups = (keys: string[]) => setOpenGroups((current) => ({ ...current, ...Object.fromEntries(keys.map((key) => [key, true])) }));
@@ -74,10 +83,10 @@ export function BlueprintLayersPanel({
     };
     const objects = layerObjects(drawing.blueprints);
     // Selection stays in the canvas model; expansion is local presentation state.
-    const [revealedSelection, setRevealedSelection] = useState(selection);
-    if (revealedSelection !== selection) {
-        setRevealedSelection(selection);
-        const added = selection.filter((item) => !revealedSelection.some((previous) => previous.page === item.page && previous.index === item.index));
+    const revealedSelection = useRef(selection);
+    useEffect(() => {
+        const added = selection.filter((item) => !revealedSelection.current.some((previous) => previous.page === item.page && previous.index === item.index));
+        revealedSelection.current = selection;
         if (added.length) {
             const sheets = new Set<string>();
             const groups: Record<string, boolean> = {};
@@ -95,7 +104,7 @@ export function BlueprintLayersPanel({
                 setOpenGroups((current) => ({ ...current, ...groups }));
             }
         }
-    }
+    }, [selection, drawing.blueprints, objects, setCollapsed]);
     useEffect(() => {
         const selected = selection.at(-1);
         if (!selected) return;
