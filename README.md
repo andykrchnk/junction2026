@@ -127,6 +127,13 @@ They create and drop only a uniquely named `junction_poc_test_*` database; the A
 
 ## Railway
 
+For an invite-only demo, create the accounts you plan to hand out, then set
+`ALLOW_SIGNUP=false` on the server service and redeploy/restart it. Better Auth
+rejects new email/password registrations on the server; existing accounts can
+still sign in. Signup stays enabled when the variable is omitted or set to
+`true`. Use exactly `true` or `false`; other values fail startup validation.
+Set it back to `true` and redeploy/restart to create more accounts.
+
 [`.railway/railway.ts`](.railway/railway.ts) declares the app and server services with repository-root Docker builds, health checks and restart policies. It provisions no database or volume. Both services follow `master` after review/merge.
 
 1. Link the intended Railway project/environment and enable generated public domains for both services.

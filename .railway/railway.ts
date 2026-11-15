@@ -49,6 +49,7 @@ export default defineRailway((context) => {
             APP_ORIGIN: context.shared.APP_ORIGIN,
             BETTER_AUTH_URL: context.shared.API_URL,
             BETTER_AUTH_SECRET: preserve(),
+            ALLOW_SIGNUP: preserve(),
             MONGODB_URI: preserve(),
             MONGODB_DB_NAME: preserve(),
         },
