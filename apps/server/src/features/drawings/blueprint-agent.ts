@@ -46,7 +46,7 @@ export async function inspectBlueprint(blueprint: Blueprint, bytes: Buffer, sign
     const agent = new Agent({
         name: 'Blueprint context analyst',
         model: config.OPENAI_MODEL,
-        modelSettings: { maxTokens: 7000 },
+        modelSettings: { maxTokens: 7000, providerData: { service_tier: 'fast' } },
         outputType: ContextOutputZod,
         instructions: `Inspect this single blueprint sheet. Return a short supported summary, general context in misc entries with title/content strings, and layout-wide limitations.
 Gather printed legends, symbol meanings, abbreviations and expansions, descriptions, general notes, units, view/floor titles, revisions and measurement references outside individual room/fixture descriptions. Assign each entry a category: sheet_details for sheet identifiers, titles, revisions and drawing-use instructions; general_notes for general instructions; legend for symbols; abbreviations for abbreviations and expansions; dimensions for units, dimensions and scale notation. Use a short title and a concise content explanation. Capture exact readable source wording in originalText, or null when no reliable transcription exists. Preserve exact readable notation. Give boundingBox as an approximate source region normalized to the full page, with left<right and top<bottom, or null when it cannot be located. Do not invent locations. Distinguish printed definitions from tentative interpretations explicitly in content. Do not invent missing expansions, hidden elements, dimensions, units, material specifications or physical counts. Empty misc means no useful general context was found.
@@ -133,7 +133,7 @@ export async function enrichEntity(
     const agent = new Agent({
         name: 'Blueprint entity analyst',
         model: config.OPENAI_MODEL,
-        modelSettings: { maxTokens: 8000 },
+        modelSettings: { maxTokens: 8000, providerData: { service_tier: 'fast' } },
         outputType: EntityOutputZod,
         instructions: `Inspect only the supplied target. Return its exact entityId and structured result; software constructs the short display description from this JSON. Do not write a paragraph.
 SCOPE: For a room, list its own openings, furnishings, direct connections and important associated markings. For a fixture, describe only the target fixture, its containing room/location and directly served rooms. A closet must not acquire the hallway's doors, other closets or neighbouring rooms. A door/window may describe itself in its matching openings array; other fixtures use attributes for their own form, not a list of nearby furniture. Surroundings are supplied to locate and interpret the target, not to inventory its neighbourhood.

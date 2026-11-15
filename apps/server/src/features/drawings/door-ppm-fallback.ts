@@ -64,7 +64,7 @@ export async function resolveDoorPpm(params: DoorPpmParams): Promise<StoredPpmRe
     const agent = new Agent({
         name: 'Door opening calibration inspector',
         model: config.OPENAI_MODEL,
-        modelSettings: { maxTokens: 2200 },
+        modelSettings: { maxTokens: 2200, providerData: { service_tier: 'fast' } },
         outputType: DoorInspectionZod,
         instructions: `Inspect the supplied floor-plan raster and door crops for ONE unambiguous ordinary single hinged interior door. Normal calibration found no usable reference. Select only an exact supplied Door ID. Identify the two wall-opening jamb endpoints (not leaf ends, frame edges, swing arc or the detection bounding-box extent) in FULL canonical raster pixels. Enlarged crop coordinates must be mapped using the supplied crop bounds. Geometry and confidence are predictions, not verified measurements.
 Return door:null if no clear opening endpoints exist, the drawing is a sketch/not to scale, distorted, contains incompatible scales, or the only doors are double, sliding, folding, garage, unusual or unclear. Never resolve conflicting real measurements by assuming door size. If useful explicit dimensions are visible and were missed, return door:null and explain rather than using a standard width. Compare other doors when visible; consistency does not prove physical width. Do not invent measurements.
