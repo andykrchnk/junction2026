@@ -24,6 +24,7 @@ const schema = new mongoose.Schema(
         title: { type: String, default: 'Untitled drawing' },
         blueprints: { type: [mongoose.Schema.Types.Mixed], default: [] },
         covers: { type: mongoose.Schema.Types.Mixed, default: null },
+        workspaceThumbnail: { type: mongoose.Schema.Types.Mixed, default: null },
         inferenceLease: { type: String, default: null },
         inferenceLeaseUntil: { type: Date, default: null },
         messages: { type: [mongoose.Schema.Types.Mixed], default: [] },

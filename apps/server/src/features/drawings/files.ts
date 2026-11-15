@@ -122,6 +122,27 @@ drawingFiles.get('/:id/predictions/:page/image', async (c) => {
     return c.body(Buffer.concat(chunks));
 });
 
+// On-demand visual preview reuses stored rasters; it never invokes inference or writes processing state.
+drawingFiles.get('/:id/workspace-preview/:theme', async (c) => {
+    const id = MongoIdZod.safeParse(c.req.param('id'));
+    const theme = z.enum(['light', 'dark']).safeParse(c.req.param('theme'));
+    if (!id.success || !theme.success) return c.json({ message: 'Preview not found.' }, 404);
+    const doc = await db.drawing.DrawingModel.findOne({ _id: id.data, ownerId: c.get('user')?.id }).lean();
+    if (!doc) return c.json({ message: 'Preview not found.' }, 404);
+    const drawing = db.drawing.DrawingDto(doc);
+    const { workspaceThumbnail } = await import('./covers');
+    const ownerId = c.get('user')?.id;
+    if (!ownerId) return c.json({ message: 'Sign in to continue.' }, 401);
+    const thumbnail = await workspaceThumbnail({ drawing, ownerId, stored: doc.workspaceThumbnail });
+    if (!thumbnail) return c.json({ message: 'Preview not available yet.' }, 404);
+    c.header('Content-Type', 'image/webp');
+    c.header('Cache-Control', 'private, no-cache');
+    const etag = `"workspace-webp-640-v1-${theme.data}-${drawing.updatedAt}"`;
+    c.header('ETag', etag);
+    if (c.req.header('If-None-Match') === etag) return c.body(null, 304);
+    return c.body(new Uint8Array(Buffer.from(thumbnail[theme.data], 'base64')));
+});
+
 // Covers are generated during detection; this route only serves stored, owner-scoped images.
 drawingFiles.get('/:id/covers/:theme', async (c) => {
     const id = MongoIdZod.safeParse(c.req.param('id'));

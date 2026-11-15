@@ -144,7 +144,10 @@ export const drawingRouter = t.router({
             return CanvasStateZod.parse({ document: doc.canvasDocument, revision: doc.canvasRevision });
         }),
     list: protectedProcedure.output(z.array(DrawingSummaryZod)).query(async ({ ctx }) => {
-        const docs = await db.drawing.DrawingModel.find({ ownerId: ctx.user.id }).select('-canvasDocument -canvasRevision').sort({ updatedAt: -1 }).lean();
+        const docs = await db.drawing.DrawingModel.find({ ownerId: ctx.user.id })
+            .select('-canvasDocument -canvasRevision -workspaceThumbnail')
+            .sort({ updatedAt: -1 })
+            .lean();
         return docs.map(db.drawing.DrawingDto);
     }),
     create: protectedProcedure.output(DrawingZod).mutation(async ({ ctx }) => {

@@ -513,3 +513,105 @@
         transition: none;
     }
 }
+
+/* Refined spacing and interaction for the existing balanced dashboard. */
+.sl-0 .sl-main {
+    padding-block: clamp(28px, 4vw, 56px);
+}
+.sl-0 .sl-heading {
+    padding-bottom: 28px;
+}
+.sl-0 .sl-heading h1 {
+    font-size: clamp(26px, 2.4vw, 32px);
+    line-height: 1.2;
+    font-weight: 600;
+    font-variation-settings: 'wght' 600;
+}
+.sl-0 .sl-toolbar {
+    padding-block: 18px;
+    gap: 16px;
+}
+.sl-0 .sl-card {
+    cursor: pointer;
+    transition:
+        border-color 160ms ease,
+        background-color 160ms ease;
+}
+.sl-0 .sl-image {
+    border-bottom: 1px solid var(--border);
+}
+.sl-0 .sl-card-copy {
+    padding: 18px 20px 16px;
+}
+.sl-0 .sl-card-title h2 {
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 600;
+    font-variation-settings: 'wght' 600;
+    letter-spacing: -0.015em;
+}
+.sl-0 .sl-card-copy p {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 18px;
+}
+.sl-0 .sl-card-meta {
+    margin-top: 18px;
+    padding-top: 0;
+    font-size: 12px;
+    line-height: 18px;
+    gap: 12px;
+}
+.sl-card-open-arrow {
+    opacity: 0;
+    transform: translate(-2px, 2px);
+    transition:
+        opacity 160ms ease,
+        transform 160ms ease;
+}
+.sl-card:hover .sl-card-open-arrow,
+.sl-card:focus-visible .sl-card-open-arrow {
+    opacity: 1;
+    transform: translate(0, 0);
+}
+.sl-0 .sl-card:hover {
+    border-color: var(--muted-foreground);
+    background: color-mix(in oklab, var(--card) 94%, var(--foreground));
+}
+.sl-card:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+}
+.sl-0 .sl-table-0 th {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+}
+.sl-0 .sl-table-0 td {
+    font-size: 13px;
+}
+@media (max-width: 700px) {
+    .sl-0 .sl-heading {
+        gap: 16px;
+        padding-bottom: 24px;
+    }
+    .sl-0 .sl-card-copy {
+        padding-inline: 16px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sl-0 .sl-card,
+    .sl-card-open-arrow {
+        transition: none;
+    }
+}
+
+/* Keep placeholder icons small; only blueprint illustrations fill the preview. */
+.sl-image {
+    display: grid;
+    place-items: center;
+}
+.sl-root .sl-image > svg[aria-label='Drawing document'] {
+    width: 40px;
+    height: 40px;
+}

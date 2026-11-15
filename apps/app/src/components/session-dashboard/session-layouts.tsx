@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react';
-import { Plus, ChevronDown, FileText, Upload, ScanLine, GridIcon, Check, ArrowUpRight } from '@repo/design-system/lib/icons-remix';
+import { useEffect, useState, type ReactNode } from 'react';
+import { remixIcons, Plus, ChevronDown, FileText, Upload, ScanLine, GridIcon, Check, ArrowUpRight } from '@repo/design-system/lib/icons-remix';
 import { Button } from '@repo/design-system/components/ui/button';
+import { DrawingPlaceholder } from '@/shared/components/drawing-placeholder';
 import { AppHeader } from '@/components/app-header';
 import { DropdownMenu, DropdownTrigger, DropdownContent } from '@repo/design-system/components/ui/dropdown';
 import { MenuItem } from '@repo/design-system/components/ui/menu-item';
@@ -17,6 +18,7 @@ type PreviewSession = {
     status: string;
     rooms?: number;
     createdAt?: string;
+    updatedAt?: string;
     documentCount?: number;
     uploadProgress?: number;
     cover?: ReactNode;
@@ -30,9 +32,19 @@ export const layoutDirections = [
     { name: 'Wide library', short: 'Wide', note: 'Two wide previews with room for session context.' },
 ];
 function SessionDate({ value }: Readonly<{ value?: string }>) {
+    const [timeZone, setTimeZone] = useState('UTC');
+    useEffect(() => setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone), []);
     return value ? (
         <time dateTime={value}>
-            {new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(value))}
+            {new Intl.DateTimeFormat('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hourCycle: 'h23',
+                timeZone,
+            }).format(new Date(value))}
         </time>
     ) : (
         <>—</>
@@ -42,7 +54,17 @@ export function SessionStatus({ status, rooms, uploadProgress }: Readonly<{ stat
     const uploading = status === 'Uploading';
     const analyzing = status === 'Analyzing';
     const identified = !uploading && !analyzing && rooms !== undefined;
-    const Icon = uploading ? Upload : analyzing ? ScanLine : identified ? GridIcon : Check;
+    const Icon = uploading
+        ? Upload
+        : analyzing
+          ? ScanLine
+          : status === 'Needs attention'
+            ? remixIcons['circle-alert']
+            : identified
+              ? GridIcon
+              : status === 'Ready'
+                ? Check
+                : FileText;
     const label = uploading
         ? `Uploading${uploadProgress === undefined ? '' : ` · ${Math.round(Math.max(0, Math.min(100, uploadProgress)))}%`}`
         : analyzing
@@ -168,7 +190,7 @@ export function SessionLayouts({
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Name</TableHead>
-                                    <TableHead>Date created</TableHead>
+                                    <TableHead>Last edited</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Documents uploaded</TableHead>
                                 </TableRow>
@@ -190,7 +212,7 @@ export function SessionLayouts({
                                             </button>
                                         </TableCell>
                                         <TableCell>
-                                            <SessionDate value={s.createdAt} />
+                                            <SessionDate value={s.updatedAt} />
                                         </TableCell>
                                         <TableCell>
                                             <SessionStatus status={s.status} rooms={s.rooms} uploadProgress={s.uploadProgress} />
@@ -209,15 +231,16 @@ export function SessionLayouts({
                         {ordered.map((s, i) => (
                             <button className="sl-card" key={s.id} onClick={() => onOpen(s)}>
                                 <div className={`sl-image${!sample && s.cover ? ' sl-image-cover' : ''}`}>
-                                    {sample ? <Thumbnail index={i} /> : (s.cover ?? <FileText size={48} aria-label="Drawing document" />)}
+                                    {sample ? <Thumbnail index={i} /> : (s.cover ?? <DrawingPlaceholder />)}
                                     {variant === 3 && <span className="sl-sheet-number">A / {String(i + 1).padStart(2, '0')}</span>}
                                 </div>
                                 <div className="sl-card-copy">
                                     <div className="sl-card-title">
-                                        <h2>{s.name}</h2>
+                                        <h2 title={s.name}>{s.name}</h2>
+                                        <ArrowUpRight size={16} aria-hidden className="sl-card-open-arrow" />
                                     </div>
                                     <p>
-                                        Created <SessionDate value={s.createdAt} />
+                                        Last edited <SessionDate value={s.updatedAt} />
                                     </p>
                                     <div className="sl-card-meta">
                                         <SessionStatus status={s.status} rooms={s.rooms} uploadProgress={s.uploadProgress} />
