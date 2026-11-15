@@ -2,8 +2,16 @@ import { createEffect, createEvent, createStore, sample } from 'effector';
 import { debounce, readonly } from 'patronum';
 import { TRPCClientError } from '@trpc/client';
 import { z } from 'zod';
-import { CanvasStateZod, type CanvasState, type SaveCanvas, type DetectedProperty, type CanvasVisibilityMode } from '@repo/types';
-import { trpcClient } from '@/shared/trpc';
+import {
+    CanvasStateZod,
+    DrawingZod,
+    type UpdateEntityClass,
+    type CanvasState,
+    type SaveCanvas,
+    type DetectedProperty,
+    type CanvasVisibilityMode,
+} from '@repo/types';
+import { queryClient, trpc, trpcClient } from '@/shared/trpc';
 import { readLocal, writeLocal } from '../canvas-storage';
 import { $$drawings, type CanvasRegion } from '../model';
 
@@ -52,12 +60,36 @@ export function createCanvasModel(id: string, storageKey: string) {
     const $revision = createStore(0);
     const $status = createStore<SaveStatus>({ type: 'saved' });
     const $selected = createStore<ObjectSelection | null>(null);
+    const $classResult = createStore<
+        { type: 'idle' } | { type: 'saved'; blueprintId: string; entityId: string } | { type: 'error'; blueprintId: string; entityId: string; message: string }
+    >({ type: 'idle' });
     const savedVisibility = VisibilityZod.safeParse(readLocal(`${storageKey}:layers`));
     const $visibility = createStore(savedVisibility.success ? savedVisibility.data : { room: true, icon: true, junction: false });
     const loadFx = createEffect(async () => CanvasStateZod.parse(await trpcClient.drawings.getCanvas.query({ id })));
     const saveFx = createEffect(async (input: SaveCanvas) => CanvasStateZod.parse(await trpcClient.drawings.saveCanvas.mutate(input)));
     const retainRecoveryFx = createEffect((state: CanvasState) => writeLocal(`${storageKey}:recovery`, state));
     const retainVisibilityFx = createEffect((visibility: z.infer<typeof VisibilityZod>) => writeLocal(`${storageKey}:layers`, visibility));
+    const updateEntityClassFx = createEffect(async (input: UpdateEntityClass) => {
+        const drawing = DrawingZod.parse(await trpcClient.drawings.updateEntityClass.mutate(input));
+        queryClient.setQueryData(trpc.drawings.get.queryKey({ id }), drawing);
+        await Promise.all([
+            queryClient.invalidateQueries(trpc.drawings.get.queryFilter({ id })),
+            queryClient.invalidateQueries(trpc.drawings.list.queryFilter()),
+        ]);
+        return drawing;
+    });
+
+    sample({ clock: [$selection, updateEntityClassFx], fn: () => ({ type: 'idle' as const }), target: $classResult });
+    sample({
+        clock: updateEntityClassFx.done,
+        fn: ({ params }) => ({ type: 'saved' as const, blueprintId: params.blueprintId, entityId: params.entityId }),
+        target: $classResult,
+    });
+    sample({
+        clock: updateEntityClassFx.fail,
+        fn: ({ params, error }) => ({ type: 'error' as const, blueprintId: params.blueprintId, entityId: params.entityId, message: error.message }),
+        target: $classResult,
+    });
 
     sample({
         clock: agentVisibilityApplied,
@@ -220,6 +252,9 @@ export function createCanvasModel(id: string, storageKey: string) {
         agentSelectionCleared,
         agentSelectionApplied,
         $agentSelectionRequestId: readonly($agentSelectionRequestId),
+        updateEntityClassFx,
+        $classResult: readonly($classResult),
+        $classPending: readonly(updateEntityClassFx.pending),
         groupSelected,
         $sheetFocus: readonly($sheetFocus),
         $regionFocus: readonly($regionFocus),

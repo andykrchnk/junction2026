@@ -165,6 +165,25 @@ export const LayoutFixtureZod = ProcessingPredictionZod.shape.fixtures.element.o
     roomIds: ProcessingPredictionZod.shape.fixtures.element.shape.room_ids,
     enrichment: EntityEnrichmentZod,
 });
+export const UpdateEntityClassZod = z.discriminatedUnion('kind', [
+    z.object({
+        id: MongoIdZod,
+        blueprintId: z.string().min(1),
+        revision: z.string().min(1),
+        entityId: z.string().min(1),
+        kind: z.literal('room'),
+        class: LayoutRoomZod.shape.class,
+    }),
+    z.object({
+        id: MongoIdZod,
+        blueprintId: z.string().min(1),
+        revision: z.string().min(1),
+        entityId: z.string().min(1),
+        kind: z.literal('fixture'),
+        class: LayoutFixtureZod.shape.class,
+    }),
+]);
+export type UpdateEntityClass = z.infer<typeof UpdateEntityClassZod>;
 export const BlueprintLayoutZod = z
     .object({
         revision: z.string().min(1),

@@ -18,6 +18,7 @@ import {
     MessageZod,
     CanvasStateZod,
     SaveCanvasZod,
+    UpdateEntityClassZod,
 } from '@repo/types';
 import { db } from '../../db';
 import { protectedProcedure, t } from '../../shared/trpc';
@@ -27,6 +28,7 @@ import { processBlueprint } from './blueprint-processing';
 import { getDrawing, processDrawing } from './operations';
 import { enqueueDrawing } from './processing-jobs';
 import { scanCommentsRouter } from './comments';
+import { updateEntityClass } from './entity-class';
 
 export const drawingRouter = t.router({
     acknowledgeCanvasAction: protectedProcedure
@@ -83,6 +85,10 @@ export const drawingRouter = t.router({
             }),
         ),
     comments: scanCommentsRouter,
+    updateEntityClass: protectedProcedure
+        .input(UpdateEntityClassZod)
+        .output(DrawingZod)
+        .mutation(({ input, ctx }) => updateEntityClass(input, ctx.user.id)),
     updateUpload: protectedProcedure
         .input(UpdateDrawingUploadZod)
         .output(DrawingZod)
