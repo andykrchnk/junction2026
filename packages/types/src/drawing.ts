@@ -36,12 +36,14 @@ const AnswerEntityListBlockZod = z.object({
 const AnswerNoticeBlockZod = z.object({ type: z.literal('notice'), tone: z.enum(['info', 'warning']), text: z.string().trim().min(1).max(2000) });
 export const AnswerBlockZod = z.discriminatedUnion('type', [AnswerTextBlockZod, AnswerEntityListBlockZod, AnswerNoticeBlockZod, EntityResultBlockZod]);
 export const AnswerPresentationZod = z.object({ version: z.literal(1), blocks: z.array(AnswerBlockZod).min(1).max(20) });
+const SuggestedPromptsZod = z.array(z.string().trim().min(1).max(160)).length(2);
 export const AnswerZod = z.object({
     text: z.string(),
     references: z.array(AnswerReferenceZod).max(50),
     status: z.enum(['answered', 'needs_clarification', 'cannot_determine']),
     clarificationQuestion: z.string().min(1).nullable(),
     userProvidedInformation: z.array(z.string()),
+    suggestedPrompts: SuggestedPromptsZod.optional(),
     // Older answers have no presentation; unsupported payloads retain their plain-text fallback.
     presentation: AnswerPresentationZod.nullable().optional().catch(null),
 });
@@ -50,6 +52,7 @@ export const AnswerZod = z.object({
 const GeneratedAnswerBlockZod = z.discriminatedUnion('type', [AnswerTextBlockZod, AnswerEntityListBlockZod, AnswerNoticeBlockZod, EntityResultReferenceZod]);
 export const StructuredAnswerZod = AnswerZod.extend({
     text: z.string().trim().min(1).max(16000),
+    suggestedPrompts: SuggestedPromptsZod,
     presentation: z.object({ version: z.literal(1), blocks: z.array(GeneratedAnswerBlockZod).min(1).max(20) }),
 });
 export type EntitySearch = z.infer<typeof EntitySearchZod>;

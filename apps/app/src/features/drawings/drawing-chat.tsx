@@ -133,6 +133,7 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
     const answer = latestMessage?.answer;
     const clarification = !attachment && !pending && answer?.status === 'needs_clarification' ? answer.clarificationQuestion : null;
     const clarificationId = latestMessage?.id ?? 'clarification';
+    const suggestedPrompts = answer?.suggestedPrompts ?? (messages.length === 0 ? ['Summarize these drawings', 'What rooms are shown?'] : []);
     const visibleError = error?.id === id ? error.message : drawing.error;
     const ask = (message: Drawing['messages'][number], attachmentRequestId?: string) => {
         if (!drawing.blueprints.length || busy || asking || submissionsRef.current.has(id)) return;
@@ -274,6 +275,22 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                         </div>
                     </div>
                     <div ref={composerRef} className="max-h-[50%] shrink-0 space-y-2 overflow-y-auto p-3">
+                        {!composerBlocked && !clarification && !attachment && !draft.trim() && suggestedPrompts.length > 0 && (
+                            <div role="group" aria-label="Suggested prompts" className="flex flex-col items-start gap-1.5">
+                                {suggestedPrompts.map((prompt, index) => (
+                                    <Button
+                                        key={`${index}-${prompt}`}
+                                        type="button"
+                                        variant="secondary"
+                                        size="compact"
+                                        className="h-auto max-w-full justify-start whitespace-normal py-1.5 text-left [overflow-wrap:anywhere]"
+                                        onClick={() => send(prompt)}
+                                    >
+                                        {prompt}
+                                    </Button>
+                                ))}
+                            </div>
+                        )}
                         {attachment && (
                             <Badge color="gray" className="h-7 max-w-full [&>span]:[text-box:normal]">
                                 <span className="flex min-w-0 items-center gap-1">
