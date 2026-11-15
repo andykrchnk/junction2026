@@ -17,9 +17,9 @@ export function ProgressStep({
     icon,
     children,
 }: Readonly<{ title: string; status: TraceStatus; detail: string; icon?: ReactNode; children: ReactNode }>) {
-    const [open, setOpen] = useState<boolean>();
+    const [open, setOpen] = useState(false);
     return (
-        <TraceCollapsible open={open ?? (status === 'running' || status === 'error')} onOpenChange={setOpen}>
+        <TraceCollapsible open={open} onOpenChange={setOpen}>
             <TraceCollapsibleTrigger className="w-full">
                 <TraceLine status={status} className="flex-1">
                     {icon && <TraceIcon>{icon}</TraceIcon>}

@@ -110,7 +110,7 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
     }, [id, attachment?.requestId, composerBlocked, tab]);
     useEffect(() => {
         endRef.current?.scrollIntoView({ block: 'nearest' });
-    }, [drawing?.messages.length, drawing?.messages.at(-1)?.answer, drawing?.blueprints, outgoing[id]]);
+    }, [drawing?.id, drawing?.messages.length, drawing?.messages.at(-1)?.answer, outgoing[id]]);
     if (isPending)
         return (
             <p role="status" className="p-4 text-sm text-muted-foreground">
