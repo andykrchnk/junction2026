@@ -8,6 +8,7 @@ import { Env } from '../../shared/env';
 import { estimatePpm } from './ppm-agent';
 import { resolvePpm } from './ppm-resolution-agent';
 import { createPpmComments } from './ppm-comments';
+import { createDoorPpmComment } from './door-ppm-fallback';
 
 type ProcessBlueprintParams = Readonly<{
     drawing: Drawing;
@@ -180,7 +181,7 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
         }
         if (blueprint.ppm === null) {
             const ppm = await resolvePpm({ blueprint, messages: drawing.messages, pages, signal });
-            await save({ ppm, status: { type: 'ready' } });
+            await save({ ppm, status: { type: 'ready' } }, createDoorPpmComment({ ppm, width: blueprint.raster.width, height: blueprint.raster.height }));
         } else {
             await save({ status: { type: 'ready' } });
         }

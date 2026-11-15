@@ -1,4 +1,5 @@
 import type { Drawing } from '@repo/types';
+import { PpmDoorFallbackDetails } from './ppm-door-fallback-details';
 
 export function BlueprintContext({ drawing }: Readonly<{ drawing: Drawing }>) {
     return (
@@ -21,6 +22,7 @@ export function BlueprintContext({ drawing }: Readonly<{ drawing: Drawing }>) {
                                     {blueprint.ppm.value ? `Estimated scale · ${blueprint.ppm.value.toLocaleString()} px/m` : 'Scale unresolved'}
                                 </p>
                                 <p className="text-xs text-muted-foreground">{blueprint.ppm.message}</p>
+                                {blueprint.ppm.doorFallback && <PpmDoorFallbackDetails fallback={blueprint.ppm.doorFallback} />}
                             </div>
                         )}
                         {!!blueprint.layout?.limitations.length && (

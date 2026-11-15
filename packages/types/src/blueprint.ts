@@ -49,11 +49,30 @@ export const PpmCalibrationZod = z.discriminatedUnion('method', [
     CalibrationSourceZod.extend({ method: z.literal('length'), pixelLength: z.number().finite().positive(), realLengthMetres: z.number().finite().positive() }),
     CalibrationSourceZod.extend({ method: z.literal('area'), pixelArea: z.number().finite().positive(), realAreaSquareMetres: z.number().finite().positive() }),
 ]);
+export const PpmDoorFallbackZod = z.object({
+    method: z.enum(['reference', 'default']),
+    assumedOpeningWidthMm: z.number().finite().positive(),
+    doorId: z.string().min(1),
+    page: z.number().int().positive(),
+    start: z.object({ x: z.number().finite().nonnegative(), y: z.number().finite().nonnegative() }),
+    end: z.object({ x: z.number().finite().nonnegative(), y: z.number().finite().nonnegative() }),
+    pixelLength: z.number().finite().positive(),
+    assumptions: z.array(z.string().min(1).max(1000)).max(20),
+    sources: z.array(z.object({ url: z.url({ protocol: /^https?$/ }), title: z.string().min(1).max(500), evidence: z.string().min(1).max(2000) })).max(10),
+    context: z.object({
+        country: z.string().nullable(),
+        drawingYear: z.number().int().positive().nullable(),
+        buildingType: z.string().nullable(),
+        doorType: z.string().nullable(),
+    }),
+});
+export type PpmDoorFallback = z.infer<typeof PpmDoorFallbackZod>;
 export const StoredPpmResultZod = z.object({
     value: z.number().finite().positive().optional(),
     message: z.string(),
     // Saved results from before evidence tracking contain only a value and explanation.
     calibration: PpmCalibrationZod.optional(),
+    doorFallback: PpmDoorFallbackZod.optional(),
 });
 export type AgentPpmResult = z.infer<typeof AgentPpmResultZod>;
 export type StoredPpmResult = z.infer<typeof StoredPpmResultZod>;
