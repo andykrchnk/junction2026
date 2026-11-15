@@ -8,7 +8,11 @@ export async function deleteEntity(input: DeleteEntity, ownerId: string) {
     const drawing = await getDrawing(input.id, ownerId);
     const blueprint = drawing.blueprints.find((item) => item.id === input.blueprintId);
     const layout = blueprint?.layout;
-    if (!layout || !blueprint.raster || !(input.kind === 'room' ? layout.rooms : layout.fixtures).some((entity) => entity.id === input.entityId)) {
+    if (
+        !layout ||
+        !blueprint.raster ||
+        !(input.kind === 'room' ? layout.rooms : input.kind === 'slab' ? layout.slabs : layout.fixtures).some((entity) => entity.id === input.entityId)
+    ) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Detected element not found.' });
     }
     if (drawing.busy || layout.revision !== input.revision) {
@@ -50,6 +54,7 @@ export async function deleteEntity(input: DeleteEntity, ownerId: string) {
     const updatedLayout = BlueprintLayoutZod.parse({
         ...layout,
         revision: crypto.randomUUID(),
+        slabs: layout.slabs.filter((entity) => entity.id !== input.entityId),
         rooms: layout.rooms
             .filter((entity) => entity.id !== input.entityId)
             .map((entity) => ({ ...entity, enrichment: reconcileEnrichment(entity.enrichment) })),

@@ -178,7 +178,7 @@ export const DeleteEntityZod = z.object({
     blueprintId: z.string().min(1),
     revision: z.string().min(1),
     entityId: z.string().min(1),
-    kind: z.enum(['room', 'fixture']),
+    kind: z.enum(['room', 'fixture', 'slab']),
 });
 export type DeleteEntity = z.infer<typeof DeleteEntityZod>;
 

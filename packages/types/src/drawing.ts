@@ -9,7 +9,7 @@ export const MAX_PDF_PAGES = 10;
 export const AnswerReferenceZod = z.object({ blueprintId: z.string(), entityId: z.string().nullable() });
 export const EntitySearchZod = z.object({
     blueprintId: z.string().min(1).nullable(),
-    kind: z.enum(['room', 'fixture']),
+    kind: z.enum(['room', 'fixture', 'slab']),
     category: z.string().trim().min(1).max(200).nullable(),
 });
 const EntityResultReferenceZod = z.object({ type: z.literal('entity_results'), resultId: z.string().uuid() });

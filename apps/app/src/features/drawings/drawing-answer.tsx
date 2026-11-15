@@ -35,7 +35,7 @@ function DrawingReferences({ drawing, references }: Readonly<{ drawing: Drawing;
                             status={undefined}
                             detail={entityIds.size ? `${entityIds.size} ${entityIds.size === 1 ? 'object' : 'objects'}` : 'Source'}
                         >
-                            {(['room', 'icon', 'junction'] as const).flatMap((type) => {
+                            {(['room', 'icon', 'slab', 'junction'] as const).flatMap((type) => {
                                 const items = members.filter((object) => object.property.type === type);
                                 return [...new Set(items.map((object) => object.property.label))]
                                     .sort((left, right) => left.localeCompare(right))

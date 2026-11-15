@@ -3,6 +3,7 @@ import type { DetectedProperty, ProcessingPrediction } from './prediction';
 type SemanticColors = Readonly<{
     room: Readonly<Record<ProcessingPrediction['rooms'][number]['class'], string>>;
     icon: Readonly<Record<ProcessingPrediction['fixtures'][number]['class'], string>>;
+    slab: Readonly<Record<'Slab', string>>;
     junction: Readonly<Record<'Structural junction', string>>;
 }>;
 
@@ -38,12 +39,13 @@ export const DETECTED_OBJECT_COLORS = {
         Chimney: '#bb7900',
         'Shower Cabin': '#0891b2',
     },
+    slab: { Slab: '#0d9488' },
     junction: {
         'Structural junction': '#b32be0',
     },
 } as const satisfies SemanticColors;
 
-const FALLBACK_COLORS = { room: '#6b7280', icon: '#78716c', junction: '#71717a' } as const;
+const FALLBACK_COLORS = { room: '#6b7280', icon: '#78716c', slab: '#0d9488', junction: '#71717a' } as const;
 
 export function getDetectedObjectColor(params: Pick<DetectedProperty, 'type' | 'label'>): string {
     const colors: Readonly<Record<string, string>> = DETECTED_OBJECT_COLORS[params.type];

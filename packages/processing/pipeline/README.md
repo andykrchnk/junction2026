@@ -1,8 +1,8 @@
 # Standardized drawing processing service
 
 `POST /v1/process` accepts a raster drawing as multipart field `image`, authenticates
-with `x-api-key`, and returns only `coordinate_system`, `image`, `rooms`, and
-`fixtures`. `response_format=zip` returns the same object in `predictions.json`.
+with `x-api-key`, and returns only `coordinate_system`, `image`, `rooms`,
+`fixtures`, and `slabs`. `response_format=zip` returns the same object in `predictions.json`.
 `GET /v1/schema` returns the authenticated JSON Schema. The existing
 `/v1/predictions` contract is proxied unchanged through this service during migration.
 
@@ -282,8 +282,13 @@ from a bounded note catalog; unknown units remain null. Unverified thickness/ann
 No confidence score is invented. These are experimental gross outlines: trenches
 and holes are not subtracted; internal-line artifacts and missing coverage remain
 possible. `X-Processing-Degraded: slab_review_required` makes this explicit.
-The consumer validates and preserves slabs in its layout and raw source; existing
-room/fixture visualization and entity enrichment do not yet render/enrich slabs.
+The consumer validates and persists slabs in its layout and raw source. Slabs
+appear as a separate canvas/layer category with selection, visibility, deletion, saved
+thickness annotations and an explicit review status. The object Ask action and
+drawing chat can search, count, reference and show slabs using their saved
+geometry and measurements. Physical areas require applicable saved calibration;
+unknown thickness units remain unknown. Slabs do not receive room/fixture
+description enrichment or fabricated confidence scores.
 Private artifacts retain rankings, candidates, selection/review responses, OCR,
 final predictions and a slab overlay. Upload contents are never instructions.
 

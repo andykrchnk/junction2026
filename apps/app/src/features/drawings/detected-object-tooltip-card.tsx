@@ -12,8 +12,8 @@ function Divider() {
     );
 }
 
-export function DetectedObjectTooltipCard({ label, area, confidence }: Readonly<{ label: string; area: string; confidence: number }>) {
-    const percentage = `${Math.round(confidence * 100)}%`;
+export function DetectedObjectTooltipCard({ label, area, confidence }: Readonly<{ label: string; area: string; confidence: number | null }>) {
+    const percentage = confidence === null ? 'Needs review' : `${Math.round(confidence * 100)}%`;
     return (
         <div
             style={{
@@ -36,8 +36,8 @@ export function DetectedObjectTooltipCard({ label, area, confidence }: Readonly<
             </span>
             <Divider />
             <span
-                aria-label={`Model confidence: ${percentage}`}
-                title="Model confidence"
+                aria-label={confidence === null ? percentage : `Model confidence: ${percentage}`}
+                title={confidence === null ? 'Unverified slab proposal' : 'Model confidence'}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
             >
                 <ConfidenceIcon size={14} aria-hidden />

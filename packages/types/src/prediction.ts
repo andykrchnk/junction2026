@@ -42,6 +42,7 @@ export const ProcessingSlabZod = z
         needs_review: z.literal(true),
     })
     .strict();
+export type ProcessingSlab = z.infer<typeof ProcessingSlabZod>;
 export const ProcessingPredictionZod = z
     .object({
         coordinate_system: z.literal('image_pixels'),
@@ -146,7 +147,7 @@ export type ProcessingPrediction = z.infer<typeof ProcessingPredictionZod>;
 export type ProcessingGeometry = z.infer<typeof ProcessingGeometryZod>;
 export const DetectedPropertyZod = z.object({
     id: z.string().min(1),
-    type: z.enum(['room', 'icon', 'junction']),
+    type: z.enum(['room', 'icon', 'slab', 'junction']),
     label: z.string(),
     geometry: z.discriminatedUnion('type', [
         z.object({ type: z.literal('Polygon'), coordinates: z.array(z.array(PixelPointZod).min(4)).min(1) }),
@@ -156,8 +157,8 @@ export const DetectedPropertyZod = z.object({
     bbox: PixelBoxZod.nullable(),
     centroid: PixelPointZod.nullable(),
     areaPixels: z.number().nonnegative().nullable(),
-    confidence: ScoreZod,
-    scoreMeaning: z.enum(['component_mean_softmax', 'structural_heatmap_peak', 'processing_confidence']),
+    confidence: ScoreZod.nullable(),
+    scoreMeaning: z.enum(['component_mean_softmax', 'structural_heatmap_peak', 'processing_confidence']).nullable(),
 });
 export const PredictionPageZod = z.object({
     page: z.number().int().positive(),

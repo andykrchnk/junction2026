@@ -224,7 +224,7 @@ export function BlueprintLayersPanel({
                                                     </p>
                                                 )}
                                                 {!count && !processing && <p className="px-4 pb-3 text-sm text-muted-foreground">No detected elements yet.</p>}
-                                                {(['room', 'icon', 'junction'] as const).map((type) => {
+                                                {(['room', 'icon', 'slab', 'junction'] as const).map((type) => {
                                                     const items = sheetObjects.filter((item) => item.property.type === type);
                                                     if (!items.length) return null;
                                                     return (
@@ -235,7 +235,15 @@ export function BlueprintLayersPanel({
                                                                         visibility[type] &&
                                                                         items.some((item) => !hiddenObjects.includes(`${item.page}:${item.index}`))
                                                                     }
-                                                                    label={type === 'room' ? 'rooms' : type === 'icon' ? 'fixtures' : 'junctions'}
+                                                                    label={
+                                                                        type === 'room'
+                                                                            ? 'rooms'
+                                                                            : type === 'icon'
+                                                                              ? 'fixtures'
+                                                                              : type === 'slab'
+                                                                                ? 'slabs'
+                                                                                : 'junctions'
+                                                                    }
                                                                     onToggle={() => {
                                                                         const visible =
                                                                             visibility[type] &&
@@ -272,7 +280,13 @@ export function BlueprintLayersPanel({
                                                                         className="cursor-pointer pl-4 pr-12 py-3 text-xs font-medium focus-visible:outline-2 focus-visible:outline-ring"
                                                                     >
                                                                         <span className="ml-1">
-                                                                            {type === 'room' ? 'Rooms' : type === 'icon' ? 'Fixtures' : 'Junctions'}
+                                                                            {type === 'room'
+                                                                                ? 'Rooms'
+                                                                                : type === 'icon'
+                                                                                  ? 'Fixtures'
+                                                                                  : type === 'slab'
+                                                                                    ? 'Slabs'
+                                                                                    : 'Junctions'}
                                                                         </span>{' '}
                                                                         <span className="ml-2 text-muted-foreground">{items.length}</span>
                                                                     </AccordionTrigger>

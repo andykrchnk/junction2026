@@ -29,8 +29,8 @@ export function objectAnnotationContext({
     if (!blueprint?.layout || !blueprint.raster) return null;
     const { width, height } = blueprint.raster;
     if (![width, height].every((value) => Number.isFinite(value) && value > 0)) return null;
-    // The canonical object order is rooms followed by fixtures, as in layoutProperties.
-    const objects = [...blueprint.layout.rooms, ...blueprint.layout.fixtures];
+    // Keep the canonical object order used by layoutProperties.
+    const objects = [...blueprint.layout.rooms, ...blueprint.layout.fixtures, ...blueprint.layout.slabs];
     const index = objects.findIndex((item) => item.id === entityId);
     const object = objects[index];
     if (!object) return null;
@@ -42,7 +42,7 @@ export function objectAnnotationContext({
         sheet: blueprint.pageNumber,
         label: object.class,
         element: index + 1,
-        type: index < blueprint.layout.rooms.length ? 'room' : 'icon',
+        type: index < blueprint.layout.rooms.length ? 'room' : index < blueprint.layout.rooms.length + blueprint.layout.fixtures.length ? 'icon' : 'slab',
         boundsPx: [
             Math.min(...points.map(([x]) => x)),
             Math.min(...points.map(([, y]) => y)),
