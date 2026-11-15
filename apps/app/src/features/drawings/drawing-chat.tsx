@@ -275,23 +275,25 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                     </div>
                     <div ref={composerRef} className="max-h-[50%] shrink-0 space-y-2 overflow-y-auto p-3">
                         {attachment && (
-                            <Badge color="gray" className="max-w-full gap-1">
-                                <button
-                                    type="button"
-                                    className="min-w-0 truncate text-left"
-                                    onClick={selectAttachment}
-                                    aria-label={`Select attached ${attachment.context.label} on canvas`}
-                                >
-                                    Selected area · {attachment.context.label} · Sheet {attachment.context.sheet}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="flex size-5 shrink-0 items-center justify-center"
-                                    aria-label="Remove object attachment"
-                                    onClick={() => $$drawings.objectAttachmentRemoved(id)}
-                                >
-                                    <X className="size-3" />
-                                </button>
+                            <Badge color="gray" className="h-7 max-w-full [&>span]:[text-box:normal]">
+                                <span className="flex min-w-0 items-center gap-1">
+                                    <button
+                                        type="button"
+                                        className="min-w-0 flex-1 truncate text-left"
+                                        onClick={selectAttachment}
+                                        aria-label={`Select attached ${attachment.context.label} on canvas`}
+                                    >
+                                        Selected area · {attachment.context.label} · Sheet {attachment.context.sheet}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="flex size-5 shrink-0 items-center justify-center"
+                                        aria-label="Remove object attachment"
+                                        onClick={() => $$drawings.objectAttachmentRemoved(id)}
+                                    >
+                                        <X className="size-3" />
+                                    </button>
+                                </span>
                             </Badge>
                         )}
                         {clarification ? (
