@@ -11,6 +11,7 @@ import { MenuItem } from '@repo/design-system/components/ui/menu-item';
 import { remixIcons } from '@repo/design-system/lib/icons-remix';
 import { DrawingAttachmentThumbnail } from './drawing-upload';
 import { $$drawings } from './model';
+import { PpmDoorFallbackDetails } from './ppm-door-fallback-details';
 
 const MoreIcon = remixIcons['more-horizontal'];
 
@@ -210,6 +211,7 @@ export function DrawingUploads({
                                         <span className="mb-2 block font-medium text-foreground">PPM: {drawing.blueprints[0]?.ppm.value} px/m</span>
                                     )}
                                     {drawing.blueprints[0]?.ppm.message}
+                                    {drawing.blueprints[0]?.ppm.doorFallback && <PpmDoorFallbackDetails fallback={drawing.blueprints[0].ppm.doorFallback} />}
                                 </>
                             ) : drawing.busy && !drawing.error && drawing.status !== 'failed' ? (
                                 'PPM is not available. Drawing processing is in progress.'

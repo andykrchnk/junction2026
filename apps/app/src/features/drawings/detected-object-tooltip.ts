@@ -14,6 +14,6 @@ export function formatDetectedObjectArea({ drawing, page, property }: ObjectTool
     const hasPrintedArea = printedArea !== null && Number.isFinite(printedArea) && printedArea > 0;
     const area = hasPrintedArea ? printedArea : estimatedArea;
     return area !== null && Number.isFinite(area) && area > 0
-        ? `${hasPrintedArea ? '' : '≈'}${area.toLocaleString('en-US', { maximumSignificantDigits: 4 })} m²`
+        ? `${hasPrintedArea ? '' : '≈'}${area.toLocaleString('en-US', { maximumSignificantDigits: 4 })} m²${!hasPrintedArea && blueprint?.ppm?.doorFallback ? ' (assumed door width)' : ''}`
         : 'Area unavailable';
 }

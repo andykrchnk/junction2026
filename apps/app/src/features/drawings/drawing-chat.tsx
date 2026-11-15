@@ -48,7 +48,8 @@ function UserQuestion({ question }: Readonly<{ question: string }>) {
 }
 
 export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id: string; previewDrawing?: Drawing; commentsModel?: CommentsModel }>) {
-    const { draft, error, activity, asking, outgoing, stages } = useUnit({
+    const { draft, error, activity, asking, outgoing, stages, stopping } = useUnit({
+        stopping: $$drawings.$stopping,
         outgoing: $$drawings.$outgoing,
         stages: $$drawings.$stages,
         draft: $$drawings.$draft,
@@ -92,6 +93,7 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
     const optimistic = outgoing[id];
     const messages = optimistic && !drawing.messages.some((message) => message.id === optimistic.id) ? [...drawing.messages, optimistic] : drawing.messages;
     const pending = messages.find((message) => !message.answer);
+    const activeQuestion = drawing.busy ? drawing.messages.find((message) => !message.answer) : undefined;
     const latestMessage = messages.at(-1);
     const answer = latestMessage?.answer;
     const clarification = !pending && answer?.status === 'needs_clarification' ? answer.clarificationQuestion : null;
@@ -100,6 +102,7 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
     const ask = (message: Drawing['messages'][number]) => {
         if (!drawing.blueprints.length || busy || asking || submissionsRef.current.has(id)) return;
         submissionsRef.current.add(id);
+        $$drawings.draftChanged('');
         void $$drawings
             .askFx({ id, message })
             .catch(() => {})
@@ -136,7 +139,7 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                             <DrawingProgress
                                 drawing={drawing}
                                 busy={busy}
-                                stage={stages[id]}
+                                stage={stages[id] ?? undefined}
                                 onRetry={
                                     previewDrawing
                                         ? undefined
@@ -197,7 +200,9 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                                     ) : null,
                                 ])}
                             </AnimatePresence>
-                            {busy && !pending && drawing.blueprints.length > 0 && <DrawingActivity label={stages[id] ?? 'Reviewing your question'} />}
+                            {!pending && drawing.blueprints.length > 0 && (activity[id] ?? 0) > 0 && (
+                                <DrawingActivity label={stages[id] ?? 'Starting analysis'} />
+                            )}
                             {visibleError && (
                                 <p role="alert" className="text-sm text-destructive">
                                     {visibleError}
@@ -244,14 +249,17 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                                 onSend={(question, files) => {
                                     if (files.length === 0) send(question);
                                 }}
-                                status="idle"
+                                status={activeQuestion ? 'streaming' : 'idle'}
+                                onStop={() => {
+                                    if (activeQuestion && !stopping) void $$drawings.stopFx({ id, messageId: activeQuestion.id }).catch(() => {});
+                                }}
                                 showQueue={false}
                                 placeholder="Message…"
                                 sendLabel="Send message"
                                 minRows={1}
                                 maxRows={6}
-                                disabled={!drawing.blueprints.length || busy || !!pending || asking}
-                                textareaProps={{ 'aria-label': 'Message', maxLength: questionLimit, autoComplete: 'off' }}
+                                disabled={activeQuestion ? stopping : !drawing.blueprints.length || busy || !!pending || asking}
+                                textareaProps={{ 'aria-label': 'Message', maxLength: questionLimit, autoComplete: 'off', readOnly: !!activeQuestion }}
                             />
                         )}
                     </div>

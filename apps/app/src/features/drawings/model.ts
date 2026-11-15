@@ -21,7 +21,7 @@ export type CanvasRegion = Readonly<{ page: number; bounds: BoundingBox | null; 
 const canvasRegionRequested = createEvent<CanvasRegion & { id: string }>();
 const traceReceived = createEvent<{ key: string; event: DrawingTraceEvent }>();
 const traceConnectionChanged = createEvent<{ key: string; error: string | null }>();
-const stageChanged = createEvent<{ id: string; label: string }>();
+const stageChanged = createEvent<{ id: string; label: string | null }>();
 
 const uploadRequested = createEvent<{ id: string; files: File[] }>();
 const opened = createEvent<string | null>();
@@ -31,7 +31,7 @@ const operationFinished = createEvent<string>();
 const $traceEvents = createStore<Record<string, DrawingTraceEvent[]>>({});
 const $traceErrors = createStore<Record<string, string | null>>({});
 const $uploadQueue = createStore<{ id: string; files: File[] }[]>([]);
-const $stages = createStore<Record<string, string>>({});
+const $stages = createStore<Record<string, string | null>>({});
 const $outgoing = createStore<Record<string, Drawing['messages'][number] | undefined>>({});
 const $id = createStore<string | null>(null);
 const $draft = createStore('');
@@ -121,6 +121,13 @@ const reviewContextFx = createEffect(async (input: ReviewDrawingContext) => {
         await refresh(input.id);
     }
 });
+const stopFx = createEffect(async (input: { id: string; messageId: string }) => {
+    try {
+        return await trpcClient.drawings.stop.mutate(input);
+    } finally {
+        await refresh(input.id);
+    }
+});
 
 sample({
     clock: traceReceived,
@@ -161,6 +168,8 @@ sample({ clock: reviewContextFx.fail, fn: ({ params, error }) => ({ id: params.i
 sample({ clock: uploadFx.finally, fn: ({ params }) => params.id, target: operationFinished });
 sample({ clock: analyzeFx.finally, fn: ({ params }) => params, target: operationFinished });
 sample({ clock: askFx.finally, fn: ({ params }) => params.id, target: operationFinished });
+sample({ clock: operationFinished, fn: (id) => ({ id, label: null }), target: stageChanged });
+sample({ clock: inferFx.finally, fn: ({ params }) => ({ id: params, label: null }), target: stageChanged });
 sample({ clock: operationStarted, source: $activity, fn: (activity, id) => ({ ...activity, [id]: (activity[id] ?? 0) + 1 }), target: $activity });
 sample({ clock: operationFinished, source: $activity, fn: (activity, id) => ({ ...activity, [id]: Math.max(0, (activity[id] ?? 0) - 1) }), target: $activity });
 sample({ clock: opened, target: $id });
@@ -173,7 +182,8 @@ sample({ clock: createFx.failData, fn: (error) => ({ id: null, message: error.me
 sample({ clock: uploadFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
 sample({ clock: analyzeFx.fail, fn: ({ params, error }) => ({ id: params, message: error.message }), target: $error });
 sample({ clock: askFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
-sample({ clock: askFx.done, source: $id, filter: (id, { params }) => id === params.id, fn: () => '', target: $draft });
+sample({ clock: stopFx, fn: () => null, target: $error });
+sample({ clock: stopFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
 sample({ clock: [opened, inferFx], fn: () => null, target: $inferenceError });
 sample({ clock: inferFx.fail, fn: ({ params, error }) => ({ id: params, message: error.message }), target: $inferenceError });
 
@@ -195,6 +205,8 @@ export const $$drawings = {
     analyzeFx,
     inferFx,
     askFx,
+    stopFx,
+    $stopping: readonly(stopFx.pending),
     $outgoing: readonly($outgoing),
     $stages: readonly($stages),
     $draft: readonly($draft),

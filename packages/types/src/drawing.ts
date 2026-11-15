@@ -138,6 +138,7 @@ export const MessageZod = z.object({
     question: z.string().min(1).max(4000),
     answer: AnswerZod.nullable(),
     trace: z.array(DrawingTraceEventZod).max(2000).optional(),
+    stopped: z.boolean().optional(),
 });
 export const DrawingCoversZod = z.object({ lightFileId: MongoIdZod, darkFileId: MongoIdZod });
 export type DrawingCovers = z.infer<typeof DrawingCoversZod>;
@@ -155,6 +156,10 @@ export const DrawingJobProgressZod = z.object({
     completed: z.number().int().nonnegative(),
     total: z.number().int().positive(),
     currentPage: z.number().int().positive().nullable(),
+    attempts: z.number().int().nonnegative().optional(),
+    availableAt: z.iso.datetime().optional(),
+    startedAt: z.iso.datetime().nullable().optional(),
+    lastError: z.string().nullable().optional(),
 });
 export const DrawingZod = DrawingSummaryZod.extend({
     processing: DrawingJobProgressZod.nullable().optional(),
@@ -167,7 +172,8 @@ export const DrawingIdZod = z.object({ id: MongoIdZod });
 export const ReviewDrawingContextZod = DrawingIdZod.extend({ blueprintId: z.string().min(1), section: z.enum(['scale', 'notes']) });
 export type ReviewDrawingContext = z.infer<typeof ReviewDrawingContextZod>;
 export const RenameDrawingZod = DrawingIdZod.extend({ title: z.string().trim().min(1).max(200) });
-export const AskDrawingZod = DrawingIdZod.extend({ message: MessageZod.omit({ answer: true, trace: true }) });
+export const AskDrawingZod = DrawingIdZod.extend({ message: MessageZod.omit({ answer: true, trace: true, stopped: true }) });
+export const StopDrawingChatZod = DrawingIdZod.extend({ messageId: z.string().uuid() });
 export type Drawing = z.infer<typeof DrawingZod>;
 export type Attachment = z.infer<typeof AttachmentZod>;
 export type DrawingSummary = z.infer<typeof DrawingSummaryZod>;

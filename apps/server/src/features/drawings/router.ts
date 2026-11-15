@@ -8,6 +8,7 @@ import {
     UpdateDrawingUploadZod,
     RenameDrawingZod,
     AskDrawingZod,
+    StopDrawingChatZod,
     DetectDrawingZod,
     DrawingIdZod,
     ReviewDrawingContextZod,
@@ -166,49 +167,90 @@ export const drawingRouter = t.router({
         .input(DrawingIdZod.extend({ retryPpm: z.boolean().optional() }))
         .output(DrawingZod)
         .mutation(({ input, ctx }) => enqueueDrawing(input.id, ctx.user.id, undefined, input.retryPpm)),
+    stop: protectedProcedure
+        .input(StopDrawingChatZod)
+        .output(DrawingZod)
+        .mutation(async ({ input, ctx }) => {
+            const doc = await db.drawing.DrawingModel.findOne({ _id: input.id, ownerId: ctx.user.id }).select('lease activeChatMessageId').lean();
+            if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Drawing not found.' });
+            if (doc.lease && doc.activeChatMessageId === input.messageId) {
+                await db.drawing.DrawingModel.updateOne(
+                    {
+                        _id: input.id,
+                        ownerId: ctx.user.id,
+                        lease: doc.lease,
+                        activeChatMessageId: input.messageId,
+                        messages: { $elemMatch: { id: input.messageId, answer: null } },
+                    },
+                    {
+                        $set: {
+                            'messages.$.stopped': true,
+                            'messages.$.answer': {
+                                text: 'Response stopped.',
+                                status: 'answered',
+                                references: [],
+                                clarificationQuestion: null,
+                                userProvidedInformation: [],
+                            },
+                            lease: null,
+                            leaseUntil: null,
+                            activeChatMessageId: null,
+                            error: null,
+                        },
+                    },
+                );
+            }
+            return getDrawing(input.id, ctx.user.id);
+        }),
     ask: protectedProcedure
         .input(AskDrawingZod)
         .output(DrawingZod)
         .mutation(({ input, ctx }) =>
-            processDrawing(input.id, ctx.user.id, async (drawing, signal, lease) => {
-                if (!drawing.blueprints.length) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Upload a blueprint first.' });
-                const previous = drawing.messages.find((message) => message.id === input.message.id);
-                if (previous?.question !== undefined && previous.question !== input.message.question)
-                    throw new TRPCError({ code: 'BAD_REQUEST', message: 'This question ID was already used.' });
-                if (previous?.answer) return {};
-                if (!previous) {
-                    if (drawing.messages.some((message) => !message.answer))
-                        throw new TRPCError({ code: 'CONFLICT', message: 'Retry the unanswered question first.' });
-                    if (drawing.messages.length >= 100)
-                        throw new TRPCError({ code: 'BAD_REQUEST', message: 'This PoC supports 100 questions per drawing. Create a new session.' });
-                    const message = { ...input.message, answer: null };
-                    const saved = await db.drawing.DrawingModel.updateOne(
-                        { _id: input.id, ownerId: ctx.user.id, lease, leaseUntil: { $gt: new Date() } },
-                        { $push: { messages: message } },
-                    );
-                    if (!saved.matchedCount) throw new TRPCError({ code: 'CONFLICT', message: 'Processing expired. Please retry.' });
-                    drawing.messages.push(message);
-                }
-                const trace = createToolTrace(drawing, ctx.user.id, input.message.id, lease, signal);
-                await trace.emit({ type: 'run_started' });
-                try {
-                    const output = await answer(drawing, signal, trace);
-                    const messages = drawing.messages.map((message) => (message.id === input.message.id ? { ...message, answer: output } : message));
-                    const current = await db.drawing.DrawingModel.findOne({ _id: input.id, ownerId: ctx.user.id, lease }).lean();
-                    if (!current) throw new TRPCError({ code: 'CONFLICT', message: 'Processing expired. Please retry.' });
-                    // Reserve space for the completion event committed alongside the answer.
-                    if (BSON.calculateObjectSize({ ...current, messages }) > 15 * 1024 * 1024 - 1024) {
-                        throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: 'This answer exceeds the session’s supported storage size.' });
+            processDrawing(
+                input.id,
+                ctx.user.id,
+                async (drawing, signal, lease) => {
+                    if (!drawing.blueprints.length) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Upload a blueprint first.' });
+                    const previous = drawing.messages.find((message) => message.id === input.message.id);
+                    if (previous?.question !== undefined && previous.question !== input.message.question)
+                        throw new TRPCError({ code: 'BAD_REQUEST', message: 'This question ID was already used.' });
+                    if (previous?.answer) return {};
+                    if (!previous) {
+                        if (drawing.messages.some((message) => !message.answer))
+                            throw new TRPCError({ code: 'CONFLICT', message: 'Retry the unanswered question first.' });
+                        if (drawing.messages.length >= 100)
+                            throw new TRPCError({ code: 'BAD_REQUEST', message: 'This PoC supports 100 questions per drawing. Create a new session.' });
+                        const message = { ...input.message, answer: null };
+                        const saved = await db.drawing.DrawingModel.updateOne(
+                            { _id: input.id, ownerId: ctx.user.id, lease, leaseUntil: { $gt: new Date() } },
+                            { $push: { messages: message } },
+                        );
+                        if (!saved.matchedCount) throw new TRPCError({ code: 'CONFLICT', message: 'Processing expired. Please retry.' });
+                        drawing.messages.push(message);
                     }
-                    await trace.complete();
-                    return { messages };
-                } catch (cause) {
-                    await trace.emit({
-                        type: 'run_failed',
-                        summary: signal.aborted ? 'Answer generation was interrupted. Retry to continue.' : 'Could not complete the answer. Please retry.',
-                    });
-                    throw cause;
-                }
-            }),
+                    const trace = createToolTrace(drawing, ctx.user.id, input.message.id, lease, signal);
+                    await trace.emit({ type: 'run_started' });
+                    try {
+                        const output = await answer(drawing, signal, trace);
+                        const messages = drawing.messages.map((message) => (message.id === input.message.id ? { ...message, answer: output } : message));
+                        const current = await db.drawing.DrawingModel.findOne({ _id: input.id, ownerId: ctx.user.id, lease }).lean();
+                        if (!current) throw new TRPCError({ code: 'CONFLICT', message: 'Processing expired. Please retry.' });
+                        // Reserve space for the completion event committed alongside the answer.
+                        if (BSON.calculateObjectSize({ ...current, messages }) > 15 * 1024 * 1024 - 1024) {
+                            throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: 'This answer exceeds the session’s supported storage size.' });
+                        }
+                        await trace.complete();
+                        return { messages };
+                    } catch (cause) {
+                        await trace.emit({
+                            type: 'run_failed',
+                            summary: signal.aborted ? 'Answer generation was interrupted. Retry to continue.' : 'Could not complete the answer. Please retry.',
+                        });
+                        throw cause;
+                    }
+                },
+                undefined,
+                input.message.id,
+            ),
         ),
 });
