@@ -219,10 +219,8 @@ async def predictions(
     ] = "cubicasa",
 ):
     lock = request.app.state.inference_lock
-    if lock.locked():
-        raise HTTPException(
-            503, "Inference busy; retry later", headers={"Retry-After": "5"}
-        )
+    # Admitted pages wait here without occupying an inference thread.
+    # Release this worker before the pipeline starts remote verification.
     async with lock:
         try:
             data = await image.read(MAX_UPLOAD_BYTES + 1)

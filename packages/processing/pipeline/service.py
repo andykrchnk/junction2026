@@ -27,7 +27,7 @@ Image.MAX_IMAGE_PIXELS = MAX_PIXELS
 async def lifespan(app):
     app.state.settings = Settings.load()
     app.state.settings.artifact_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-    app.state.lock = asyncio.Lock()
+    app.state.capacity = asyncio.Semaphore(app.state.settings.concurrency)
     yield
 
 
@@ -138,13 +138,13 @@ async def processing(
     image: UploadFile,
     response_format: Literal["json", "zip"] = "json",
 ):
-    lock = request.app.state.lock
+    capacity = request.app.state.capacity
     try:
-        if lock.locked():
+        if capacity.locked():
             raise HTTPException(
-                503, "Processing busy; retry later", headers={"Retry-After": "5"}
+                503, "Processing busy; retry later", headers={"Retry-After": "1"}
             )
-        async with lock:
+        async with capacity:
             data = await acquire_upload(request, image)
             raster, encoded = await run_in_threadpool(decode, data)
             try:

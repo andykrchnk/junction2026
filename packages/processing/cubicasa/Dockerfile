@@ -13,7 +13,7 @@ RUN useradd --uid 10001 --create-home inference && mkdir weights && chown infere
 USER inference
 EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health/ready')"
-CMD ["uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1", "--limit-concurrency", "8", "--timeout-keep-alive", "5"]
+CMD ["uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1", "--limit-concurrency", "64", "--timeout-keep-alive", "5"]
 
 FROM base AS cuda
 RUN pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cu124
@@ -24,4 +24,4 @@ RUN useradd --uid 10001 --create-home inference && mkdir weights && chown infere
 USER inference
 EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health/ready')"
-CMD ["uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1", "--limit-concurrency", "8", "--timeout-keep-alive", "5"]
+CMD ["uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1", "--limit-concurrency", "64", "--timeout-keep-alive", "5"]

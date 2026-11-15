@@ -1,3 +1,4 @@
+import { withOpenAiCapacity } from './openai-capacity';
 import { Agent, run, setTracingDisabled, user } from '@openai/agents';
 import { PpmCalibrationZod, StoredPpmResultZod, type Blueprint, type Drawing, type StoredPpmResult } from '@repo/types';
 import { z } from 'zod';
@@ -73,7 +74,7 @@ Also return doorFallbackAllowed outside result: true ONLY for a fail caused by a
         signal: params.signal,
         timeoutMs: 45_000,
         label: 'Resolving scale',
-        run: (signal) => run(agent, input, { signal, maxTurns: 1 }),
+        run: (signal) => withOpenAiCapacity(signal, () => run(agent, input, { signal, maxTurns: 1 })),
     });
     const { result, doorFallbackAllowed } = PpmResolutionOutputZod.parse(output.finalOutput);
     if (result.type === 'fail') {

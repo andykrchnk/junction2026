@@ -52,7 +52,7 @@ export async function predictRaster(
             const response = await fetch(url, { method: 'POST', headers: { 'X-API-Key': Env.INFERENCE_API_KEY }, body, signal, redirect: 'error' });
             if (response.status === 503 && attempt < MAX_BUSY_RETRIES) {
                 const retryAfter = Number(response.headers.get('Retry-After'));
-                const seconds = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter, 30) : 5;
+                const seconds = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter, 5) : 1;
                 await response.body?.cancel();
                 await delay(seconds * 1000, undefined, { signal });
                 continue;

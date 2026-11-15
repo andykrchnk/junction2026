@@ -47,10 +47,17 @@ curl --fail http://127.0.0.1:8002/v1/process \
 - `stages/`: target crops, explicit annotations, verifier questions, decision rules,
   relationships and final GeoJSON normalization.
 
-CubiCasa detail and PaddleOCR run sequentially to bound concurrent GPU demand.
-Workers retain their loaded weights. The API admits one standardized processing
-request at a time; further calls receive 503 with Retry-After. Gemini runs at most
-the configured number of concurrent requests (default eight). Fixtures, including
+Each page runs CubiCasa detail then PaddleOCR. Each GPU worker retains its loaded
+weights and queues requests behind one execution lock; busy workers do not reject
+admitted pages or cause missing OCR. Different workers can overlap on the GPU.
+The geometry worker HTTP admission limit is 64, leaving room for the pipeline
+queue and health probes; it does not allow concurrent executions within a worker.
+`PIPELINE_CONCURRENCY` admits up to 15 active pages by default (integer 1–32).
+Saturated pipeline admission returns 503 with `Retry-After: 1`; the backend uses
+bounded retries and reschedules persistent backpressure after one second.
+Worker capacity is released before remote verification, so later pages can run
+GPU work while earlier pages verify. Gemini runs at most the configured number
+of concurrent requests across all pages (default eight). Fixtures, including
 close-up rechecks, complete before room verification. Each room receives only
 verified fixture classes substantially inside it; unresolved proposals are counted
 without passing their labels. Both stages share the target cap and deadline, with
@@ -119,11 +126,18 @@ Private per-request worker predictions, Gemini responses, decisions and final ou
 are stored in `.local/processing-pipeline/artifacts`, outside the public API and Git.
 Private `timings.json` records seconds spent in geometry, OCR, fixture/room
 verification and normalization, including elapsed time when a timed stage fails.
-`PIPELINE_GEMINI_WORKERS` controls independent verification requests (default 8,
+`PIPELINE_GEMINI_WORKERS` controls aggregate verification requests (default 8,
 integer 1–16, validated at startup). Set it on this service; use 4 for the previous
-parallelism. Each request still handles one target, fixtures finish before rooms,
+parallelism. The shared semaphore belongs to the service settings and includes
+close-up rechecks. Waiting consumes the page verification deadline. Each request
+still handles one target, fixtures finish before rooms,
 and the shared target budget and deadline remain unchanged. Tune concurrency against provider quotas; this is independent of the
-server's drawing/entity concurrency limits.
+server's drawing/entity concurrency limits. Limits are per service process; keep
+one Uvicorn process per pipeline/worker as configured. Multiple replicas add
+capacity. UUID artifact directories and page-local results remain independent.
+The backend defaults to 15 drawing jobs, but pages in one PDF remain sequential
+because its lease and cursor belong to the drawing. OpenAI analysis has its own
+aggregate `DRAWING_OPENAI_CONCURRENCY` limit (default 18) per backend instance.
 The detail worker's optional `CUBICASA_DOOR_CONTRAST=true` mode supplies additional
 doors through the existing review-only contract. These proposals start removed
 and require the same original-source Decisions checks as other recovered doors.

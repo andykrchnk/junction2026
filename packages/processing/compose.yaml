@@ -13,6 +13,8 @@ services:
             LEGACY_INFERENCE_URL: http://inference:8001
             GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
             PIPELINE_ARTIFACT_DIR: /artifacts
+            PIPELINE_CONCURRENCY: ${PIPELINE_CONCURRENCY:-15}
+            PIPELINE_GEMINI_WORKERS: ${PIPELINE_GEMINI_WORKERS:-8}
         secrets: [gemini_api_key]
         volumes:
             - ./.local/processing-pipeline/artifacts:/artifacts

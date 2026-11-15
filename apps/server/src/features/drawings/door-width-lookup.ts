@@ -3,6 +3,7 @@ import { PpmDoorFallbackZod } from '@repo/types';
 import { z } from 'zod';
 import { config } from '../../shared/config';
 import { withDeadline } from './deadline';
+import { withOpenAiCapacity } from './openai-capacity';
 
 const ContextZod = PpmDoorFallbackZod.shape.context;
 const SourceZod = PpmDoorFallbackZod.shape.sources.element;
@@ -71,7 +72,7 @@ Return openingWidthMm only if at least one consulted primary source directly sup
             signal: params.signal,
             timeoutMs: 25_000,
             label: 'Searching door-size references',
-            run: (signal) => run(agent, [user(JSON.stringify(context))], { signal, maxTurns: 3 }),
+            run: (signal) => withOpenAiCapacity(signal, () => run(agent, [user(JSON.stringify(context))], { signal, maxTurns: 3 })),
         });
         const output = LookupOutputZod.parse(result.finalOutput);
         const retrieved = result.rawResponses.flatMap((response) =>
