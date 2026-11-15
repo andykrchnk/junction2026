@@ -29,6 +29,8 @@ import { readLocal, ViewZod, writeLocal } from './canvas-storage';
 import { DetectionCanvasLayer, DetectionContext } from './detection-layer';
 import { CommentsContext, CommentCanvasLayer } from './comment-layer';
 import { type CommentsModel } from './canvas/comments-model';
+import { CanvasAgentActions } from './canvas-agent-actions';
+import { CanvasEvidenceLayer } from './canvas-evidence-layer';
 import 'tldraw/tldraw.css';
 import './blueprint-canvas.css';
 
@@ -48,6 +50,7 @@ function CanvasLayers() {
     return (
         <>
             <DetectionCanvasLayer />
+            <CanvasEvidenceLayer />
             <CommentCanvasLayer />
         </>
     );
@@ -201,6 +204,7 @@ function CanvasEditor({
     }, [activeEditor, drawing.blueprints]);
     const selectionGesture = useRef<SelectionGesture | null>(null);
     const focus = useUnit(model.$focus);
+    const region = useUnit(model.$regionFocus);
     const reducedMotion = useReducedMotion();
     const sheetFocus = useUnit(model.$sheetFocus);
     useEffect(() => {
@@ -208,6 +212,20 @@ function CanvasEditor({
         const bounds = activeEditor.getShapePageBounds(createShapeId(`blueprint-${sheetFocus.page}`));
         if (bounds) activeEditor.zoomToBounds(bounds.clone().expandBy(48), { animation: { duration: reducedMotion ? 0 : 350 } });
     }, [activeEditor, sheetFocus, reducedMotion]);
+    useEffect(() => {
+        if (!activeEditor || !region) return;
+        const shape = activeEditor.getShape(createShapeId(`blueprint-${region.page}`));
+        if (!shape || shape.type !== 'image') return;
+        const transform = activeEditor.getShapePageTransform(shape);
+        const { left, top, right, bottom } = region.bounds ?? { left: 0, top: 0, right: 1, bottom: 1 };
+        const points = [
+            [left, top],
+            [right, top],
+            [right, bottom],
+            [left, bottom],
+        ].map(([x, y]) => transform.applyToPoint({ x: x * shape.props.w, y: y * shape.props.h }));
+        activeEditor.zoomToBounds(Box.FromPoints(points).expandBy(32), { targetZoom: 2, animation: { duration: reducedMotion ? 0 : 350 } });
+    }, [activeEditor, region, reducedMotion]);
     useEffect(() => {
         if (!activeEditor || !focus) return;
         const page = layoutPages(drawing.blueprints).find((page) => page.page === focus.object.page);
@@ -254,12 +272,12 @@ function CanvasEditor({
             else model.selected(null);
         },
         {
-            enabled: activeEditor !== null && (commentMode !== 'default' || openCommentId !== null || selectedObject !== null),
+            enabled: activeEditor !== null && (commentMode !== 'default' || openCommentId !== null || selectedObject !== null || region !== null),
             enableOnFormTags: true,
             enableOnContentEditable: true,
             eventListenerOptions: { capture: true },
         },
-        [activeEditor, commentsModel, openCommentId, commentMode, model, draftComment],
+        [activeEditor, commentsModel, openCommentId, commentMode, model, draftComment, region],
     );
     const [recoveryConflict, setRecoveryConflict] = useState(!!recovery?.document && recovery.revision !== saved.revision);
     const [assets] = useState<TLAssetStore>(() => ({
@@ -513,6 +531,7 @@ function CanvasEditor({
                     event.stopPropagation();
                 }}
             >
+                <CanvasAgentActions drawing={drawing} editor={activeEditor} model={model} />
                 <CommentsContext.Provider
                     value={{
                         drawing: { ...drawing, blueprints: drawing.blueprints.filter((item) => !item.attachment.hiddenFromCanvas) },

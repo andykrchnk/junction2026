@@ -11,6 +11,7 @@ export const BoundingBoxZod = z
         bottom: z.number().min(0).max(1),
     })
     .describe('Approximate box in the full displayed page, with top-left origin and coordinates from 0 to 1. Not measurement geometry.');
+export type BoundingBox = z.infer<typeof BoundingBoxZod>;
 export const PpmCandidateZod = z.object({
     type: z.enum(['written_dimension', 'scale_bar', 'printed_scale_ratio', 'known_area', 'known_product', 'calibrated_drawing']),
     page: z.number().int().positive(),
@@ -39,7 +40,21 @@ export const AgentPpmResultZod = z.discriminatedUnion('type', [
     z.object({ type: z.literal('success'), value: z.number().finite().positive(), message: z.string() }),
     z.object({ type: z.literal('fail'), message: z.string() }),
 ]);
-export const StoredPpmResultZod = z.object({ value: z.number().finite().positive().optional(), message: z.string() });
+const CalibrationSourceZod = z.object({
+    usedCandidateIndexes: z.array(z.number().int().nonnegative()).max(50),
+    basis: z.string().min(1).max(3000),
+    scope: z.string().min(1).max(1000),
+});
+export const PpmCalibrationZod = z.discriminatedUnion('method', [
+    CalibrationSourceZod.extend({ method: z.literal('length'), pixelLength: z.number().finite().positive(), realLengthMetres: z.number().finite().positive() }),
+    CalibrationSourceZod.extend({ method: z.literal('area'), pixelArea: z.number().finite().positive(), realAreaSquareMetres: z.number().finite().positive() }),
+]);
+export const StoredPpmResultZod = z.object({
+    value: z.number().finite().positive().optional(),
+    message: z.string(),
+    // Saved results from before evidence tracking contain only a value and explanation.
+    calibration: PpmCalibrationZod.optional(),
+});
 export type AgentPpmResult = z.infer<typeof AgentPpmResultZod>;
 export type StoredPpmResult = z.infer<typeof StoredPpmResultZod>;
 export const AttachmentZod = z.object({
@@ -183,7 +198,16 @@ export const BlueprintStatusZod = z.discriminatedUnion('type', [
     z.object({ type: z.literal('not_configured'), stage: z.literal('inference') }),
     z.object({ type: z.literal('ready') }),
 ]);
-export const BlueprintMiscZod = z.array(z.object({ title: z.string().min(1).max(200), content: z.string().max(6000) })).max(100);
+export const DrawingNoteCategoryZod = z.enum(['sheet_details', 'general_notes', 'legend', 'abbreviations', 'dimensions']);
+export const DrawingNoteZod = z.object({
+    title: z.string().min(1).max(200),
+    content: z.string().max(6000),
+    // New extraction requires these fields; legacy notes remain readable without them.
+    category: DrawingNoteCategoryZod.optional(),
+    originalText: z.string().max(6000).nullable().optional(),
+    boundingBox: BoundingBoxZod.nullable().optional(),
+});
+export const BlueprintMiscZod = z.array(DrawingNoteZod).max(100);
 export const BlueprintZod = z
     .object({
         id: z.string().min(1),

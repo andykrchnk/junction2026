@@ -1,4 +1,4 @@
-import { layoutPages } from './layout';
+import { layoutPages, layerObjects } from './layout';
 import { useEffect, useRef, useState } from 'react';
 import { useUnit } from 'effector-react';
 import { motion, useReducedMotion } from 'motion/react';
@@ -72,7 +72,7 @@ export function BlueprintLayersPanel({
         else model.selected(object);
         model.focusRequested(object);
     };
-    const pages = layoutPages(drawing.blueprints);
+    const objects = layerObjects(drawing.blueprints);
     // Selection stays in the canvas model; expansion is local presentation state.
     const [revealedSelection, setRevealedSelection] = useState(selection);
     if (revealedSelection !== selection) {
@@ -83,7 +83,7 @@ export function BlueprintLayersPanel({
             const groups: Record<string, boolean> = {};
             for (const item of added) {
                 const blueprint = drawing.blueprints.find((sheet) => sheet.pageNumber === item.page);
-                const property = pages.find((page) => page.page === item.page)?.detectedProperties[item.index];
+                const property = objects.find((object) => object.page === item.page && object.index === item.index)?.property;
                 if (!blueprint || !property) continue;
                 sheets.add(blueprint.id);
                 groups[JSON.stringify([blueprint.id, property.type])] = true;
@@ -111,7 +111,7 @@ export function BlueprintLayersPanel({
         return () => cancelAnimationFrame(frame);
     }, [selection]);
     const attachment = drawing.blueprints[0]?.attachment;
-    const count = pages.reduce((total, page) => total + page.detectedProperties.length, 0);
+    const count = objects.length;
     return (
         <motion.div
             ref={container}
@@ -166,6 +166,7 @@ export function BlueprintLayersPanel({
                     >
                         {drawing.blueprints.map((blueprint) => {
                             const pages = layoutPages([blueprint]);
+                            const sheetObjects = objects.filter((object) => object.page === blueprint.pageNumber);
                             const count = pages.reduce((total, page) => total + page.detectedProperties.length, 0);
                             const processing = blueprint.status.type === 'processing' && blueprint.status.stage === 'inference';
                             const failed = blueprint.status.type === 'failed' ? blueprint : null;
@@ -215,11 +216,7 @@ export function BlueprintLayersPanel({
                                                 )}
                                                 {!count && !processing && <p className="px-4 pb-3 text-sm text-muted-foreground">No detected elements yet.</p>}
                                                 {(['room', 'icon', 'junction'] as const).map((type) => {
-                                                    const items = pages
-                                                        .flatMap((page) =>
-                                                            page.detectedProperties.map((property, index) => ({ property, index, page: page.page })),
-                                                        )
-                                                        .filter((item) => item.property.type === type);
+                                                    const items = sheetObjects.filter((item) => item.property.type === type);
                                                     if (!items.length) return null;
                                                     return (
                                                         <div key={type} className="relative">
@@ -332,7 +329,7 @@ export function BlueprintLayersPanel({
                                                                                                     className="cursor-pointer py-3 pl-6 pr-12 text-xs font-medium focus-visible:outline-2 focus-visible:outline-ring"
                                                                                                 >
                                                                                                     <span
-                                                                                                        className="ml-1 mr-2 inline-block size-2 rounded-full"
+                                                                                                        className="ml-1 mr-2 inline-block size-2"
                                                                                                         style={{
                                                                                                             backgroundColor: getDetectedObjectColor({
                                                                                                                 type,
@@ -349,7 +346,13 @@ export function BlueprintLayersPanel({
                                                                                                 <AccordionContent className="[&>div]:p-0">
                                                                                                     <ul className="pb-2">
                                                                                                         {members.map(
-                                                                                                            ({ property, page, index }, groupIndex) => {
+                                                                                                            ({
+                                                                                                                property,
+                                                                                                                page,
+                                                                                                                index,
+                                                                                                                number,
+                                                                                                                name: objectName,
+                                                                                                            }) => {
                                                                                                                 const selected = selection.some(
                                                                                                                     (item) =>
                                                                                                                         item.page === page &&
@@ -416,7 +419,7 @@ export function BlueprintLayersPanel({
                                                                                                                                 });
                                                                                                                                 selectRow(row, event.shiftKey);
                                                                                                                             }}
-                                                                                                                            className="flex min-w-0 flex-1 items-center gap-2 pl-10 pr-1 py-2 text-left text-xs hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring disabled:opacity-50 aria-pressed:bg-accent aria-pressed:text-accent-foreground"
+                                                                                                                            className="flex min-w-0 flex-1 items-center gap-2 pl-10 pr-1 py-2 text-left text-xs hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring disabled:opacity-50 aria-pressed:bg-accent/50 aria-pressed:text-foreground"
                                                                                                                             onClick={(event) => {
                                                                                                                                 if (!visibility[type])
                                                                                                                                     model.visibilityChanged({
@@ -435,7 +438,7 @@ export function BlueprintLayersPanel({
                                                                                                                             }}
                                                                                                                         >
                                                                                                                             <span
-                                                                                                                                className="size-2 shrink-0 rounded-full"
+                                                                                                                                className="size-2 shrink-0"
                                                                                                                                 style={{
                                                                                                                                     backgroundColor:
                                                                                                                                         getDetectedObjectColor(
@@ -446,9 +449,14 @@ export function BlueprintLayersPanel({
                                                                                                                             />
                                                                                                                             <span className="min-w-0 flex-1 truncate">
                                                                                                                                 {property.label}{' '}
-                                                                                                                                <span className="text-muted-foreground">
-                                                                                                                                    {groupIndex + 1} · Sheet{' '}
-                                                                                                                                    {page}
+                                                                                                                                <span
+                                                                                                                                    className={
+                                                                                                                                        selected
+                                                                                                                                            ? 'text-foreground'
+                                                                                                                                            : 'text-muted-foreground'
+                                                                                                                                    }
+                                                                                                                                >
+                                                                                                                                    {number} · Sheet {page}
                                                                                                                                 </span>
                                                                                                                             </span>
                                                                                                                         </button>
@@ -459,7 +467,7 @@ export function BlueprintLayersPanel({
                                                                                                                                     `${page}:${index}`,
                                                                                                                                 )
                                                                                                                             }
-                                                                                                                            label={`${property.label} ${groupIndex + 1}, sheet ${page}`}
+                                                                                                                            label={`${objectName}, sheet ${page}`}
                                                                                                                             onToggle={() => {
                                                                                                                                 const visible =
                                                                                                                                     !visibility[type] ||

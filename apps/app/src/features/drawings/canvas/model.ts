@@ -2,10 +2,10 @@ import { createEffect, createEvent, createStore, sample } from 'effector';
 import { debounce, readonly } from 'patronum';
 import { TRPCClientError } from '@trpc/client';
 import { z } from 'zod';
-import { CanvasStateZod, type CanvasState, type SaveCanvas, type DetectedProperty } from '@repo/types';
+import { CanvasStateZod, type CanvasState, type SaveCanvas, type DetectedProperty, type CanvasVisibilityMode } from '@repo/types';
 import { trpcClient } from '@/shared/trpc';
 import { readLocal, writeLocal } from '../canvas-storage';
-import { $$drawings } from '../model';
+import { $$drawings, type CanvasRegion } from '../model';
 
 export type ObjectSelection = { page: number; index: number };
 
@@ -16,18 +16,38 @@ const VisibilityZod = z.object({ room: z.boolean(), icon: z.boolean(), junction:
 export function createCanvasModel(id: string, storageKey: string) {
     const changed = createEvent<string>();
     const saveRequested = createEvent();
+    const allObjectsShown = createEvent();
+    const agentVisibilityApplied = createEvent<{
+        requestId: string;
+        mode: CanvasVisibilityMode;
+        scopePages: number[];
+        targets: ObjectSelection[];
+        objects: (ObjectSelection & { type: DetectedProperty['type'] })[];
+    }>();
+    const agentVisibilityChanged = createEvent<{
+        requestId: string;
+        mode: CanvasVisibilityMode;
+        hidden: string[];
+        visibility: z.infer<typeof VisibilityZod>;
+    }>();
+    const agentSelectionCleared = createEvent();
+    const agentSelectionApplied = createEvent<{ requestId: string; objects: ObjectSelection[] }>();
     const selected = createEvent<ObjectSelection | null>();
     const rangeSelected = createEvent<{ object: ObjectSelection; order: ObjectSelection[] }>();
     const selectionToggled = createEvent<ObjectSelection>();
     const groupSelected = createEvent<{ page: number; objects: ObjectSelection[] }>();
     const focusRequested = createEvent<ObjectSelection>();
+    const regionFocusRequested = createEvent<CanvasRegion>();
     const objectVisibilityChanged = createEvent<{ object: ObjectSelection; visible: boolean }>();
     const visibilityChanged = createEvent<{ type: DetectedProperty['type']; visible: boolean }>();
+    const $agentVisibility = createStore<{ requestId: string; mode: CanvasVisibilityMode } | null>(null);
+    const $agentSelectionRequestId = createStore<string | null>(null);
     const $sheetFocus = createStore<{ page: number; sequence: number } | null>(null);
     const $anchor = createStore<ObjectSelection | null>(null);
     const $hiddenObjects = createStore<string[]>([]);
     const $selection = createStore<ObjectSelection[]>([]);
     const $focus = createStore<{ object: ObjectSelection; sequence: number } | null>(null);
+    const $regionFocus = createStore<(CanvasRegion & { sequence: number }) | null>(null);
     const $document = createStore<string | null>(null);
     const $revision = createStore(0);
     const $status = createStore<SaveStatus>({ type: 'saved' });
@@ -39,6 +59,53 @@ export function createCanvasModel(id: string, storageKey: string) {
     const retainRecoveryFx = createEffect((state: CanvasState) => writeLocal(`${storageKey}:recovery`, state));
     const retainVisibilityFx = createEffect((visibility: z.infer<typeof VisibilityZod>) => writeLocal(`${storageKey}:layers`, visibility));
 
+    sample({
+        clock: agentVisibilityApplied,
+        source: { visibility: $visibility, hidden: $hiddenObjects },
+        fn: ({ visibility, hidden }, change) => {
+            const nextVisibility = { ...visibility };
+            const nextHidden = new Set(hidden);
+            const key = (object: ObjectSelection) => `${object.page}:${object.index}`;
+            const targets = new Set(change.targets.map(key));
+            // Materialize disabled types before enabling them so unrelated objects stay hidden.
+            if (change.mode !== 'hide') {
+                const enabledTypes = new Set(
+                    change.objects
+                        .filter((object) => (change.mode === 'reset' ? change.scopePages.includes(object.page) : targets.has(key(object))))
+                        .map((object) => object.type),
+                );
+                for (const object of change.objects) if (enabledTypes.has(object.type) && !visibility[object.type]) nextHidden.add(key(object));
+                for (const type of enabledTypes) nextVisibility[type] = true;
+            }
+            for (const object of change.objects) {
+                const objectKey = key(object);
+                if (!change.scopePages.includes(object.page)) continue;
+                if (change.mode === 'reset' || (change.mode !== 'hide' && targets.has(objectKey))) nextHidden.delete(objectKey);
+                else if (change.mode === 'isolate' || (change.mode === 'hide' && targets.has(objectKey))) nextHidden.add(objectKey);
+            }
+            return { requestId: change.requestId, mode: change.mode, hidden: [...nextHidden], visibility: nextVisibility };
+        },
+        target: agentVisibilityChanged,
+    });
+    sample({ clock: agentVisibilityChanged, fn: ({ hidden }) => hidden, target: $hiddenObjects });
+    sample({ clock: agentVisibilityChanged, fn: ({ visibility }) => visibility, target: $visibility });
+    sample({ clock: agentVisibilityChanged, fn: ({ requestId, mode }) => ({ requestId, mode }), target: $agentVisibility });
+    sample({
+        clock: agentVisibilityChanged,
+        source: $selection,
+        fn: (selection, { hidden }) => selection.filter((object) => !hidden.includes(`${object.page}:${object.index}`)),
+        target: $selection,
+    });
+    sample({ clock: allObjectsShown, fn: () => [], target: $hiddenObjects });
+    sample({ clock: allObjectsShown, fn: () => ({ room: true, icon: true, junction: true }), target: $visibility });
+    sample({ clock: [allObjectsShown, objectVisibilityChanged, visibilityChanged], fn: () => null, target: $agentVisibility });
+    sample({ clock: agentSelectionApplied, fn: ({ requestId }) => requestId, target: $agentSelectionRequestId });
+    sample({ clock: agentSelectionApplied, fn: ({ objects }) => objects, target: $selection });
+    sample({ clock: agentSelectionApplied, fn: ({ objects }) => objects[0] ?? null, target: $anchor });
+    sample({ clock: [agentSelectionApplied, agentSelectionCleared], fn: () => null, target: $regionFocus });
+    sample({ clock: agentSelectionCleared, fn: () => null, target: selected });
+    sample({ clock: [selected, rangeSelected, selectionToggled, groupSelected], fn: () => null, target: $agentSelectionRequestId });
+    sample({ clock: agentSelectionCleared, fn: () => null, target: $agentSelectionRequestId });
     sample({ clock: groupSelected, fn: ({ objects }) => objects, target: $selection });
     sample({ clock: groupSelected, fn: ({ objects }) => objects[0] ?? null, target: $anchor });
     sample({ clock: groupSelected, source: $sheetFocus, fn: (focus, { page }) => ({ page, sequence: (focus?.sequence ?? 0) + 1 }), target: $sheetFocus });
@@ -84,10 +151,25 @@ export function createCanvasModel(id: string, storageKey: string) {
     sample({ clock: $selection, fn: (items) => items.at(-1) ?? null, target: $selected });
     sample({ clock: focusRequested, source: $focus, fn: (focus, object) => ({ object, sequence: (focus?.sequence ?? 0) + 1 }), target: $focus });
     sample({
+        clock: regionFocusRequested,
+        source: $regionFocus,
+        fn: (focus, region) => ({ ...region, sequence: (focus?.sequence ?? 0) + 1 }),
+        target: $regionFocus,
+    });
+    sample({ clock: regionFocusRequested, fn: () => [], target: $selection });
+    sample({ clock: regionFocusRequested, fn: () => null, target: [$focus, $anchor, $sheetFocus] });
+    sample({ clock: [selected, rangeSelected, selectionToggled, focusRequested, groupSelected], fn: () => null, target: $regionFocus });
+    sample({
+        clock: $$drawings.canvasRegionRequested,
+        filter: (region) => region.id === id,
+        fn: ({ page, bounds, label }) => ({ page, bounds, label }),
+        target: regionFocusRequested,
+    });
+    sample({
         clock: $$drawings.canvasSelectionRequested,
         filter: (selection) => selection.id === id,
         fn: ({ page, index }) => ({ page, index }),
-        target: selected,
+        target: [selected, focusRequested],
     });
     sample({
         clock: visibilityChanged,
@@ -132,8 +214,15 @@ export function createCanvasModel(id: string, storageKey: string) {
     });
 
     return {
+        allObjectsShown,
+        agentVisibilityApplied,
+        $agentVisibility: readonly($agentVisibility),
+        agentSelectionCleared,
+        agentSelectionApplied,
+        $agentSelectionRequestId: readonly($agentSelectionRequestId),
         groupSelected,
         $sheetFocus: readonly($sheetFocus),
+        $regionFocus: readonly($regionFocus),
         objectVisibilityChanged,
         $hiddenObjects: readonly($hiddenObjects),
         rangeSelected,
