@@ -21,7 +21,8 @@ const buttonVariants = cva(
     // whitespace-nowrap: a label never breaks onto 2 lines. It also makes
     // the label the button's narrowest width, so a tight row moves the
     // button (or overflows) instead of squeezing it.
-    "group relative isolate inline-flex items-center justify-center outline-none cursor-pointer select-none whitespace-nowrap",
+    // Scope internal feedback to this button; parent chat/list containers also use group.
+    "group group/button relative isolate inline-flex items-center justify-center outline-none cursor-pointer select-none whitespace-nowrap",
     "transition-colors duration-80",
     // A loading button is disabled too, but stays at full strength: aria-busy
     // marks it as working, not unavailable.
@@ -123,35 +124,35 @@ interface ButtonProps
    double up, since an outer shadow renders only outside the surface box. */
 const bgVariants: Record<string, string> = {
   primary:
-    "[--btn-bg:var(--primary)] group-hover:[--btn-bg:var(--primary-hover)] group-active:[--btn-bg:var(--primary-active)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+    "[--btn-bg:var(--primary)] group-hover/button:[--btn-bg:var(--primary-hover)] group-active/button:[--btn-bg:var(--primary-active)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active/button:shadow-[0_0_0_0px_var(--btn-bg)]",
   secondary:
-    "[--btn-bg:var(--tint)] group-hover:[--btn-bg:var(--tint-hover)] group-active:[--btn-bg:var(--tint)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+    "[--btn-bg:var(--tint)] group-hover/button:[--btn-bg:var(--tint-hover)] group-active/button:[--btn-bg:var(--tint)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active/button:shadow-[0_0_0_0px_var(--btn-bg)]",
   // The border ring is an outer 1px shadow at rest that hands off to an
   // inset 1px shadow when pressed, so the ring moves inward with the
   // surface. The translucent fill only ever reaches the ring's inner edge
   // (exactly the surface box), so it needs no spread of its own.
   tertiary:
-    "bg-transparent shadow-[0_0_0_1px_var(--border),inset_0_0_0_0px_var(--border)] group-hover:bg-hover group-active:bg-active group-active:shadow-[0_0_0_0px_var(--border),inset_0_0_0_1px_var(--border)]",
+    "bg-transparent shadow-[0_0_0_1px_var(--border),inset_0_0_0_0px_var(--border)] group-hover/button:bg-hover group-active/button:bg-active group-active/button:shadow-[0_0_0_0px_var(--border),inset_0_0_0_1px_var(--border)]",
   // Translucent fill + same-color spread never double up: outer shadows
   // render only outside the surface box.
   ghost:
-    "bg-transparent shadow-[0_0_0_1px_transparent] group-hover:bg-hover group-hover:shadow-[0_0_0_1px_var(--hover)] group-active:bg-active group-active:shadow-[0_0_0_0px_var(--active)]",
+    "bg-transparent shadow-[0_0_0_1px_transparent] group-hover/button:bg-hover group-hover/button:shadow-[0_0_0_1px_var(--hover)] group-active/button:bg-active group-active/button:shadow-[0_0_0_0px_var(--active)]",
   // shadcn's destructive, a red wash under red text, a step stronger:
   // 15% at rest and 25% on hover, 20/30 in dark mode. Pressing returns
   // to the rest wash, as secondary does.
   destructive:
-    "[--btn-bg:light-dark(color-mix(in_oklab,var(--btn-red)_15%,transparent),color-mix(in_oklab,var(--btn-red)_20%,transparent))] group-hover:[--btn-bg:light-dark(color-mix(in_oklab,var(--btn-red)_25%,transparent),color-mix(in_oklab,var(--btn-red)_30%,transparent))] group-active:[--btn-bg:light-dark(color-mix(in_oklab,var(--btn-red)_15%,transparent),color-mix(in_oklab,var(--btn-red)_20%,transparent))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+    "[--btn-bg:light-dark(color-mix(in_oklab,var(--btn-red)_15%,transparent),color-mix(in_oklab,var(--btn-red)_20%,transparent))] group-hover/button:[--btn-bg:light-dark(color-mix(in_oklab,var(--btn-red)_25%,transparent),color-mix(in_oklab,var(--btn-red)_30%,transparent))] group-active/button:[--btn-bg:light-dark(color-mix(in_oklab,var(--btn-red)_15%,transparent),color-mix(in_oklab,var(--btn-red)_20%,transparent))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active/button:shadow-[0_0_0_0px_var(--btn-bg)]",
 };
 
-/* A loading button's fill: each variant above minus its group-hover: and
-   group-active: overrides, so it holds the rest colors while the pointer is
+/* A loading button's fill: each variant above minus its group-hover/button: and
+   group-active/button: overrides, so it holds the rest colors while the pointer is
    still over the button that was just clicked. */
 const loadingBgVariants: Record<string, string> = Object.fromEntries(
   Object.entries(bgVariants).map(([variant, classes]) => [
     variant,
     classes
       .split(" ")
-      .filter((c) => !c.startsWith("group-hover:") && !c.startsWith("group-active:"))
+      .filter((c) => !c.startsWith("group-hover/button:") && !c.startsWith("group-active/button:"))
       .join(" "),
   ])
 );
@@ -160,15 +161,15 @@ const loadingBgVariants: Record<string, string> = Object.fromEntries(
    geometric press-collapse still reacts on top. */
 const activeBgVariants: Record<string, string> = {
   primary:
-    "[--btn-bg:var(--primary-active)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+    "[--btn-bg:var(--primary-active)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active/button:shadow-[0_0_0_0px_var(--btn-bg)]",
   secondary:
-    "[--btn-bg:var(--tint)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+    "[--btn-bg:var(--tint)] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active/button:shadow-[0_0_0_0px_var(--btn-bg)]",
   tertiary:
-    "bg-active shadow-[0_0_0_1px_var(--border),inset_0_0_0_0px_var(--border)] group-active:shadow-[0_0_0_0px_var(--border),inset_0_0_0_1px_var(--border)]",
+    "bg-active shadow-[0_0_0_1px_var(--border),inset_0_0_0_0px_var(--border)] group-active/button:shadow-[0_0_0_0px_var(--border),inset_0_0_0_1px_var(--border)]",
   ghost:
-    "bg-active shadow-[0_0_0_1px_var(--active)] group-active:shadow-[0_0_0_0px_var(--active)]",
+    "bg-active shadow-[0_0_0_1px_var(--active)] group-active/button:shadow-[0_0_0_0px_var(--active)]",
   destructive:
-    "[--btn-bg:light-dark(color-mix(in_oklab,var(--btn-red)_25%,transparent),color-mix(in_oklab,var(--btn-red)_30%,transparent))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active:shadow-[0_0_0_0px_var(--btn-bg)]",
+    "[--btn-bg:light-dark(color-mix(in_oklab,var(--btn-red)_25%,transparent),color-mix(in_oklab,var(--btn-red)_30%,transparent))] bg-[var(--btn-bg)] shadow-[0_0_0_1px_var(--btn-bg)] group-active/button:shadow-[0_0_0_0px_var(--btn-bg)]",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -242,7 +243,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         <span
           aria-hidden
           className={cn(
-            "absolute inset-px rounded-[inherit] transition-[box-shadow,background-color] [transition-duration:180ms,80ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease] group-active:[transition-duration:80ms,80ms]",
+            "absolute inset-px rounded-[inherit] transition-[box-shadow,background-color] [transition-duration:180ms,80ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1),ease] group-active/button:[transition-duration:80ms,80ms]",
             bgClass
           )}
         />
@@ -285,7 +286,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               </span>
             </>
           ) : isIconOnly ? (
-            <span className="[&_svg]:stroke-[1.5] [&_svg]:transition-[stroke-width] [&_svg]:duration-80 group-hover:[&_svg]:stroke-[2]">
+            <span className="[&_svg]:stroke-[1.5] [&_svg]:transition-[stroke-width] [&_svg]:duration-80 group-hover/button:[&_svg]:stroke-[2]">
               {label}
             </span>
           ) : (
@@ -294,7 +295,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 <LeadingIcon
                   size={iconSize}
                   strokeWidth={1.5}
-                  className="transition-[stroke-width] duration-80 group-hover:stroke-[2]"
+                  className="transition-[stroke-width] duration-80 group-hover/button:stroke-[2]"
                 />
               )}
               {/* text-box only applies to block containers, so the trim lives
@@ -306,7 +307,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 <TrailingIcon
                   size={iconSize}
                   strokeWidth={1.5}
-                  className="transition-[stroke-width] duration-80 group-hover:stroke-[2]"
+                  className="transition-[stroke-width] duration-80 group-hover/button:stroke-[2]"
                 />
               )}
             </>

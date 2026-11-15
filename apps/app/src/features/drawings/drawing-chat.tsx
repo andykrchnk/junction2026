@@ -1,4 +1,3 @@
-import { layoutPages } from './layout';
 import { AnnotationChatNavigation } from './drawing-annotation';
 import { MessageSquare } from '@repo/design-system/lib/icons-remix';
 import { DrawingComments } from './drawing-comments';
@@ -21,6 +20,8 @@ import { $$drawings } from './model';
 import { DrawingActivity } from './drawing-activity';
 import { DrawingProgress } from './drawing-progress';
 import { ChatMarkdown } from './chat-markdown';
+import { DrawingToolTrace } from './drawing-tool-trace';
+import { DrawingAnswer } from './drawing-answer';
 
 const questionLimit = 4000;
 
@@ -159,66 +160,44 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                                     <ChatMessage key={`${message.id}-user`} from="user">
                                         <UserQuestion question={message.question} />
                                     </ChatMessage>,
-                                    message.answer ? (
-                                        <ChatMessage key={`${message.id}-assistant`} from="assistant" className="w-full max-w-full">
-                                            {message.answer.status === 'cannot_determine' && (
-                                                <p className="text-muted-foreground mb-2 text-xs font-medium">Cannot determine from available information</p>
-                                            )}
-                                            <ChatMarkdown>{message.answer.text}</ChatMarkdown>
-                                            {!!message.answer.references?.length && (
-                                                <div className="mt-3 flex flex-wrap gap-2" aria-label="Supporting drawing objects">
-                                                    {message.answer.references.map((reference, index) => {
-                                                        const blueprint = drawing.blueprints.find((item) => item.id === reference.blueprintId);
-                                                        const page = layoutPages(drawing.blueprints).find((item) => item.page === blueprint?.pageNumber);
-                                                        const propertyIndex =
-                                                            page?.detectedProperties.findIndex((item) => item.id === reference.entityId) ?? -1;
-                                                        if (!blueprint) return null;
-                                                        if (!page || propertyIndex < 0)
-                                                            return (
-                                                                <span key={index} className="text-xs text-muted-foreground">
-                                                                    Sheet {blueprint.pageNumber}
-                                                                </span>
-                                                            );
-                                                        return (
-                                                            <Button
-                                                                key={index}
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                onClick={() =>
-                                                                    $$drawings.canvasSelectionRequested({ id, page: page.page, index: propertyIndex })
-                                                                }
-                                                            >
-                                                                Sheet {blueprint.pageNumber} · {page.detectedProperties[propertyIndex].label}
-                                                            </Button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                            {message.answer.status === 'needs_clarification' &&
-                                                message.answer.clarificationQuestion &&
-                                                message.id !== (clarification ? latestMessage?.id : null) && (
-                                                    <div className="mt-3 border-t pt-3">
-                                                        <p className="text-primary text-xs font-medium">More information needed</p>
-                                                        <div className="mt-1">
-                                                            <ChatMarkdown>{message.answer.clarificationQuestion}</ChatMarkdown>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            {!!message.answer.userProvidedInformation?.length && (
-                                                <details className="mt-3 text-xs">
-                                                    <summary className="cursor-pointer text-muted-foreground">Information you provided</summary>
-                                                    <ul className="mt-2 list-disc space-y-1 pl-5">
-                                                        {message.answer.userProvidedInformation.map((information, index) => (
-                                                            <li key={index}>{information}</li>
-                                                        ))}
-                                                    </ul>
-                                                </details>
+                                    message.answer || message.trace?.length || (pending?.id === message.id && busy) ? (
+                                        <ChatMessage key={`${message.id}-assistant`} from="assistant" className="w-full max-w-full items-stretch">
+                                            <DrawingToolTrace drawing={drawing} message={message} busy={busy} />
+                                            {message.answer && (
+                                                <>
+                                                    {message.answer.status === 'cannot_determine' && (
+                                                        <p className="text-muted-foreground mb-2 text-xs font-medium">
+                                                            Cannot determine from available information
+                                                        </p>
+                                                    )}
+                                                    <DrawingAnswer answer={message.answer} drawing={drawing} />
+                                                    {message.answer.status === 'needs_clarification' &&
+                                                        message.answer.clarificationQuestion &&
+                                                        message.id !== (clarification ? latestMessage?.id : null) && (
+                                                            <div className="mt-3 border-t pt-3">
+                                                                <p className="text-primary text-xs font-medium">More information needed</p>
+                                                                <div className="mt-1">
+                                                                    <ChatMarkdown>{message.answer.clarificationQuestion}</ChatMarkdown>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    {!!message.answer.userProvidedInformation?.length && (
+                                                        <details className="mt-3 text-xs">
+                                                            <summary className="cursor-pointer text-muted-foreground">Information you provided</summary>
+                                                            <ul className="mt-2 list-disc space-y-1 pl-5">
+                                                                {message.answer.userProvidedInformation.map((information, index) => (
+                                                                    <li key={index}>{information}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </details>
+                                                    )}
+                                                </>
                                             )}
                                         </ChatMessage>
                                     ) : null,
                                 ])}
                             </AnimatePresence>
-                            {busy && drawing.blueprints.length > 0 && <DrawingActivity label={stages[id] ?? 'Reviewing your question'} />}
+                            {busy && !pending && drawing.blueprints.length > 0 && <DrawingActivity label={stages[id] ?? 'Reviewing your question'} />}
                             {visibleError && (
                                 <p role="alert" className="text-sm text-destructive">
                                     {visibleError}

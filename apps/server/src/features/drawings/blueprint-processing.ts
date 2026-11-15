@@ -9,7 +9,15 @@ import { estimatePpm } from './ppm-agent';
 import { resolvePpm } from './ppm-resolution-agent';
 import { createPpmComments } from './ppm-comments';
 
-type ProcessBlueprintParams = Readonly<{ drawing: Drawing; ownerId: string; signal: AbortSignal; lease: string; blueprintId?: string; jobLease?: string }>;
+type ProcessBlueprintParams = Readonly<{
+    drawing: Drawing;
+    ownerId: string;
+    signal: AbortSignal;
+    lease: string;
+    blueprintId?: string;
+    jobLease?: string;
+    review?: 'notes' | 'scale';
+}>;
 
 function previousDescription(entity: LayoutRoom | LayoutFixture) {
     if (entity.enrichment.type === 'complete') return entity.enrichment.result;
@@ -71,11 +79,15 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
         if (!result.matchedCount) throw new TRPCError({ code: 'CONFLICT', message: 'Blueprint processing expired or its layout changed. Retry.' });
     };
     const stage =
-        blueprint.misc === null
+        params.review === 'notes'
             ? 'misc'
-            : [...blueprint.layout.rooms, ...blueprint.layout.fixtures].some((entity) => !hasDetailedEntityDescription(entity))
-              ? 'entities'
-              : 'ppm';
+            : params.review === 'scale'
+              ? 'ppm'
+              : blueprint.misc === null
+                ? 'misc'
+                : [...blueprint.layout.rooms, ...blueprint.layout.fixtures].some((entity) => !hasDetailedEntityDescription(entity))
+                  ? 'entities'
+                  : 'ppm';
     const startedAt = performance.now();
     let succeeded = false;
     let attemptedEntities = 0;
@@ -93,8 +105,8 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
             await save({
                 misc: context.misc,
                 'layout.summary': context.summary,
-                'layout.limitations': [...blueprint.layout.limitations, ...context.limitations],
-                status: { type: 'pending', stage: 'entities' },
+                'layout.limitations': [...new Set([...blueprint.layout.limitations, ...context.limitations])],
+                status: params.review === 'notes' ? { type: 'ready' } : { type: 'pending', stage: 'entities' },
             });
             succeeded = true;
             return;
@@ -178,7 +190,8 @@ export async function processBlueprint(params: ProcessBlueprintParams) {
         const error = cause instanceof TRPCError ? cause.message : 'Blueprint analysis failed or timed out. Retry to resume.';
         await db.drawing.DrawingModel.updateOne(
             { ...owned, leaseUntil: { $gt: new Date() } },
-            { $set: { [`${root}.status`]: { type: 'partial', stage, error } } },
+            // A review preserves the last completed context until its replacement is saved.
+            { $set: { [`${root}.status`]: params.review ? { type: 'ready' } : { type: 'partial', stage, error } } },
         );
         throw new TRPCError({ code: cause instanceof TRPCError ? cause.code : 'INTERNAL_SERVER_ERROR', message: error, cause });
     } finally {

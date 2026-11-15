@@ -58,3 +58,16 @@ export function layoutPages(blueprints: readonly Blueprint[]): PredictionPage[] 
         return page ? [page] : [];
     });
 }
+
+// Number objects within each sheet category, matching the Layers hierarchy.
+export function layerObjects(blueprints: readonly Blueprint[]) {
+    return layoutPages(blueprints).flatMap((page) => {
+        const counts = new Map<string, number>();
+        return page.detectedProperties.map((property, index) => {
+            const category = `${property.type}:${property.label}`;
+            const number = (counts.get(category) ?? 0) + 1;
+            counts.set(category, number);
+            return { property, index, page: page.page, number, name: `${property.label} ${number}` };
+        });
+    });
+}

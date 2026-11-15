@@ -1,24 +1,86 @@
-import { TRPCError } from '@trpc/server';
+import { setTimeout as delay } from 'node:timers/promises';
+import { tracked, TRPCError } from '@trpc/server';
+import { BSON } from 'mongodb';
 import { z } from 'zod';
 import {
+    AcknowledgeCanvasActionZod,
+    CanvasActionAcknowledgmentZod,
     UpdateDrawingUploadZod,
     RenameDrawingZod,
     AskDrawingZod,
     DetectDrawingZod,
     DrawingIdZod,
+    ReviewDrawingContextZod,
     DrawingSummaryZod,
     DrawingZod,
+    DrawingTraceInputZod,
+    MessageZod,
     CanvasStateZod,
     SaveCanvasZod,
 } from '@repo/types';
 import { db } from '../../db';
 import { protectedProcedure, t } from '../../shared/trpc';
 import { answer } from './agent';
+import { acknowledgeCanvasAction, createToolTrace } from './tool-trace';
+import { processBlueprint } from './blueprint-processing';
 import { getDrawing, processDrawing } from './operations';
 import { enqueueDrawing } from './processing-jobs';
 import { scanCommentsRouter } from './comments';
 
 export const drawingRouter = t.router({
+    acknowledgeCanvasAction: protectedProcedure
+        .input(AcknowledgeCanvasActionZod)
+        .output(CanvasActionAcknowledgmentZod)
+        .mutation(({ input, ctx }) => acknowledgeCanvasAction(input, ctx.user.id)),
+    trace: protectedProcedure.input(DrawingTraceInputZod).subscription(async function* ({ input, ctx, signal }) {
+        let after = Math.max(input.after, Number(input.lastEventId) || 0);
+        const deadline = Date.now() + 160_000;
+        while (!signal?.aborted && Date.now() < deadline) {
+            // Read only this message; ownership is rechecked on every replay/live read.
+            const doc = await db.drawing.DrawingModel.findOne({ _id: input.id, ownerId: ctx.user.id })
+                .select({ messages: { $elemMatch: { id: input.messageId } }, lease: 1, leaseUntil: 1 })
+                .lean();
+            if (!doc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Drawing not found.' });
+            const message = MessageZod.optional().parse(doc.messages[0]);
+            for (const event of message?.trace ?? []) {
+                if (event.sequence <= after) continue;
+                after = event.sequence;
+                yield tracked(String(after), event);
+            }
+            const active = doc.lease !== null && doc.leaseUntil != null && doc.leaseUntil.getTime() > Date.now();
+            if (message && (message.answer || (!active && message.trace?.length))) return;
+            await delay(300, undefined, { signal }).catch((cause: unknown) => {
+                if (!signal?.aborted) throw cause;
+            });
+        }
+    }),
+    reviewContext: protectedProcedure
+        .input(ReviewDrawingContextZod)
+        .output(DrawingZod)
+        .mutation(({ input, ctx }) =>
+            processDrawing(input.id, ctx.user.id, async (drawing, signal, lease) => {
+                const blueprint = drawing.blueprints.find((item) => item.id === input.blueprintId);
+                if (!blueprint || blueprint.status.type !== 'ready')
+                    throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Finish blueprint analysis before reviewing drawing context.' });
+                await processBlueprint({
+                    drawing: {
+                        ...drawing,
+                        blueprints: [
+                            {
+                                ...blueprint,
+                                ...(input.section === 'scale' ? { ppm: null } : { misc: null }),
+                                status: { type: 'pending', stage: input.section === 'scale' ? 'ppm' : 'misc' },
+                            },
+                        ],
+                    },
+                    ownerId: ctx.user.id,
+                    signal,
+                    lease,
+                    review: input.section,
+                });
+                return {};
+            }),
+        ),
     comments: scanCommentsRouter,
     updateUpload: protectedProcedure
         .input(UpdateDrawingUploadZod)
@@ -124,8 +186,26 @@ export const drawingRouter = t.router({
                     if (!saved.matchedCount) throw new TRPCError({ code: 'CONFLICT', message: 'Processing expired. Please retry.' });
                     drawing.messages.push(message);
                 }
-                const output = await answer(drawing, signal);
-                return { messages: drawing.messages.map((message) => (message.id === input.message.id ? { ...message, answer: output } : message)) };
+                const trace = createToolTrace(drawing, ctx.user.id, input.message.id, lease, signal);
+                await trace.emit({ type: 'run_started' });
+                try {
+                    const output = await answer(drawing, signal, trace);
+                    const messages = drawing.messages.map((message) => (message.id === input.message.id ? { ...message, answer: output } : message));
+                    const current = await db.drawing.DrawingModel.findOne({ _id: input.id, ownerId: ctx.user.id, lease }).lean();
+                    if (!current) throw new TRPCError({ code: 'CONFLICT', message: 'Processing expired. Please retry.' });
+                    // Reserve space for the completion event committed alongside the answer.
+                    if (BSON.calculateObjectSize({ ...current, messages }) > 15 * 1024 * 1024 - 1024) {
+                        throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: 'This answer exceeds the session’s supported storage size.' });
+                    }
+                    await trace.complete();
+                    return { messages };
+                } catch (cause) {
+                    await trace.emit({
+                        type: 'run_failed',
+                        summary: signal.aborted ? 'Answer generation was interrupted. Retry to continue.' : 'Could not complete the answer. Please retry.',
+                    });
+                    throw cause;
+                }
             }),
         ),
 });
