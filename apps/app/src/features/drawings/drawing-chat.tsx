@@ -12,7 +12,6 @@ import type { Drawing } from '@repo/types';
 import { AskUserQuestions } from '@repo/design-system/components/ui/ask-user-questions';
 import { Button } from '@repo/design-system/components/ui/button';
 import { InputMessage } from '@repo/design-system/components/ui/input-message';
-import { Badge } from '@repo/design-system/components/ui/badge';
 import { annotationMarker, annotationContextSchema } from './annotation-context';
 import { ChatMessage } from '@repo/design-system/components/ui/chat-message';
 import { trpc } from '@/shared/trpc';
@@ -25,7 +24,7 @@ import { DrawingAnswer } from './drawing-answer';
 
 const questionLimit = 4000;
 
-function UserQuestion({ question }: Readonly<{ question: string }>) {
+function UserQuestion({ question, model, drawing }: Readonly<{ question: string; model?: CommentsModel; drawing: Drawing }>) {
     const markerIndex = question.lastIndexOf(annotationMarker);
     if (markerIndex < 0) return <>{question}</>;
     let context;
@@ -35,13 +34,22 @@ function UserQuestion({ question }: Readonly<{ question: string }>) {
         return <>{question}</>;
     }
     if (!context.success) return <>{question}</>;
+    const available = drawing.blueprints.some((blueprint) => blueprint.pageNumber === context.data.sheet && !blueprint.attachment.hiddenFromCanvas);
     return (
         <div className="flex min-w-0 flex-col items-start gap-2 whitespace-normal">
-            <Badge color="gray" className="max-w-full">
-                <span className="truncate">
-                    Selected area · {context.data.label} · Sheet {context.data.sheet}
+            <button
+                type="button"
+                disabled={!model || !available}
+                title={available ? undefined : 'Show this blueprint to focus the annotation'}
+                onClick={() => model?.annotationFocusRequested(context.data)}
+                className="flex max-w-full items-center gap-2 border border-foreground/20 bg-black/5 px-2.5 py-2 text-left text-xs text-foreground hover:bg-black/10 focus-visible:outline-2 focus-visible:outline-ring dark:bg-black/15 dark:hover:bg-black/25 disabled:cursor-default"
+                aria-label={`Focus ${context.data.label} on sheet ${context.data.sheet}`}
+            >
+                <MessageSquare size={14} className="shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0 truncate">
+                    {context.data.label} · Sheet {context.data.sheet}
                 </span>
-            </Badge>
+            </button>
             <div className="max-w-full whitespace-pre-wrap [overflow-wrap:anywhere]">{question.slice(0, markerIndex)}</div>
         </div>
     );
@@ -161,7 +169,7 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                             <AnimatePresence initial={false}>
                                 {messages.flatMap((message) => [
                                     <ChatMessage key={`${message.id}-user`} from="user">
-                                        <UserQuestion question={message.question} />
+                                        <UserQuestion question={message.question} model={commentsModel} drawing={drawing} />
                                     </ChatMessage>,
                                     message.answer || message.trace?.length || (pending?.id === message.id && busy) ? (
                                         <ChatMessage key={`${message.id}-assistant`} from="assistant" className="w-full max-w-full items-stretch">

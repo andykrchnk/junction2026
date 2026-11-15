@@ -107,7 +107,7 @@ const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
                     // word-by-word stream visibly reflows earlier words to new
                     // lines. Default (normal) wrapping appends left-to-right and
                     // stays put as the text grows.
-                    "text-pretty bg-[var(--chat-user-background)] text-primary-foreground"
+                    "text-pretty bg-[var(--chat-user-background)] text-foreground"
                   )
                 : "text-foreground"
             )}

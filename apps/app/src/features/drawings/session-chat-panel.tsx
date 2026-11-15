@@ -4,10 +4,57 @@ import type { Drawing } from '@repo/types';
 import { Button } from '@repo/design-system/components/ui/button';
 import { motion, useReducedMotion } from 'motion/react';
 import { spring } from '@repo/design-system/lib/springs';
-import { remixIcons } from '@repo/design-system/lib/icons-remix';
+import { useUnit } from 'effector-react';
+import { Toolbar } from '@repo/design-system/components/ui/toolbar';
+import { Tooltip } from '@repo/design-system/components/ui/tooltip';
+import { MessageAdd, remixIcons } from '@repo/design-system/lib/icons-remix';
 const CollapseIcon = remixIcons['panel-left'];
 import { DrawingChat } from './drawing-chat';
 import { $$drawings } from './model';
+
+function CommentTool({ drawing, model }: Readonly<{ drawing: Drawing; model: CommentsModel }>) {
+    const { mode, modeChanged } = useUnit({ mode: model.$mode, modeChanged: model.modeChanged });
+    const active = mode === 'comment';
+    const [hovered, setHovered] = useState(false);
+    const expanded = active || hovered;
+    const reducedMotion = useReducedMotion();
+    return (
+        <Toolbar.Root
+            onPointerEnter={() => setHovered(true)}
+            onPointerLeave={() => setHovered(false)}
+            aria-label="Canvas tools"
+            className="absolute left-full top-[27px] ml-2 flex border border-border bg-card p-1 shadow-sm max-md:left-auto max-md:right-16 max-md:ml-0"
+        >
+            <Tooltip content={active ? 'Exit commenting' : 'Place a comment on the blueprint'} shortcut="C">
+                <Toolbar.Button
+                    render={<Button className="px-2.5" variant={active ? 'primary' : 'secondary'} />}
+                    data-active={active}
+                    /* Keep the Fluid button styling inside the toolbar primitive. */
+                    aria-label="Comment"
+                    aria-pressed={active}
+                    disabled={!drawing.blueprints.some((blueprint) => !blueprint.attachment.hiddenFromCanvas)}
+                    onClick={() => {
+                        if (active) setHovered(false);
+                        modeChanged(active ? 'default' : 'comment');
+                    }}
+                >
+                    <span className="flex items-center">
+                        <MessageAdd size={16} className="shrink-0" aria-hidden />
+                        <motion.span
+                            initial={false}
+                            animate={{ width: expanded ? 'auto' : 0, opacity: expanded ? 1 : 0 }}
+                            transition={reducedMotion ? { duration: 0 } : spring.fast}
+                            className="block overflow-hidden"
+                            aria-hidden="true"
+                        >
+                            <span className="block pl-2">Comment</span>
+                        </motion.span>
+                    </span>
+                </Toolbar.Button>
+            </Tooltip>
+        </Toolbar.Root>
+    );
+}
 
 export function SessionChatPanel({
     drawing,
@@ -73,8 +120,11 @@ export function SessionChatPanel({
                 animate={{ height: collapsed ? 98 : height }}
                 transition={reducedMotion ? { duration: 0 } : spring.slow}
             >
+                {commentsModel && !previewDrawing && <CommentTool drawing={drawing} model={commentsModel} />}
                 <div className="bg-card border border-border flex h-full min-h-0 flex-col overflow-hidden">
-                    <header className="flex min-h-20 shrink-0 items-center gap-2 px-3 py-[2px]">
+                    <header
+                        className={`flex min-h-20 shrink-0 items-center gap-2 px-3 py-[2px] ${commentsModel && !previewDrawing ? 'max-md:pr-[188px]' : 'max-md:pr-14'}`}
+                    >
                         <div className="min-w-0 flex-1">
                             <form
                                 onSubmit={(event) => {
@@ -127,6 +177,7 @@ export function SessionChatPanel({
                         <Button
                             variant="ghost"
                             size="icon"
+                            className="max-md:absolute max-md:right-5 max-md:top-[31px]"
                             aria-label={collapsed ? 'Expand chat' : 'Collapse chat'}
                             aria-expanded={!collapsed}
                             onClick={() => setCollapsed(!collapsed)}

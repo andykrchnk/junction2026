@@ -1,3 +1,4 @@
+import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
 import { layoutPages } from './layout';
 import { $$user } from '@/entities/user/model';
 import { CommentAuthor } from './drawing-comments';
@@ -14,7 +15,7 @@ import { SurfaceProvider } from '@repo/design-system/lib/surface-context';
 import { surfaceClasses } from '@repo/design-system/lib/surface-classes';
 import { DropdownMenu, DropdownTrigger, DropdownContent } from '@repo/design-system/components/ui/dropdown';
 import { MenuItem } from '@repo/design-system/components/ui/menu-item';
-import { X } from '@repo/design-system/lib/icons-remix';
+import { MessageSquare, X } from '@repo/design-system/lib/icons-remix';
 import { queryClient, trpc } from '@/shared/trpc';
 import type { CommentsModel } from './canvas/comments-model';
 
@@ -83,7 +84,8 @@ function CommentActions({ disabled, onDelete }: { disabled: boolean; onDelete: (
 function CommentLayer({ drawing, model }: CommentsContextValue) {
     const user = useUnit($$user.$user);
     const editor = useEditor();
-    const { focusRequest, openId, draft, error, creating, deleting, deleteError } = useUnit({
+    const { focusRequest, openId, draft, error, creating, deleting, deleteError, visible } = useUnit({
+        visible: model.$visible,
         focusRequest: model.$focusRequest,
         openId: model.$openId,
         draft: model.$draft,
@@ -160,108 +162,127 @@ function CommentLayer({ drawing, model }: CommentsContextValue) {
                     Could not load comments. Reopen the drawing to retry.
                 </p>
             )}
-            {entries.map(({ comment, x, y, screen }) => {
-                const isOpen = openId === comment.id;
-                const isDraft = draft?.id === comment.id;
-                const isAnnotation = comment.type === 'annotation';
-                const width = Math.min(288, Math.max(180, viewport.w - 24));
-                const maxHeight = Math.min(360, Math.max(120, viewport.h - 24));
-                const flipLeft = screen.x + 28 + width > viewport.x + viewport.w;
-                const flipUp = screen.y + 12 + maxHeight > viewport.y + viewport.h;
-                return (
-                    <div
-                        key={comment.id}
-                        data-comment-ui="true"
-                        style={{
-                            position: 'absolute',
-                            zIndex: isOpen ? 1 : 0,
-                            transformOrigin: '0 0',
-                            transform: `translate(${x}px, ${y}px) scale(${1 / zoom})`,
-                            pointerEvents: 'auto',
-                        }}
-                        onPointerDown={(event) => event.stopPropagation()}
-                    >
-                        <button
-                            type="button"
-                            aria-label={`${isDraft ? 'New comment' : comment.type === 'annotation' ? 'Annotation' : 'Comment'} ${comment.number ?? ''}, sheet ${comment.page}`}
-                            aria-expanded={isOpen}
-                            onClick={() => model.openChanged(comment.id)}
-                            className={`absolute focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-                                isAnnotation
-                                    ? '-left-1 -top-1 size-2 rounded-full bg-[#eab308] transition-transform hover:scale-200'
-                                    : `-left-5 -top-5 flex size-10 items-center justify-center border-2 bg-black text-white shadow-lg ${isOpen ? 'border-white' : 'border-white/30'}`
-                            }`}
+            {visible &&
+                entries.map(({ comment, x, y, screen }) => {
+                    const isOpen = openId === comment.id;
+                    const isDraft = draft?.id === comment.id;
+                    const isPirto = comment.source === 'ppm';
+                    const width = Math.min(288, Math.max(180, viewport.w - 24));
+                    const maxHeight = Math.min(360, Math.max(120, viewport.h - 24));
+                    const flipLeft = screen.x + 28 + width > viewport.x + viewport.w;
+                    const flipUp = screen.y + 12 + maxHeight > viewport.y + viewport.h;
+                    return (
+                        <div
+                            key={comment.id}
+                            data-comment-ui="true"
+                            style={{
+                                position: 'absolute',
+                                zIndex: isOpen ? 1 : 0,
+                                transformOrigin: '0 0',
+                                transform: `translate(${x}px, ${y}px) scale(${1 / zoom})`,
+                                pointerEvents: 'auto',
+                            }}
+                            onPointerDown={(event) => event.stopPropagation()}
                         >
-                            {isDraft ? (
-                                <X className="size-4" aria-hidden />
-                            ) : (
-                                !isAnnotation && <span className="text-sm font-semibold tabular-nums">{comment.number ?? '·'}</span>
-                            )}
-                        </button>
-                        {isOpen && (
-                            <SurfaceProvider value={2}>
-                                <section
-                                    ref={isolatePopoverWheel}
-                                    role="dialog"
-                                    aria-label={isDraft ? 'New comment' : 'Comment'}
-                                    className={`${surfaceClasses(2)} absolute flex flex-col gap-3 overflow-hidden rounded-none border border-border p-4 text-sm text-foreground`}
-                                    style={{
-                                        left: flipLeft ? -width - 28 : 28,
-                                        top: flipUp ? -12 : 12,
-                                        transform: flipUp ? 'translateY(-100%)' : undefined,
-                                        width,
-                                        maxHeight,
-                                    }}
-                                >
-                                    {!isDraft && (
-                                        <div className="flex shrink-0 items-center justify-between gap-3">
-                                            <CommentAuthor comment={comment} />
-                                            <div className="flex shrink-0 items-center gap-1">
-                                                {comment.type === 'comment' &&
-                                                    comment.source === 'user' &&
-                                                    (comment.author?.id === user?.id || !comment.author) && (
-                                                        <CommentActions disabled={creating || deleting} onDelete={() => model.deleteRequested(comment.id)} />
-                                                    )}
-                                                <Button size="icon-compact" variant="ghost" aria-label="Close comment" onClick={() => model.openChanged(null)}>
-                                                    <X />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <ScrollArea
-                                        role="region"
-                                        aria-label="Comment content"
-                                        className="min-h-0"
-                                        style={{ maxHeight: Math.max(36, maxHeight - 84) }}
-                                        viewportClassName="max-h-[inherit] overscroll-contain"
-                                        onKeyDown={(event) => {
-                                            if (event.key !== 'Escape') event.stopPropagation();
+                            <button
+                                type="button"
+                                aria-label={`${isDraft ? (isOpen ? 'Cancel new comment' : 'Resume new comment') : comment.type === 'annotation' ? 'Annotation' : 'Comment'} ${comment.number ?? ''}, sheet ${comment.page}`}
+                                aria-expanded={isOpen}
+                                onClick={() => {
+                                    if (!isDraft) model.openChanged(comment.id);
+                                    else if (isOpen) model.draftCancelled();
+                                    else model.modeChanged('comment');
+                                }}
+                                className={`absolute focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                                    isPirto
+                                        ? `-left-3.5 -top-3.5 flex size-7 items-center justify-center border-2 border-white text-white shadow-lg ${isOpen ? 'bg-primary' : 'bg-black'}`
+                                        : `-left-5 -top-5 flex size-10 items-center justify-center border-2 text-white shadow-lg ${isOpen ? 'border-white bg-primary' : 'border-white/30 bg-black'}`
+                                }`}
+                            >
+                                {isDraft ? (
+                                    isOpen ? (
+                                        <X className="size-4" aria-hidden />
+                                    ) : (
+                                        <MessageSquare className="size-4" aria-hidden />
+                                    )
+                                ) : isPirto ? (
+                                    <BrandLogo iconOnly className="!h-4" />
+                                ) : (
+                                    <span className="text-sm font-semibold tabular-nums">{comment.number ?? '·'}</span>
+                                )}
+                            </button>
+                            {isOpen && (
+                                <SurfaceProvider value={2}>
+                                    <section
+                                        ref={isolatePopoverWheel}
+                                        role="dialog"
+                                        aria-label={isDraft ? 'New comment' : 'Comment'}
+                                        className={`${surfaceClasses(2)} absolute flex flex-col gap-3 overflow-hidden rounded-none border border-border p-4 text-sm text-foreground`}
+                                        style={{
+                                            left: flipLeft ? -width - 28 : 28,
+                                            top: flipUp ? -12 : 12,
+                                            transform: flipUp ? 'translateY(-100%)' : undefined,
+                                            width,
+                                            maxHeight,
                                         }}
                                     >
-                                        {deleteError?.id === comment.id && (
-                                            <p role="alert" className="mb-2 text-xs text-destructive">
-                                                {deleteError.message}
-                                            </p>
+                                        {!isDraft && (
+                                            <div className="flex shrink-0 items-start justify-between gap-3">
+                                                <CommentAuthor comment={comment} />
+                                                <div className="flex shrink-0 items-center gap-1">
+                                                    {comment.type === 'comment' &&
+                                                        comment.source === 'user' &&
+                                                        (comment.author?.id === user?.id || !comment.author) && (
+                                                            <CommentActions
+                                                                disabled={creating || deleting}
+                                                                onDelete={() => model.deleteRequested(comment.id)}
+                                                            />
+                                                        )}
+                                                    <Button
+                                                        size="icon-compact"
+                                                        variant="ghost"
+                                                        aria-label="Close comment"
+                                                        onClick={() => model.openChanged(null)}
+                                                    >
+                                                        <X />
+                                                    </Button>
+                                                </div>
+                                            </div>
                                         )}
-                                        {isDraft ? (
-                                            <CommentEditor
-                                                text={draft.text}
-                                                error={error}
-                                                creating={creating}
-                                                deleting={deleting}
-                                                onTextChange={model.draftChanged}
-                                                onSubmit={model.saveRequested}
-                                            />
-                                        ) : (
-                                            <p className="whitespace-pre-wrap break-words">{comment.text}</p>
-                                        )}
-                                    </ScrollArea>
-                                </section>
-                            </SurfaceProvider>
-                        )}
-                    </div>
-                );
-            })}
+                                        <ScrollArea
+                                            role="region"
+                                            aria-label="Comment content"
+                                            className="min-h-0"
+                                            style={{ maxHeight: Math.max(36, maxHeight - 84) }}
+                                            viewportClassName="max-h-[inherit] overscroll-contain"
+                                            onKeyDown={(event) => {
+                                                if (event.key !== 'Escape') event.stopPropagation();
+                                            }}
+                                        >
+                                            {deleteError?.id === comment.id && (
+                                                <p role="alert" className="mb-2 text-xs text-destructive">
+                                                    {deleteError.message}
+                                                </p>
+                                            )}
+                                            {isDraft ? (
+                                                <CommentEditor
+                                                    text={draft.text}
+                                                    error={error}
+                                                    creating={creating}
+                                                    deleting={deleting}
+                                                    onTextChange={model.draftChanged}
+                                                    onSubmit={model.saveRequested}
+                                                />
+                                            ) : (
+                                                <p className="whitespace-pre-wrap break-words">{comment.text}</p>
+                                            )}
+                                        </ScrollArea>
+                                    </section>
+                                </SurfaceProvider>
+                            )}
+                        </div>
+                    );
+                })}
         </div>
     );
 }

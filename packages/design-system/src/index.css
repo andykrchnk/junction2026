@@ -1276,7 +1276,7 @@ b, strong { font-weight: var(--weight-semibold); font-variation-settings: 'wght'
 :root { --chat-input-background: #f4f4f4; }
 .dark { --chat-input-background: #2a2a2c; }
 
-:root { --chat-user-background: color-mix(in srgb, var(--primary) 80%, black); }
+:root { --chat-user-background: var(--chat-input-background); }
 
 /* Keep the editable answer distinct from the surrounding question card. */
 .chat-clarification-input textarea {
