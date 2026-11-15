@@ -1,4 +1,6 @@
 import sharp from 'sharp';
+import { z } from 'zod';
+import type { Drawing } from '@repo/types';
 import { ObjectId } from 'mongodb';
 import { getDetectedObjectColor, type DrawingCovers, type PredictionPage } from '@repo/types';
 
@@ -10,10 +12,11 @@ type StoreDrawingCoversParams = Readonly<{ drawingId: string; ownerId: string; p
 type DeleteDrawingCoversParams = Readonly<{ drawingId: string; ownerId: string; covers: DrawingCovers }>;
 type UploadCoverParams = Readonly<{ drawingId: string; ownerId: string; theme: 'light' | 'dark'; bytes: Buffer }>;
 
-export async function renderDrawingCovers(pages: PredictionPage[]): Promise<{ light: Buffer; dark: Buffer }> {
+export async function renderDrawingCovers(pages: PredictionPage[], rasters?: ReadonlyMap<string, Buffer>): Promise<{ light: Buffer; dark: Buffer }> {
     if (pages.length === 0) throw new Error('Cannot render drawing covers without detected pages.');
     const sorted = [...pages].sort((first, second) => first.page - second.page);
     const views = sorted.map((page) => {
+        if (rasters) return { page, x: 0, y: 0, width: page.width, height: page.height };
         const points = page.detectedProperties
             .filter((property) => property.type === 'room')
             .flatMap((room) => {
@@ -48,27 +51,34 @@ export async function renderDrawingCovers(pages: PredictionPage[]): Promise<{ li
             const scale = Math.min(layout.width / view.width, layout.height / view.height);
             const left = PADDING + (index % layout.columns) * (layout.width + GAP) + (layout.width - view.width * scale) / 2;
             const top = PADDING + Math.floor(index / layout.columns) * (layout.height + GAP) + (layout.height - view.height * scale) / 2;
-            return view.page.detectedProperties
-                .filter((property) => property.type === 'room')
-                .flatMap((room) => {
-                    if (room.geometry.type === 'Point') return [];
-                    const polygons = room.geometry.type === 'Polygon' ? [room.geometry.coordinates] : room.geometry.coordinates;
-                    const path = polygons
-                        .flatMap((polygon) =>
-                            polygon.map(
-                                (ring) =>
-                                    ring
-                                        .map(
-                                            ([x, y], pointIndex) =>
-                                                `${pointIndex === 0 ? 'M' : 'L'}${left + (x - view.x) * scale} ${top + (y - view.y) * scale}`,
-                                        )
-                                        .join(' ') + 'Z',
-                            ),
-                        )
-                        .join(' ');
-                    return [`<path d="${path}" fill="none" stroke="${getDetectedObjectColor(room)}" stroke-width="4" stroke-linejoin="round"/>`];
-                })
-                .join('');
+            const raster = rasters?.get(view.page.rasterFileId);
+            const sheet = raster
+                ? `<image x="${left}" y="${top}" width="${view.width * scale}" height="${view.height * scale}" href="data:image/png;base64,${raster.toString('base64')}"/>`
+                : '';
+            return (
+                sheet +
+                view.page.detectedProperties
+                    .filter((property) => property.type === 'room')
+                    .flatMap((room) => {
+                        if (room.geometry.type === 'Point') return [];
+                        const polygons = room.geometry.type === 'Polygon' ? [room.geometry.coordinates] : room.geometry.coordinates;
+                        const path = polygons
+                            .flatMap((polygon) =>
+                                polygon.map(
+                                    (ring) =>
+                                        ring
+                                            .map(
+                                                ([x, y], pointIndex) =>
+                                                    `${pointIndex === 0 ? 'M' : 'L'}${left + (x - view.x) * scale} ${top + (y - view.y) * scale}`,
+                                            )
+                                            .join(' ') + 'Z',
+                                ),
+                            )
+                            .join(' ');
+                        return [`<path d="${path}" fill="none" stroke="${getDetectedObjectColor(room)}" stroke-width="4" stroke-linejoin="round"/>`];
+                    })
+                    .join('')
+            );
         })
         .join('');
     const render = (background: string) =>
@@ -127,4 +137,57 @@ export async function deleteUnreferencedDrawingCovers(params: DeleteDrawingCover
             if (!referenced) await blueprintFiles.delete(new ObjectId(id)).catch(() => {});
         }),
     );
+}
+
+const WorkspaceThumbnailZod = z.object({
+    version: z.string(),
+    light: z.string(),
+    dark: z.string(),
+});
+const pendingThumbnails = new Map<string, Promise<{ light: string; dark: string } | null>>();
+
+export async function workspaceThumbnail(params: Readonly<{ drawing: Drawing; ownerId: string; stored: unknown }>) {
+    // Version the renderer as well as the workspace so future visual changes invalidate old thumbnails.
+    const version = `webp-640-v1:${params.drawing.updatedAt}`;
+    const cached = WorkspaceThumbnailZod.safeParse(params.stored);
+    if (cached.success && cached.data.version === version) return cached.data;
+    const key = `${params.ownerId}:${params.drawing.id}:${version}`;
+    const pending = pendingThumbnails.get(key);
+    if (pending) return pending;
+    const task = renderWorkspaceThumbnail(params, version);
+    pendingThumbnails.set(key, task);
+    try {
+        return await task;
+    } finally {
+        pendingThumbnails.delete(key);
+    }
+}
+
+async function renderWorkspaceThumbnail(params: Readonly<{ drawing: Drawing; ownerId: string }>, version: string) {
+    const [{ db }, { blueprintFiles }] = await Promise.all([import('../../db'), import('./files')]);
+    const pages = params.drawing.blueprints.flatMap((blueprint) => {
+        const page = db.drawing.predictionPage(blueprint);
+        return page && !blueprint.attachment.hiddenFromCanvas ? [page] : [];
+    });
+    if (!pages.length) return null;
+    const rasters = new Map<string, Buffer>();
+    for (const page of pages) {
+        const chunks: Buffer[] = [];
+        for await (const chunk of blueprintFiles.openDownloadStream(new ObjectId(page.rasterFileId))) chunks.push(Buffer.from(chunk));
+        rasters.set(
+            page.rasterFileId,
+            await sharp(Buffer.concat(chunks)).resize({ width: 640, height: 426, fit: 'inside', withoutEnlargement: true }).png().toBuffer(),
+        );
+    }
+    const images = await renderDrawingCovers(pages, rasters);
+    const encode = async (bytes: Buffer) => (await sharp(bytes).resize(640, 426).webp({ quality: 65, effort: 4 }).toBuffer()).toString('base64');
+    const [light, dark] = await Promise.all([encode(images.light), encode(images.dark)]);
+    const thumbnail = { version, light, dark };
+    // Do not mark a thumbnail write as a user edit or overwrite a newer workspace's preview.
+    await db.drawing.DrawingModel.updateOne(
+        { _id: params.drawing.id, ownerId: params.ownerId, updatedAt: new Date(params.drawing.updatedAt) },
+        { $set: { workspaceThumbnail: thumbnail } },
+        { timestamps: false },
+    );
+    return thumbnail;
 }

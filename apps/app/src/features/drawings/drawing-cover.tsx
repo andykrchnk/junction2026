@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import type { DrawingSummary } from '@repo/types';
-import { FileText } from '@repo/design-system/lib/icons-remix';
+import { DrawingPlaceholder } from '@/shared/components/drawing-placeholder';
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 
@@ -13,12 +13,17 @@ export function DrawingCover({ drawing }: Readonly<{ drawing: DrawingSummary }>)
     const [preview, setPreview] = useState<Readonly<{ blob: Blob; url: string }> | null>(null);
     const [failedUrl, setFailedUrl] = useState<string | null>(null);
     const { data: blob } = useQuery({
-        queryKey: ['drawing-cover', drawing.id, fileId ?? null, theme],
-        enabled: Boolean(fileId && resolvedTheme),
+        queryKey: ['drawing-workspace-preview', drawing.id, drawing.updatedAt, theme],
+        enabled: Boolean(drawing.documentCount && resolvedTheme),
         staleTime: Infinity,
         queryFn: async ({ signal }) => {
-            const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/covers/${theme}`, { signal });
-            if (!response.ok) throw new Error('Could not load the session cover.');
+            const response = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/workspace-preview/${theme}`, { signal });
+            if (!response.ok) {
+                if (!fileId) throw new Error('Preview not available yet.');
+                const fallback = await authenticatedFetch(`${config.API_URL}/api/drawings/${drawing.id}/covers/${theme}`, { signal });
+                if (!fallback.ok) throw new Error('Could not load the session cover.');
+                return fallback.blob();
+            }
             return response.blob();
         },
     });
@@ -32,13 +37,13 @@ export function DrawingCover({ drawing }: Readonly<{ drawing: DrawingSummary }>)
         return () => URL.revokeObjectURL(url);
     }, [blob]);
 
-    if (!resolvedTheme || !fileId || !preview || preview.blob !== blob || preview.url === failedUrl) {
-        return <FileText size={48} aria-label="Drawing document" />;
+    if (!resolvedTheme || !preview || preview.blob !== blob || preview.url === failedUrl) {
+        return <DrawingPlaceholder />;
     }
     return (
         <img
             src={preview.url}
-            alt={`${drawing.title} room outline cover`}
+            alt={`${drawing.title} workspace preview`}
             className="absolute inset-0 h-full w-full object-cover"
             onError={() => setFailedUrl(preview.url)}
         />

@@ -61,6 +61,7 @@ export function DashboardPage() {
                     id: all.length - index,
                     name: drawing.title,
                     createdAt: drawing.createdAt,
+                    updatedAt: drawing.updatedAt,
                     documentCount: drawing.documentCount,
                     file: `Updated ${new Date(drawing.updatedAt).toLocaleDateString()}`,
                     status: { empty: 'New', uploaded: 'Uploaded', analyzing: 'Analyzing', ready: 'Ready', failed: 'Needs attention' }[drawing.status],
