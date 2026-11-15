@@ -4,6 +4,7 @@ import { createCommentsModel } from './canvas/comments-model';
 import { SessionChatPanel } from './session-chat-panel';
 import { MAX_FILE_BYTES, type Drawing } from '@repo/types';
 import { useDropzone } from 'react-dropzone';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
@@ -13,6 +14,7 @@ import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { trpc } from '@/shared/trpc';
 import { EntityClassEditor } from './entity-class-editor';
+import { ObjectContextMenu } from './object-context-menu';
 
 const BlueprintCanvas = lazy(() => import('./blueprint-canvas'));
 export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: string; userId: string; previewDrawing?: Drawing }>) {
@@ -38,6 +40,20 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
     });
     const [canvasModel] = useState(() => createCanvasModel(id, `junction:canvas:${userId}:${id}`));
     const [commentsModel] = useState(() => createCommentsModel(id));
+    const [chatCollapsed, setChatCollapsed] = useState<boolean>(false);
+    const [layersCollapsed, setLayersCollapsed] = useState<boolean>(false);
+    useHotkeys(
+        'meta+backslash',
+        (event) => {
+            if (event.repeat) return;
+            const collapsed = !(chatCollapsed && layersCollapsed);
+            setChatCollapsed(collapsed);
+            setLayersCollapsed(collapsed);
+            event.stopPropagation();
+        },
+        { preventDefault: true, enableOnFormTags: true, enableOnContentEditable: true, eventListenerOptions: { capture: true } },
+        [chatCollapsed, layersCollapsed],
+    );
     const [localFile, setLocalFile] = useState<File | null>(null);
     const [localUrl, setLocalUrl] = useState('');
     const [uploadError, setUploadError] = useState('');
@@ -134,12 +150,35 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                     {visibleError}
                 </p>
             )}
-            <section aria-label="Blueprint canvas" className="absolute inset-0 z-0">
-                {canvas}
-            </section>
-            <SessionChatPanel commentsModel={commentsModel} drawing={drawing} previewDrawing={previewDrawing} />
+            <ObjectContextMenu
+                drawing={drawing}
+                onAsk={(target) => {
+                    setChatCollapsed(false);
+                    commentsModel.modeChanged('default');
+                    $$drawings.objectAttached({ id, ...target });
+                }}
+            >
+                <section aria-label="Blueprint canvas" className="absolute inset-0 z-0">
+                    {canvas}
+                </section>
+            </ObjectContextMenu>
+            <SessionChatPanel
+                commentsModel={commentsModel}
+                drawing={drawing}
+                previewDrawing={previewDrawing}
+                collapsed={chatCollapsed}
+                setCollapsed={setChatCollapsed}
+            />
             <div className="pointer-events-none relative z-10 min-h-0 min-w-0 flex-1">{uploadOverlay}</div>
-            <BlueprintLayersPanel drawing={drawing} model={canvasModel} preview={!!previewDrawing} onUpload={open} uploading={false} />
+            <BlueprintLayersPanel
+                drawing={drawing}
+                model={canvasModel}
+                preview={!!previewDrawing}
+                onUpload={open}
+                uploading={false}
+                collapsed={layersCollapsed}
+                setCollapsed={setLayersCollapsed}
+            />
             <EntityClassEditor drawing={drawing} model={canvasModel} preview={!!previewDrawing} />
         </div>
     );

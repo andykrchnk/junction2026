@@ -174,6 +174,12 @@ export type ReviewDrawingContext = z.infer<typeof ReviewDrawingContextZod>;
 export const RenameDrawingZod = DrawingIdZod.extend({ title: z.string().trim().min(1).max(200) });
 export const AskDrawingZod = DrawingIdZod.extend({ message: MessageZod.omit({ answer: true, trace: true, stopped: true }) });
 export const StopDrawingChatZod = DrawingIdZod.extend({ messageId: z.string().uuid() });
+export const AdjustDrawingPpmZod = DrawingIdZod.extend({
+    blueprintId: z.string().min(1),
+    entityId: z.string().min(1),
+    layoutRevision: z.string().min(1),
+    areaSquareMetres: z.number().finite().positive(),
+});
 export type Drawing = z.infer<typeof DrawingZod>;
 export type Attachment = z.infer<typeof AttachmentZod>;
 export type DrawingSummary = z.infer<typeof DrawingSummaryZod>;

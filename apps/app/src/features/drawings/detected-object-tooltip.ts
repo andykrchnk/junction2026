@@ -9,11 +9,14 @@ export function formatDetectedObjectArea({ drawing, page, property }: ObjectTool
     const room = property.type === 'room' ? blueprint?.layout?.rooms.find((item) => item.id === property.id) : null;
     const measurement = room?.class === property.label ? room.measurements.area : null;
     const printedArea = measurement ? measurement.value * AREA_TO_SQUARE_METRES[measurement.unit] : null;
+    const userCalibration = blueprint?.ppm?.userCalibration;
+    const userArea = userCalibration?.entityId === property.id ? userCalibration.areaSquareMetres : null;
     const ppm = blueprint?.ppm?.value;
     const estimatedArea = ppm !== undefined && property.areaPixels !== null ? property.areaPixels / (ppm * ppm) : null;
     const hasPrintedArea = printedArea !== null && Number.isFinite(printedArea) && printedArea > 0;
-    const area = hasPrintedArea ? printedArea : estimatedArea;
+    const hasUserArea = userArea !== null && Number.isFinite(userArea) && userArea > 0;
+    const area = hasUserArea ? userArea : hasPrintedArea ? printedArea : estimatedArea;
     return area !== null && Number.isFinite(area) && area > 0
-        ? `${hasPrintedArea ? '' : '≈'}${area.toLocaleString('en-US', { maximumSignificantDigits: 4 })} m²${!hasPrintedArea && blueprint?.ppm?.doorFallback ? ' (assumed door width)' : ''}`
+        ? `${hasUserArea || hasPrintedArea ? '' : '≈'}${area.toLocaleString('en-US', { maximumSignificantDigits: 4 })} m²${!hasUserArea && !hasPrintedArea && blueprint?.ppm?.doorFallback ? ' (assumed door width)' : ''}`
         : 'Area unavailable';
 }

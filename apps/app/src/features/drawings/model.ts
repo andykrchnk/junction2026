@@ -15,6 +15,9 @@ import {
 import { authenticatedFetch } from '@/shared/auth';
 import { config } from '@/shared/config';
 import { queryClient, trpc, trpcClient } from '@/shared/trpc';
+import type { ObjectAnnotationContext } from './annotation-context';
+
+export type ComposerObjectAttachment = Readonly<{ context: ObjectAnnotationContext; layoutRevision: string; requestId: string }>;
 
 const canvasSelectionRequested = createEvent<{ id: string; page: number; index: number }>();
 export type CanvasRegion = Readonly<{ page: number; bounds: BoundingBox | null; label: string }>;
@@ -22,6 +25,9 @@ const canvasRegionRequested = createEvent<CanvasRegion & { id: string }>();
 const traceReceived = createEvent<{ key: string; event: DrawingTraceEvent }>();
 const traceConnectionChanged = createEvent<{ key: string; error: string | null }>();
 const stageChanged = createEvent<{ id: string; label: string | null }>();
+const objectAttached = createEvent<{ id: string; context: ObjectAnnotationContext; layoutRevision: string }>();
+const objectAttachmentRemoved = createEvent<string>();
+const questionRejected = createEvent<{ id: string; message: string }>();
 
 const uploadRequested = createEvent<{ id: string; files: File[] }>();
 const opened = createEvent<string | null>();
@@ -33,6 +39,7 @@ const $traceErrors = createStore<Record<string, string | null>>({});
 const $uploadQueue = createStore<{ id: string; files: File[] }[]>([]);
 const $stages = createStore<Record<string, string | null>>({});
 const $outgoing = createStore<Record<string, Drawing['messages'][number] | undefined>>({});
+const $objectAttachments = createStore<Record<string, ComposerObjectAttachment | undefined>>({});
 const $id = createStore<string | null>(null);
 const $draft = createStore('');
 const $activity = createStore<Record<string, number>>({});
@@ -106,7 +113,7 @@ const analyzeFx = createEffect(async (id: string) => {
     await refresh(id);
     return drawing;
 });
-const askFx = createEffect(async (input: { id: string; message: Drawing['messages'][number] }) => {
+const askFx = createEffect(async (input: { id: string; message: Drawing['messages'][number]; attachmentRequestId?: string }) => {
     try {
         stageChanged({ id: input.id, label: 'Reviewing blueprint evidence' });
         return await trpcClient.drawings.ask.mutate({ id: input.id, message: { id: input.message.id, question: input.message.question } });
@@ -152,6 +159,25 @@ sample({ clock: stageChanged, source: $stages, fn: (stages, { id, label }) => ({
 sample({ clock: uploadFx, fn: ({ id }) => ({ id, label: 'Uploading blueprint' }), target: stageChanged });
 sample({ clock: inferFx, fn: (id) => ({ id, label: 'Preparing blueprint' }), target: stageChanged });
 sample({ clock: askFx, source: $outgoing, fn: (outgoing, { id, message }) => ({ ...outgoing, [id]: message }), target: $outgoing });
+sample({
+    clock: objectAttached,
+    source: $objectAttachments,
+    fn: (attachments, { id, context, layoutRevision }) => ({ ...attachments, [id]: { context, layoutRevision, requestId: crypto.randomUUID() } }),
+    target: $objectAttachments,
+});
+sample({
+    clock: objectAttachmentRemoved,
+    source: $objectAttachments,
+    fn: (attachments, id) => ({ ...attachments, [id]: undefined }),
+    target: $objectAttachments,
+});
+sample({
+    clock: askFx,
+    source: $objectAttachments,
+    fn: (attachments, { id, attachmentRequestId }) =>
+        attachmentRequestId && attachments[id]?.requestId === attachmentRequestId ? { ...attachments, [id]: undefined } : attachments,
+    target: $objectAttachments,
+});
 sample({ clock: askFx.done, source: $outgoing, fn: (outgoing, { params }) => ({ ...outgoing, [params.id]: undefined }), target: $outgoing });
 sample({ clock: askFx, source: $id, filter: (id, params) => id === params.id, fn: () => '', target: $draft });
 sample({ clock: uploadFx, fn: ({ id }) => id, target: operationStarted });
@@ -184,10 +210,16 @@ sample({ clock: analyzeFx.fail, fn: ({ params, error }) => ({ id: params, messag
 sample({ clock: askFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
 sample({ clock: stopFx, fn: () => null, target: $error });
 sample({ clock: stopFx.fail, fn: ({ params, error }) => ({ id: params.id, message: error.message }), target: $error });
+sample({ clock: questionRejected, target: $error });
+sample({ clock: objectAttached, fn: () => null, target: $error });
 sample({ clock: [opened, inferFx], fn: () => null, target: $inferenceError });
 sample({ clock: inferFx.fail, fn: ({ params, error }) => ({ id: params, message: error.message }), target: $inferenceError });
 
 export const $$drawings = {
+    objectAttached,
+    objectAttachmentRemoved,
+    questionRejected,
+    $objectAttachments: readonly($objectAttachments),
     acknowledgeCanvasActionFx,
     connectTraceFx,
     $traceEvents: readonly($traceEvents),

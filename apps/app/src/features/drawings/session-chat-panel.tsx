@@ -60,7 +60,9 @@ export function SessionChatPanel({
     drawing,
     previewDrawing,
     commentsModel,
-}: Readonly<{ drawing: Drawing; previewDrawing?: Drawing; commentsModel?: CommentsModel }>) {
+    collapsed,
+    setCollapsed,
+}: Readonly<{ drawing: Drawing; previewDrawing?: Drawing; commentsModel?: CommentsModel; collapsed: boolean; setCollapsed: (collapsed: boolean) => void }>) {
     const container = useRef<HTMLDivElement>(null);
     const reducedMotion = useReducedMotion();
     const [height, setHeight] = useState(600);
@@ -72,7 +74,6 @@ export function SessionChatPanel({
         observer.observe(parent);
         return () => observer.disconnect();
     }, []);
-    const [collapsed, setCollapsed] = useState(false);
     const [width, setWidth] = useState(360);
     const [editing, setEditing] = useState(false);
     const [localSaved, setLocalSaved] = useState<Pick<Drawing, 'title' | 'updatedAt'> | null>(null);

@@ -110,6 +110,8 @@ function ContextMenu({ children, onOpenChange, disabled = false, size }: Context
 const EDITABLE = "input, textarea, select, [contenteditable]:not([contenteditable=false])";
 
 interface ContextMenuTriggerProps extends HTMLAttributes<HTMLElement> {
+  /** Claim the context click before nested canvas editors handle it. */
+  captureContextMenu?: boolean;
   /** The element that opens the menu, in place of the default div. Its own
    *  handlers run first. */
   render?: ReactElement<HTMLAttributes<HTMLElement>>;
@@ -128,7 +130,9 @@ function ContextMenuTrigger({
   children,
   className,
   onContextMenu,
+  onContextMenuCapture,
   onKeyDown,
+  captureContextMenu = false,
   ...props
 }: ContextMenuTriggerProps) {
   const ctx = useContext(ContextMenuContext);
@@ -144,6 +148,10 @@ function ContextMenuTrigger({
   const own = isValidElement(render) ? render.props : undefined;
 
   const handleContextMenu = (e: MouseEvent<HTMLElement>) => {
+    if (captureContextMenu) {
+      own?.onContextMenuCapture?.(e);
+      onContextMenuCapture?.(e);
+    }
     own?.onContextMenu?.(e);
     onContextMenu?.(e);
     // A nested menu that already opened claims the click.
@@ -166,7 +174,8 @@ function ContextMenuTrigger({
     return cloneElement(render, {
       ...props,
       className: cn(own?.className, className),
-      onContextMenu: handleContextMenu,
+      onContextMenu: captureContextMenu ? undefined : handleContextMenu,
+      onContextMenuCapture: captureContextMenu ? handleContextMenu : (onContextMenuCapture ?? own?.onContextMenuCapture),
       onKeyDown: handleKeyDown,
     });
   }
@@ -174,7 +183,8 @@ function ContextMenuTrigger({
     <div
       data-slot="context-menu-trigger"
       className={className}
-      onContextMenu={handleContextMenu}
+      onContextMenu={captureContextMenu ? undefined : handleContextMenu}
+      onContextMenuCapture={captureContextMenu ? handleContextMenu : onContextMenuCapture}
       onKeyDown={handleKeyDown}
       {...props}
     >
