@@ -14,7 +14,7 @@ const auth = betterAuth({
     account: { modelName: 'betterauth-accounts' },
     session: { modelName: 'betterauth-sessions', cookieCache: { enabled: false } },
     verification: { modelName: 'betterauth-verifications' },
-    emailAndPassword: { enabled: true, minPasswordLength: 8, maxPasswordLength: 128, autoSignIn: true },
+    emailAndPassword: { enabled: true, disableSignUp: !Env.ALLOW_SIGNUP, minPasswordLength: 8, maxPasswordLength: 128, autoSignIn: true },
     rateLimit: { enabled: true, storage: 'database' },
     plugins: [bearer()],
 });
