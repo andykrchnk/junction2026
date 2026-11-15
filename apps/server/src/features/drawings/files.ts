@@ -63,7 +63,29 @@ drawingFiles.post('/:id/file', async (c) => {
                         processingJob: {
                             $cond: [
                                 { $in: ['$processingJob.status', ['queued', 'running']] },
-                                { $mergeObjects: ['$processingJob', { pages: { $concatArrays: ['$processingJob.pages', { $literal: appendedPages }] } }] },
+                                {
+                                    $mergeObjects: [
+                                        '$processingJob',
+                                        {
+                                            pages: { $concatArrays: ['$processingJob.pages', { $literal: appendedPages }] },
+                                        },
+                                        // Keep legacy runs intact until the worker can safely upgrade them.
+                                        {
+                                            $cond: [
+                                                { $isArray: '$processingJob.tasks' },
+                                                {
+                                                    tasks: {
+                                                        $concatArrays: [
+                                                            '$processingJob.tasks',
+                                                            { $literal: appendedPages.map(db.drawing.createPageProcessingJob) },
+                                                        ],
+                                                    },
+                                                },
+                                                {},
+                                            ],
+                                        },
+                                    ],
+                                },
                                 { $literal: db.drawing.createProcessingJob(appendedPages) },
                             ],
                         },
