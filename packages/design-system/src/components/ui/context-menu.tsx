@@ -16,6 +16,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { DropdownContent, DropdownMenu, DropdownTrigger } from "@repo/design-system/components/ui/dropdown";
+import { useControllableOpen } from "@repo/design-system/components/ui/menu-item";
 import { cn } from "@repo/design-system/lib/utils";
 import type { SizeVariant } from "@repo/design-system/lib/size-context";
 
@@ -38,6 +39,7 @@ const ContextMenuContext = createContext<ContextMenuContextValue | null>(null);
 
 interface ContextMenuProps {
   children: ReactNode;
+  open?: boolean;
   /** Called as the menu opens and closes. */
   onOpenChange?: (open: boolean) => void;
   /** Right-clicks keep the browser's own menu. */
@@ -46,8 +48,8 @@ interface ContextMenuProps {
   size?: SizeVariant;
 }
 
-function ContextMenu({ children, onOpenChange, disabled = false, size }: ContextMenuProps) {
-  const [open, setOpen] = useState(false);
+function ContextMenu({ children, open: openProp, onOpenChange, disabled = false, size }: ContextMenuProps) {
+  const [open, setOpen] = useControllableOpen(openProp, false, onOpenChange);
   const [point, setPoint] = useState<Point | null>(null);
   // Where focus was when the menu opened: it goes back there on close
   // rather than to the hidden trigger.
@@ -55,7 +57,6 @@ function ContextMenu({ children, onOpenChange, disabled = false, size }: Context
 
   const change = (next: boolean) => {
     setOpen(next);
-    onOpenChange?.(next);
     if (next) return;
     const back = returnTo.current;
     returnTo.current = null;
@@ -112,6 +113,10 @@ const EDITABLE = "input, textarea, select, [contenteditable]:not([contenteditabl
 interface ContextMenuTriggerProps extends HTMLAttributes<HTMLElement> {
   /** Claim the context click before nested canvas editors handle it. */
   captureContextMenu?: boolean;
+  /** Also open on an unmodified click or Enter/Space; drags keep their canvas behavior. */
+  openOnClick?: boolean;
+  /** Claim click and keyboard activation before a nested canvas stops propagation. */
+  captureActivation?: boolean;
   /** The element that opens the menu, in place of the default div. Its own
    *  handlers run first. */
   render?: ReactElement<HTMLAttributes<HTMLElement>>;
@@ -132,9 +137,18 @@ function ContextMenuTrigger({
   onContextMenu,
   onContextMenuCapture,
   onKeyDown,
+  onClick,
+  onClickCapture,
+  onKeyDownCapture,
+  onPointerDownCapture,
+  onPointerMoveCapture,
+  onPointerCancelCapture,
+  openOnClick = false,
+  captureActivation = false,
   captureContextMenu = false,
   ...props
 }: ContextMenuTriggerProps) {
+  const gesture = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const ctx = useContext(ContextMenuContext);
   if (!ctx) throw new Error("ContextMenuTrigger must be inside <ContextMenu>");
 
@@ -160,11 +174,52 @@ function ContextMenuTrigger({
     ctx.open({ x: e.clientX, y: e.clientY }, e.currentTarget);
   };
 
+  const handleClick = (e: MouseEvent<HTMLElement>) => {
+    if (captureActivation) {
+      own?.onClickCapture?.(e);
+      onClickCapture?.(e);
+    }
+    own?.onClick?.(e);
+    onClick?.(e);
+    const start = gesture.current;
+    gesture.current = null;
+    if (!openOnClick || e.button !== 0 || e.shiftKey || e.metaKey || e.ctrlKey || e.altKey || start?.moved ||
+        (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 5) || !opens(e.target, e.defaultPrevented)) return;
+    e.preventDefault();
+    ctx.open({ x: e.clientX, y: e.clientY }, e.currentTarget);
+  };
+
+  const pointerHandlers: HTMLAttributes<HTMLElement> = {
+    onClick: captureActivation ? undefined : handleClick,
+    onClickCapture: captureActivation ? handleClick : (onClickCapture ?? own?.onClickCapture),
+    onPointerDownCapture: (e) => {
+      gesture.current = e.button === 0 && e.isPrimary ? { x: e.clientX, y: e.clientY, moved: false } : null;
+      own?.onPointerDownCapture?.(e);
+      onPointerDownCapture?.(e);
+    },
+    onPointerMoveCapture: (e) => {
+      const start = gesture.current;
+      if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 5) start.moved = true;
+      own?.onPointerMoveCapture?.(e);
+      onPointerMoveCapture?.(e);
+    },
+    onPointerCancelCapture: (e) => {
+      gesture.current = null;
+      own?.onPointerCancelCapture?.(e);
+      onPointerCancelCapture?.(e);
+    },
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLElement>) => {
+    if (captureActivation) {
+      own?.onKeyDownCapture?.(e);
+      onKeyDownCapture?.(e);
+    }
     own?.onKeyDown?.(e);
     onKeyDown?.(e);
     const menuKey = e.key === "ContextMenu" || (e.shiftKey && e.key === "F10");
-    if (!menuKey || !opens(e.target, e.defaultPrevented)) return;
+    const activateKey = openOnClick && !e.shiftKey && (e.key === "Enter" || e.key === " ");
+    if ((!menuKey && !activateKey) || !opens(e.target, e.defaultPrevented)) return;
     e.preventDefault();
     const rect = (e.target as Element).getBoundingClientRect();
     ctx.open({ x: rect.left + 8, y: rect.bottom }, e.currentTarget);
@@ -173,10 +228,12 @@ function ContextMenuTrigger({
   if (isValidElement(render)) {
     return cloneElement(render, {
       ...props,
+      ...pointerHandlers,
       className: cn(own?.className, className),
       onContextMenu: captureContextMenu ? undefined : handleContextMenu,
       onContextMenuCapture: captureContextMenu ? handleContextMenu : (onContextMenuCapture ?? own?.onContextMenuCapture),
-      onKeyDown: handleKeyDown,
+      onKeyDown: captureActivation ? undefined : handleKeyDown,
+      onKeyDownCapture: captureActivation ? handleKeyDown : (onKeyDownCapture ?? own?.onKeyDownCapture),
     });
   }
   return (
@@ -185,8 +242,10 @@ function ContextMenuTrigger({
       className={className}
       onContextMenu={captureContextMenu ? undefined : handleContextMenu}
       onContextMenuCapture={captureContextMenu ? handleContextMenu : onContextMenuCapture}
-      onKeyDown={handleKeyDown}
+      onKeyDown={captureActivation ? undefined : handleKeyDown}
+      onKeyDownCapture={captureActivation ? handleKeyDown : onKeyDownCapture}
       {...props}
+      {...pointerHandlers}
     >
       {children}
     </div>

@@ -1,7 +1,12 @@
 import { useState, type ReactNode } from 'react';
 import type { Drawing } from '@repo/types';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent } from '@repo/design-system/components/ui/context-menu';
+import { MessageSquare, ScanLine } from '@repo/design-system/lib/icons-remix';
 import { MenuItem } from '@repo/design-system/components/ui/menu-item';
+import { DetectedElementCard } from './detected-element-card';
+import { EntityClassMenu } from './entity-class-menu';
+import { formatDetectedObjectArea } from './detected-object-tooltip';
+import type { CanvasModel } from './canvas/model';
 import { layoutPages } from './layout';
 import { createPpmAdjustmentModel } from './ppm-adjustment-model';
 import { PpmAdjustmentDialog } from './ppm-adjustment-dialog';
@@ -18,7 +23,16 @@ export function ObjectContextMenu({
     drawing,
     children,
     onAsk,
-}: Readonly<{ drawing: Drawing; children: ReactNode; onAsk: (target: Pick<ObjectMenuTarget, 'context' | 'layoutRevision'>) => void }>) {
+    model,
+    preview,
+}: Readonly<{
+    drawing: Drawing;
+    model: CanvasModel;
+    preview: boolean;
+    children: ReactNode;
+    onAsk: (target: Pick<ObjectMenuTarget, 'context' | 'layoutRevision'>) => void;
+}>) {
+    const [open, setOpen] = useState(false);
     const [adjustmentModel] = useState(() => createPpmAdjustmentModel(drawing.id));
     const [menuTarget, setMenuTarget] = useState<ObjectMenuTarget | null>(null);
     const targetFor = (target: EventTarget): ObjectMenuTarget | null => {
@@ -45,15 +59,29 @@ export function ObjectContextMenu({
                       : null,
         };
     };
+    const blueprint = drawing.blueprints.find((item) => item.id === menuTarget?.context.blueprintId && !item.attachment.hiddenFromCanvas);
+    const page = layoutPages(drawing.blueprints).find((item) => item.page === blueprint?.pageNumber);
+    const index = page?.detectedProperties.findIndex((item) => item.id === menuTarget?.context.entityId) ?? -1;
+    const property = page?.detectedProperties[index];
+    const entity =
+        property?.type === 'room'
+            ? blueprint?.layout?.rooms.find((item) => item.id === property.id)
+            : blueprint?.layout?.fixtures.find((item) => item.id === property?.id);
     return (
         <>
-            <ContextMenu>
+            <ContextMenu open={open && !!property} onOpenChange={setOpen}>
                 <ContextMenuTrigger
                     captureContextMenu
+                    captureActivation
+                    openOnClick
                     className="contents"
-                    filter={(target) => !!target.closest('[data-detected-object]')}
+                    filter={(target) => !!target.closest('[data-detected-object]') && !target.closest('[data-comment-mode="comment"]')}
                     onPointerDownCapture={(event) => {
                         if (event.button === 2 && event.target instanceof Element && event.target.closest('[data-detected-object]')) event.stopPropagation();
+                    }}
+                    onClick={(event) => {
+                        if (event.shiftKey || event.metaKey || event.ctrlKey || event.altKey) return;
+                        setMenuTarget(targetFor(event.target));
                     }}
                     onContextMenu={(event) => {
                         if (!(event.target instanceof Element) || !event.target.closest('[data-detected-object]')) return;
@@ -61,33 +89,69 @@ export function ObjectContextMenu({
                         setMenuTarget(targetFor(event.target));
                     }}
                     onKeyDown={(event) => {
-                        if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) return;
+                        if (
+                            !(event.target instanceof Element) ||
+                            !event.target.closest('[data-detected-object]') ||
+                            event.target.closest('[data-comment-mode="comment"]')
+                        )
+                            return;
+                        if (
+                            event.key !== 'ContextMenu' &&
+                            !(event.shiftKey && event.key === 'F10') &&
+                            !(!event.shiftKey && (event.key === 'Enter' || event.key === ' '))
+                        )
+                            return;
                         event.stopPropagation();
-                        setMenuTarget(targetFor(event.target));
+                        const target = targetFor(event.target);
+                        setMenuTarget(target);
+                        if (target && target.context.element !== null && !event.shiftKey)
+                            model.selected({ page: target.context.sheet, index: target.context.element - 1 });
                     }}
                 >
                     {children}
                 </ContextMenuTrigger>
-                <ContextMenuContent>
+                <ContextMenuContent className="w-80 max-w-[calc(100vw-1rem)]">
+                    {property && page && (
+                        <DetectedElementCard
+                            label={property.label}
+                            area={formatDetectedObjectArea({ drawing, page, property, index })}
+                            enrichment={entity?.enrichment}
+                            onClose={() => setOpen(false)}
+                        />
+                    )}
                     <MenuItem
                         index={0}
                         label="Ask"
-                        disabled={!menuTarget || drawing.busy}
+                        icon={MessageSquare}
+                        disabled={preview || !menuTarget || drawing.busy}
                         onSelect={() => {
-                            if (menuTarget && !drawing.busy) onAsk({ context: menuTarget.context, layoutRevision: menuTarget.layoutRevision });
+                            if (menuTarget && blueprint?.layout && property && !preview && !drawing.busy)
+                                onAsk({ context: { ...menuTarget.context, label: property.label }, layoutRevision: blueprint.layout.revision });
                         }}
                     />
+                    {blueprint && property && (
+                        <EntityClassMenu drawing={drawing} blueprint={blueprint} property={property} model={model} disabled={preview || drawing.busy} />
+                    )}
                     <MenuItem
-                        index={1}
+                        index={2}
                         label="Adjust area"
-                        disabled={!menuTarget || menuTarget.areaPixels === null || menuTarget.areaPixels <= 0 || drawing.busy}
+                        icon={ScanLine}
+                        disabled={preview || !menuTarget || menuTarget.areaPixels === null || menuTarget.areaPixels <= 0 || drawing.busy}
                         onSelect={() => {
-                            if (menuTarget && menuTarget.areaPixels !== null && menuTarget.areaPixels > 0 && !drawing.busy)
+                            if (
+                                menuTarget &&
+                                blueprint?.layout &&
+                                property &&
+                                menuTarget.areaPixels !== null &&
+                                menuTarget.areaPixels > 0 &&
+                                !preview &&
+                                !drawing.busy
+                            )
                                 adjustmentModel.targetOpened({
                                     blueprintId: menuTarget.context.blueprintId,
                                     entityId: menuTarget.context.entityId,
-                                    label: menuTarget.context.label,
-                                    layoutRevision: menuTarget.layoutRevision,
+                                    label: property.label,
+                                    layoutRevision: blueprint.layout.revision,
                                     areaPixels: menuTarget.areaPixels,
                                     currentAreaSquareMetres: menuTarget.currentAreaSquareMetres,
                                 });

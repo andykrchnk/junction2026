@@ -16,7 +16,8 @@ export function formatDetectedObjectArea({ drawing, page, property }: ObjectTool
     const hasPrintedArea = printedArea !== null && Number.isFinite(printedArea) && printedArea > 0;
     const hasUserArea = userArea !== null && Number.isFinite(userArea) && userArea > 0;
     const area = hasUserArea ? userArea : hasPrintedArea ? printedArea : estimatedArea;
-    return area !== null && Number.isFinite(area) && area > 0
-        ? `${hasUserArea || hasPrintedArea ? '' : '≈'}${area.toLocaleString('en-US', { maximumSignificantDigits: 4 })} m²${!hasUserArea && !hasPrintedArea && blueprint?.ppm?.doorFallback ? ' (assumed door width)' : ''}`
-        : 'Area unavailable';
+    if (area !== null && Number.isFinite(area) && area > 0)
+        return `${hasUserArea || hasPrintedArea ? '' : '≈'}${area.toLocaleString('en-US', { maximumSignificantDigits: 4 })} m²${!hasUserArea && !hasPrintedArea && blueprint?.ppm?.doorFallback ? ' (assumed door width)' : ''}`;
+    const waitingForScale = !blueprint?.ppm?.value && (blueprint?.status.type === 'pending' || blueprint?.status.type === 'processing');
+    return waitingForScale ? 'Waiting for scale' : 'Area unavailable';
 }
