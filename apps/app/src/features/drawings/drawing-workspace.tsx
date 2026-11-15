@@ -12,6 +12,7 @@ import { $$drawings } from './model';
 import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { trpc } from '@/shared/trpc';
+import { EntityClassEditor } from './entity-class-editor';
 
 const BlueprintCanvas = lazy(() => import('./blueprint-canvas'));
 export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: string; userId: string; previewDrawing?: Drawing }>) {
@@ -139,6 +140,7 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
             <SessionChatPanel commentsModel={commentsModel} drawing={drawing} previewDrawing={previewDrawing} />
             <div className="pointer-events-none relative z-10 min-h-0 min-w-0 flex-1">{uploadOverlay}</div>
             <BlueprintLayersPanel drawing={drawing} model={canvasModel} preview={!!previewDrawing} onUpload={open} uploading={false} />
+            <EntityClassEditor drawing={drawing} model={canvasModel} preview={!!previewDrawing} />
         </div>
     );
 }
