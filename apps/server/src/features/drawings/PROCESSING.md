@@ -15,17 +15,20 @@ reconciliation never overwrites an active job. Explicit retries create a new run
 ID, so an older job cannot process the replacement run.
 
 `DRAWING_PROCESSING_CONCURRENCY` sets the drawing concurrency per backend instance
-(default 3, integer 1–32; restart after changing it). Agenda reserves one additional
+(default 15, integer 1–32; restart after changing it). Agenda reserves one additional
 slot for reconciliation. Each drawing job executes one bounded stage at a time;
 pages within a drawing remain sequential. Multiple replicas add their configured
 capacity. The limit applies to document stages, not individual downstream calls:
 entity enrichment can run multiple requests within a stage, and the GPU service
-may serialize inference or return backpressure.
+queues admitted inference behind one execution per GPU worker. The target of 15
+active blueprints applies across separate drawing jobs, not pages of one PDF.
+Same-PDF parallelism needs changes to the drawing-wide lease and durable cursor
+and is outside this change.
 
 Progress, page cursor and saved inference/entity checkpoints remain on the drawing.
 Rejected pages advance immediately. Other stage failures get up to three attempts
 with backoff before advancing and retaining the error. Inference backpressure
-(503) reschedules for 30 seconds later without spending the failure budget.
+(503) reschedules one second later without spending the failure budget.
 Missing provider configuration leaves explicit partial/not-configured status and
 continues. Finishing means all selected pages were attempted, not all succeeded.
 
@@ -65,11 +68,14 @@ fixtures; it retains the same prompts, output validation, failure handling and
 and shared read-only; each entity retains its own original-resolution crop and
 canonical geometry. No entity or verification step is omitted for speed.
 
-The two concurrency limits multiply: the defaults permit up to 18 entity requests
-per backend instance across three drawings. Multiple replicas add their capacity.
-Tune this against provider quotas and memory; set entity concurrency back to 3
-when diagnosing throttling. A larger batch reduces scheduling/raster-download
-overhead but is not a guarantee of proportional provider latency improvement.
+`DRAWING_OPENAI_CONCURRENCY` bounds aggregate context, entity and calibration
+requests across drawings, including door inspection and reference lookup
+(default 18, integer 1–64). Waiting requests share their
+existing stage abort signal and deadline; aborted waiters do not spend capacity.
+This preserves the former maximum of 18 entity requests instead of multiplying
+six by 15. Chat requests are independent. Limits are per backend instance;
+multiple replicas add capacity. Tune provider quotas and memory independently
+from the drawing and entity batch limits.
 
 Server logs emit `Blueprint detection stage` timings (leased detection work,
 raster preparation, inference including verification; excluding cover generation)
@@ -79,10 +85,11 @@ drawing text, images, credentials or raw provider errors. Worker requests also
 save private `timings.json` with geometry, OCR, fixture/room verification and
 normalization durations, including elapsed time for failed timed stages.
 `PIPELINE_GEMINI_WORKERS` independently controls the Python pipeline's concurrent
-single-target Decisions requests (default 8, integer 1–16; set on the pipeline
+single-target Decisions requests across all admitted pages (default 8, integer 1–16; set on the pipeline
 service). It preserves fixture-before-room verification, original evidence,
 acceptance rules and target/deadline budgets; set it to 4 to restore the previous
-parallelism. It does not batch multiple targets into one model request.
+parallelism. Waiting for shared capacity consumes the existing verification
+deadline. It does not batch multiple targets into one model request.
 
 Compare the same page and completed object counts before/after changes. Separate
 image preparation measurements from provider and end-to-end latency. Contrast

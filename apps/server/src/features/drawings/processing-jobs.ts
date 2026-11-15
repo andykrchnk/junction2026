@@ -266,7 +266,7 @@ async function processDrawingStage(data: z.infer<typeof JobDataZod>, signal: Abo
                         'processingJob.cursor': cursor,
                         'processingJob.attempts': backpressure ? Math.max(0, job.attempts - 1) : advance || !failed ? 0 : job.attempts,
                         'processingJob.availableAt': new Date(
-                            Date.now() + (signal.aborted ? 0 : backpressure ? 30_000 : failed && !advance ? 5000 * job.attempts : 0),
+                            Date.now() + (signal.aborted ? 0 : backpressure ? 1000 : failed && !advance ? 5000 * job.attempts : 0),
                         ),
                         'processingJob.lease': null,
                         'processingJob.leaseUntil': null,

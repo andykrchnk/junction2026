@@ -1,3 +1,4 @@
+import { withOpenAiCapacity } from './openai-capacity';
 import { Agent, run, setTracingDisabled, user } from '@openai/agents';
 import { PpmCandidateZod, PpmCandidatesZod, type Blueprint, type PpmCandidates } from '@repo/types';
 import { z } from 'zod';
@@ -114,7 +115,7 @@ SHEET NOTES AND OBJECT MARKINGS (unverified, verify against images):\n${JSON.str
             { type: 'input_image', image: `data:image/png;base64,${detail.bytes.toString('base64')}`, detail: 'high' },
         ]),
     );
-    const result = await run(agent, [...input, ...detailInput], { signal: params.signal, maxTurns: 1 });
+    const result = await withOpenAiCapacity(params.signal, () => run(agent, [...input, ...detailInput], { signal: params.signal, maxTurns: 1 }));
     const { candidates } = PpmOutputZod.parse(result.finalOutput);
     const suppliedPages = new Set(params.pages.map((page) => page.page));
     if (candidates.some((candidate) => !suppliedPages.has(candidate.page))) throw new Error('Invalid PPM candidate page');

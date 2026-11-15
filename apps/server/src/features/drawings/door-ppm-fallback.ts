@@ -6,6 +6,7 @@ import { config } from '../../shared/config';
 import { layoutProperties } from '../../db/drawing.schema';
 import { lookupDoorWidth } from './door-width-lookup';
 import { withDeadline } from './deadline';
+import { withOpenAiCapacity } from './openai-capacity';
 
 type DoorPpmParams = Readonly<{
     blueprint: Blueprint;
@@ -74,27 +75,29 @@ Extract country, original drawing year, building type and door type from explici
         timeoutMs: 30_000,
         label: 'Checking door openings',
         run: (signal) =>
-            run(
-                agent,
-                [
-                    user([
-                        {
-                            type: 'input_text',
-                            text: JSON.stringify({ page: page.page, width: page.width, height: page.height, doors, failure: params.failureMessage }),
-                        },
-                        { type: 'input_image', image: `data:image/png;base64,${page.bytes.toString('base64')}`, detail: 'high' },
-                    ]),
-                    ...crops.map((crop) =>
+            withOpenAiCapacity(signal, () =>
+                run(
+                    agent,
+                    [
                         user([
                             {
                                 type: 'input_text',
-                                text: `Door ${crop.id}. Full canonical crop bounds: ${JSON.stringify(crop.bounds)}. This image is enlarged; map endpoints back to the full raster.`,
+                                text: JSON.stringify({ page: page.page, width: page.width, height: page.height, doors, failure: params.failureMessage }),
                             },
-                            { type: 'input_image', image: `data:image/png;base64,${crop.bytes.toString('base64')}`, detail: 'high' },
+                            { type: 'input_image', image: `data:image/png;base64,${page.bytes.toString('base64')}`, detail: 'high' },
                         ]),
-                    ),
-                ],
-                { signal, maxTurns: 1 },
+                        ...crops.map((crop) =>
+                            user([
+                                {
+                                    type: 'input_text',
+                                    text: `Door ${crop.id}. Full canonical crop bounds: ${JSON.stringify(crop.bounds)}. This image is enlarged; map endpoints back to the full raster.`,
+                                },
+                                { type: 'input_image', image: `data:image/png;base64,${crop.bytes.toString('base64')}`, detail: 'high' },
+                            ]),
+                        ),
+                    ],
+                    { signal, maxTurns: 1 },
+                ),
             ),
     });
     const inspected = DoorInspectionZod.parse(result.finalOutput);

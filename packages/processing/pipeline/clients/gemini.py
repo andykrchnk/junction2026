@@ -1,6 +1,7 @@
 import hashlib
 import json
 import math
+import time
 from pathlib import Path
 import httpx
 
@@ -47,8 +48,13 @@ def validate(result, questions):
 
 
 class Gemini:
-    def __init__(self, settings, directory):
+    def __init__(self, settings, directory, deadline=None):
         self.settings = settings
+        self.deadline = (
+            deadline
+            if deadline is not None
+            else time.monotonic() + settings.deadline_seconds
+        )
         self.directory = directory
         self.directory.mkdir(parents=True, exist_ok=True)
         self.client = httpx.Client(
@@ -68,13 +74,23 @@ class Gemini:
             if path.exists():
                 result = json.loads(path.read_text())
             else:
-                response = self.client.post(
-                    "https://generativelanguage.googleapis.com/v1beta/decisions",
-                    headers={"x-goog-api-key": self.settings.gemini_key},
-                    json=payload,
-                )
-                response.raise_for_status()
-                result = response.json()
+                # One provider budget across all pages, including close-up rechecks.
+                if not self.settings.gemini_slots.acquire(
+                    timeout=max(0, self.deadline - time.monotonic())
+                ):
+                    raise VerificationFailure("Verification capacity deadline exceeded")
+                try:
+                    if time.monotonic() >= self.deadline:
+                        raise VerificationFailure("Verification capacity deadline exceeded")
+                    response = self.client.post(
+                        "https://generativelanguage.googleapis.com/v1beta/decisions",
+                        headers={"x-goog-api-key": self.settings.gemini_key},
+                        json=payload,
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+                finally:
+                    self.settings.gemini_slots.release()
             answers = validate(result, questions)
             path.write_text(json.dumps(result))
             return answers

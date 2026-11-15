@@ -55,8 +55,8 @@ def process(image, image_bytes, settings):
     overview = image.copy()
     overview.thumbnail((1200, 1200))
     overview_part = image_part(overview)
-    verifier = Gemini(settings, directory / "gemini")
     deadline = time.monotonic() + settings.deadline_seconds
+    verifier = Gemini(settings, directory / "gemini", deadline=deadline)
 
     def evaluate(pair):
         index, target = pair

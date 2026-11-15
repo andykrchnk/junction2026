@@ -42,6 +42,8 @@ export default defineRailway((context) => {
             INFERENCE_BASE_URL: preserve(),
             INFERENCE_API_KEY: preserve(),
             INFERENCE_TIMEOUT_MS: preserve(),
+            DRAWING_PROCESSING_CONCURRENCY: '15',
+            DRAWING_OPENAI_CONCURRENCY: '18',
             NODE_ENV: 'production',
             PORT: '8080',
             APP_ORIGIN: context.shared.APP_ORIGIN,

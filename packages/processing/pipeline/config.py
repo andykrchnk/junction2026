@@ -1,6 +1,7 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from threading import BoundedSemaphore
 
 
 @dataclass(frozen=True)
@@ -13,9 +14,14 @@ class Settings:
     artifact_dir: Path
     model: str = "gemini-decision-1"
     max_targets: int = 500
+    concurrency: int = 15
     gemini_workers: int = 8
+    gemini_slots: BoundedSemaphore = field(init=False, repr=False, compare=False)
     gemini_timeout: float = 30
     deadline_seconds: float = 180
+
+    def __post_init__(self):
+        object.__setattr__(self, "gemini_slots", BoundedSemaphore(self.gemini_workers))
 
     @classmethod
     def load(cls):
@@ -40,6 +46,14 @@ class Settings:
             ) from None
         if not 1 <= workers <= 16:
             raise RuntimeError("PIPELINE_GEMINI_WORKERS must be an integer from 1 to 16")
+        try:
+            concurrency = int(os.environ.get("PIPELINE_CONCURRENCY", "15"))
+        except ValueError:
+            raise RuntimeError(
+                "PIPELINE_CONCURRENCY must be an integer from 1 to 32"
+            ) from None
+        if not 1 <= concurrency <= 32:
+            raise RuntimeError("PIPELINE_CONCURRENCY must be an integer from 1 to 32")
         return cls(
             key,
             gemini,
@@ -47,5 +61,6 @@ class Settings:
             os.environ.get("PADDLEOCR_URL", "http://paddleocr:8001"),
             os.environ.get("LEGACY_INFERENCE_URL", "http://inference:8001"),
             Path(os.environ.get("PIPELINE_ARTIFACT_DIR", "/artifacts")),
+            concurrency=concurrency,
             gemini_workers=workers,
         )
