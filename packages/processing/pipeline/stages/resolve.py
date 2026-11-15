@@ -2,17 +2,25 @@ from taxonomy import STRUCTURAL_CLASSES
 
 
 def apply(target, answers):
-    """Apply resolved room-use decisions; retain conservative fixture checks."""
+    """Resolve classes independently of geometry and fixture presence."""
     selected = answers["class"]["choice"]
     score = answers["class"]["confidence"]
     evidence = answers["evidence"]["noul"]
-    if target["kind"] == "fixture":
-        target["fixture_verification"] = {
-            "class": selected, "class_score": score,
-            "evidence_score": evidence, "existence_score": answers["exists"]["noul"],
-        }
     recovered = target.get("requires_verification", False)
     target["decision"] = "removed" if recovered else "retained"
+    if target["kind"] == "fixture":
+        target["verification"] = {
+            "resolution": "ambiguous",
+            "class_basis": answers.get("class_basis", {}).get(
+                "choice", "insufficient_evidence"
+            ),
+            "selected_class": selected,
+            "selected_class_score": score,
+            "evidence_score": evidence,
+            "existence_score": answers["exists"]["noul"],
+        }
+        if selected == "ambiguous":
+            return
     if recovered and (
         selected != "Door" or score < 0.9
         or answers["exists"]["noul"] < 0.9
@@ -22,6 +30,7 @@ def apply(target, answers):
     if target["kind"] == "fixture" and selected == "No Icon":
         if score >= 0.99 and evidence >= 0.95 and answers["exists"]["noul"] <= 0.05:
             target["decision"] = "removed"
+            target["verification"]["resolution"] = "resolved"
         return
     if target["kind"] == "room":
         resolution = selected if selected in {"ambiguous", "conflicting_room_uses"} else "resolved"
@@ -46,9 +55,25 @@ def apply(target, answers):
         ):
             return
     else:
-        if selected in STRUCTURAL_CLASSES or score < 0.9 or evidence < 0.85:
+        if selected in STRUCTURAL_CLASSES or score < 0.9:
             return
-        if answers["exists"]["noul"] < 0.9:
+        if (
+            not recovered
+            and target["class"] not in {"Door", "Window"}
+            and selected not in {"Door", "Window"}
+            and {target["class"], selected} & {"Bathtub", "Sauna Bench", "Shower Cabin"}
+            and "class_basis" in answers
+        ):
+            # The detector already supplied a fixture candidate. Resolve its type
+            # from direct evidence rather than three separate high-score gates.
+            if (
+                answers["class_basis"]["choice"] not in {
+                    "fixture_symbol", "associated_label", "symbol_and_label"
+                }
+                or answers["exists"]["noul"] <= 0.5
+            ):
+                return
+        elif evidence < 0.85 or answers["exists"]["noul"] < 0.9:
             return
         if selected == "Window" and answers["door_swing"]["noul"] > 0.2:
             return
@@ -60,8 +85,7 @@ def apply(target, answers):
             )
         ):
             return
-    if target["kind"] == "fixture":
-        target["accepted_classification"] = {"class": selected, "score": score}
+        target["verification"]["resolution"] = "resolved"
     if recovered:
         target["decision"] = "verified_recovery"
         target["confidence"] = score

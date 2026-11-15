@@ -72,6 +72,7 @@ export const ProcessingPredictionZod = z
                         'Fire Place',
                         'Bathtub',
                         'Chimney',
+                        'Shower Cabin',
                     ]),
                     confidence: ScoreZod,
                     room_ids: z.array(z.string().min(1)),

@@ -28,6 +28,12 @@ RoomClass = Enum(
 IconClass = Enum(
     "IconClass", {f"C{i}": v for i, v in enumerate(ICON_CLASSES)}, type=str
 )
+# Application output classes can extend the verifier vocabulary without changing
+# pretrained channels or accepting invented classes from the geometry worker.
+FIXTURE_CLASSES = ICON_CLASSES + ("Shower Cabin",)
+FixtureClass = Enum(
+    "FixtureClass", {f"C{i}": v for i, v in enumerate(FIXTURE_CLASSES)}, type=str
+)
 STRUCTURAL_CLASSES = {"Background", "Wall", "Railing"}
 
 
