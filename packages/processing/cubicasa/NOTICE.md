@@ -9,6 +9,13 @@ The original inference wrapper was obtained from
 Local changes correct preprocessing, add confidence output and provide HTTP
 serving and containers.
 
+As of 15 November 2026, the wrapper's upstream repository has no declared
+license. Permission to redistribute its original portions remains unverified;
+the root submission review license does not grant rights to those portions.
+Obtain upstream permission or replace those portions before further
+distribution. The CC BY-NC notice for CubiCasa5K does not establish a license
+for independently authored wrapper code.
+
 The structural polygonizer in `utils/official_postprocessing.py` is copied from
 CubiCasa5k commit `c34440266665a11f4484eb06cd2e4b7d72ad76c1`,
 `floortrans/post_prosessing.py`, under the same CC BY-NC 4.0 licence.

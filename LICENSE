@@ -1,0 +1,53 @@
+Junction 2026 Submission Review License
+
+Copyright (c) 2026 the Junction 2026 project contributors.
+Each contributor retains copyright in their own original contributions.
+All rights reserved except as expressly granted below.
+
+1. Scope
+
+This license applies only to original material in this repository for which
+the project contributors hold the necessary rights (the "Project Material").
+Third-party code, fonts, images, datasets, model weights and other third-party
+material are excluded. Their respective owners retain their rights, and their
+own licenses or permissions apply. See THIRD_PARTY_NOTICES.md. This license
+does not grant rights that the project contributors do not hold.
+
+2. Limited permission for submission review
+
+The respective copyright holders grant Junction 2026 organizers, judges and
+reviewers authorized by the organizers a non-exclusive, royalty-free permission
+to access, download, make internal copies of, inspect, build and run the Project
+Material solely to evaluate this project's Junction 2026 submission. Reviewers
+may make local modifications only as necessary to build, run and evaluate it.
+They may share review copies only with other authorized reviewers for that
+purpose and must retain this license and applicable copyright notices.
+
+3. Reserved rights
+
+Except for the review permission above, no permission is granted to use, modify,
+redistribute, sublicense, sell, commercially exploit or incorporate the Project
+Material into another product or service. Separate permission from the relevant
+copyright holders is required for those activities. No ownership is transferred.
+No trademark rights are granted. Public availability of the repository does not
+grant additional reuse rights. Rights available under applicable law, existing
+licenses and applicable hosting-platform terms are unaffected.
+
+4. Event terms
+
+This license does not override or revoke rights already granted under accepted
+Junction event, challenge or platform terms or any separate agreement. If those
+terms require MIT licensing or broader rights, this submission-only license is
+not a substitute. An exception must be agreed with Junction before relying on
+this license for submission. This document does not establish that any such
+exception has been obtained.
+
+5. Disclaimer
+
+THE PROJECT MATERIAL IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. TO THE EXTENT PERMITTED
+BY APPLICABLE LAW, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE PROJECT MATERIAL OR
+ITS USE.

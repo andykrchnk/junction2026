@@ -44,6 +44,12 @@ volumes within 2%; text answers are free-form.
 
 ## Licences
 
+The repository's root submission review license does not apply to this supplied dataset,
+including `questions.jsonl`. Source-specific license and credit files under `data/` are Git-ignored
+and are not shipped in the repository. Before redistributing questions or drawings, verify the
+challenge terms and include the applicable credits and licenses, or exclude the data from that copy.
+See [third-party notices](../../THIRD_PARTY_NOTICES.md#challenge-data-and-research).
+
 Every file keeps its own licence, listed with its credit in `data/<source>/LICENSE.md`. Keep the credit
 when you show or share a drawing. NonCommercial (NC) files are for non-commercial use only. Adaptations of
 ShareAlike (SA) files must use the same licence. NoDerivatives (ND) files must stay unchanged.
