@@ -8,6 +8,7 @@ import {
     DrawingZod,
     DrawingCoversZod,
     MessageZod,
+    type ProcessingSlab,
     type LayoutRoom,
     type LayoutFixture,
     type Attachment,
@@ -172,6 +173,7 @@ export function layoutFromPrediction(page: PredictionPage, degraded: string[] = 
     return {
         revision: page.rasterFileId,
         summary: '',
+        slabs: page.raw.slabs,
         rooms: page.raw.rooms.map((room) => LayoutRoomZod.parse({ ...room, enrichment: { type: 'pending' } })),
         fixtures: page.raw.fixtures.map(({ room_ids, ...fixture }) =>
             LayoutFixtureZod.parse({ ...fixture, roomIds: room_ids, enrichment: { type: 'pending' } }),
@@ -182,10 +184,14 @@ export function layoutFromPrediction(page: PredictionPage, degraded: string[] = 
 }
 
 type GeometryCandidate = Pick<LayoutRoom | LayoutFixture, 'id' | 'class' | 'confidence' | 'geometry'>;
-export function layoutProperties(layout: Readonly<{ rooms: readonly GeometryCandidate[]; fixtures: readonly GeometryCandidate[] }>): DetectedProperty[] {
+type SlabCandidate = Pick<ProcessingSlab, 'id' | 'class' | 'geometry'>;
+export function layoutProperties(
+    layout: Readonly<{ rooms: readonly GeometryCandidate[]; fixtures: readonly GeometryCandidate[]; slabs?: readonly SlabCandidate[] }>,
+): DetectedProperty[] {
     return [
         ...layout.rooms.map((room) => ({ type: 'room' as const, entity: room })),
         ...layout.fixtures.map((fixture) => ({ type: 'icon' as const, entity: fixture })),
+        ...(layout.slabs ?? []).map((slab) => ({ type: 'slab' as const, entity: slab })),
     ].map(({ type, entity }) => {
         const polygons = entity.geometry.type === 'Polygon' ? [entity.geometry.coordinates] : entity.geometry.coordinates;
         const points = polygons.flat(2);
@@ -213,8 +219,8 @@ export function layoutProperties(layout: Readonly<{ rooms: readonly GeometryCand
             bbox,
             centroid: null,
             areaPixels,
-            confidence: entity.confidence,
-            scoreMeaning: 'processing_confidence',
+            confidence: 'confidence' in entity ? entity.confidence : null,
+            scoreMeaning: 'confidence' in entity ? 'processing_confidence' : null,
         });
     });
 }

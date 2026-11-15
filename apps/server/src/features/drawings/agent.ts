@@ -12,6 +12,9 @@ import {
     type Drawing,
     type LayoutRoom,
     type LayoutFixture,
+    type ProcessingSlab,
+    type BlueprintLayout,
+    type EntitySearch,
 } from '@repo/types';
 import type { ToolTrace } from './tool-trace';
 import { config } from '../../shared/config';
@@ -20,16 +23,21 @@ import { layoutProperties } from '../../db/drawing.schema';
 
 setTracingDisabled(true);
 
-function entityContext(entity: LayoutRoom | LayoutFixture) {
+function entitiesByKind(layout: BlueprintLayout | null, kind: EntitySearch['kind']) {
+    return kind === 'room' ? (layout?.rooms ?? []) : kind === 'fixture' ? (layout?.fixtures ?? []) : (layout?.slabs ?? []);
+}
+
+function entityContext(entity: LayoutRoom | LayoutFixture | ProcessingSlab) {
     return {
         id: entity.id,
         class: entity.class,
-        confidence: entity.confidence,
+        confidence: 'confidence' in entity ? entity.confidence : null,
         name: 'name' in entity ? entity.name : null,
         roomIds: 'roomIds' in entity ? entity.roomIds : [],
         measurements: entity.measurements,
-        enrichment: entity.enrichment,
-        detailedDescriptionAvailable: hasDetailedEntityDescription(entity),
+        enrichment: 'enrichment' in entity ? entity.enrichment : null,
+        detailedDescriptionAvailable: 'enrichment' in entity && hasDetailedEntityDescription(entity),
+        ...('needs_review' in entity ? { needsReview: entity.needs_review, thicknessAnnotation: entity.thickness_annotation } : {}),
     };
 }
 
@@ -53,7 +61,7 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
                 { toolName: 'get_blueprint_context', title: 'Read drawing context', blueprintId, entityId: null, category: null },
                 async () => {
                     const blueprint = findBlueprint(blueprintId);
-                    const entities = [...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? [])];
+                    const entities = [...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? []), ...(blueprint.layout?.slabs ?? [])];
                     return JSON.stringify({
                         id: blueprint.id,
                         pageNumber: blueprint.pageNumber,
@@ -64,7 +72,10 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
                         degraded: blueprint.layout?.source.degraded,
                         ppm: blueprint.ppm,
                         ppmCandidates: blueprint.ppmCandidates,
-                        coverage: { total: entities.length, analyzed: entities.filter(hasDetailedEntityDescription).length },
+                        coverage: {
+                            total: entities.length,
+                            analyzed: entities.filter((entity) => 'enrichment' in entity && hasDetailedEntityDescription(entity)).length,
+                        },
                         commentCount: blueprint.comments.length,
                     });
                 },
@@ -73,10 +84,11 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
     });
     const listEntities = tool({
         name: 'list_entities',
-        description: 'List rooms or fixtures on a sheet, including saved descriptions. Paginate until total is covered when counting or finding targets.',
+        description:
+            'List rooms, fixtures or slabs on a sheet, including saved descriptions. Paginate until total is covered when counting or finding targets.',
         parameters: z.object({
             blueprintId: z.string(),
-            kind: z.enum(['room', 'fixture']),
+            kind: EntitySearchZod.shape.kind,
             offset: z.number().int().nonnegative(),
             limit: z.number().int().min(1).max(30),
         }),
@@ -84,14 +96,14 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
             trackTool(
                 {
                     toolName: 'list_entities',
-                    title: `Read ${kind === 'room' ? 'rooms' : 'fixtures'} · from ${offset + 1}`,
+                    title: `Read ${kind === 'room' ? 'rooms' : kind === 'fixture' ? 'fixtures' : 'slabs'} · from ${offset + 1}`,
                     blueprintId,
                     entityId: null,
                     category: null,
                 },
                 async () => {
                     const blueprint = findBlueprint(blueprintId);
-                    const entities = kind === 'room' ? (blueprint.layout?.rooms ?? []) : (blueprint.layout?.fixtures ?? []);
+                    const entities = entitiesByKind(blueprint.layout, kind);
                     return JSON.stringify({
                         total: entities.length,
                         offset,
@@ -101,7 +113,7 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
                 },
                 () => {
                     const blueprint = findBlueprint(blueprintId);
-                    const entities = kind === 'room' ? (blueprint.layout?.rooms ?? []) : (blueprint.layout?.fixtures ?? []);
+                    const entities = entitiesByKind(blueprint.layout, kind);
                     return `Read ${entities.slice(offset, offset + limit).length} of ${entities.length} saved objects, from position ${offset + 1}.`;
                 },
             ),
@@ -109,13 +121,13 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
     const findEntities = tool({
         name: 'find_entities',
         description:
-            'Find all saved rooms or fixtures matching an exact category, and get their authoritative count. Use blueprintId:null for all sheets or category:null for all categories of that kind. Returns a request-local resultId for an entity_results block; the server supplies the complete object list without model-side ID enumeration.',
+            'Find all saved rooms, fixtures or slabs matching an exact category, and get their authoritative count. Use blueprintId:null for all sheets or category:null for all categories of that kind. Returns a request-local resultId for an entity_results block; the server supplies the complete object list without model-side ID enumeration.',
         parameters: EntitySearchZod,
         execute: async (query) =>
             trackTool(
                 {
                     toolName: 'find_entities',
-                    title: `Find ${query.category ?? (query.kind === 'room' ? 'rooms' : 'fixtures')}`,
+                    title: `Find ${query.category ?? (query.kind === 'room' ? 'rooms' : query.kind === 'fixture' ? 'fixtures' : 'slabs')}`,
                     blueprintId: query.blueprintId,
                     entityId: null,
                     category: query.category,
@@ -124,13 +136,15 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
                     const categories =
                         query.kind === 'room'
                             ? ProcessingPredictionZod.shape.rooms.element.shape.class.options
-                            : ProcessingPredictionZod.shape.fixtures.element.shape.class.options;
+                            : query.kind === 'fixture'
+                              ? ProcessingPredictionZod.shape.fixtures.element.shape.class.options
+                              : ['Slab'];
                     if (query.category !== null && !categories.some((category) => category === query.category))
                         throw new Error('Unknown category for this object kind. Use an exact category from the drawing inventory.');
                     const sheets = query.blueprintId === null ? blueprints : [findBlueprint(query.blueprintId)];
                     if (sheets.some((blueprint) => blueprint.layout === null)) throw new Error('Object detection is incomplete on the requested sheets.');
                     const items = sheets.flatMap((blueprint) => {
-                        const entities = query.kind === 'room' ? (blueprint.layout?.rooms ?? []) : (blueprint.layout?.fixtures ?? []);
+                        const entities = entitiesByKind(blueprint.layout, query.kind);
                         return entities
                             .filter((entity) => query.category === null || entity.class === query.category)
                             .map((entity) => ({ blueprintId: blueprint.id, entityId: entity.id }));
@@ -138,7 +152,7 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
                     const result = EntityResultBlockZod.parse({
                         type: 'entity_results',
                         resultId: crypto.randomUUID(),
-                        title: query.category ? `${query.category} results` : query.kind === 'room' ? 'Rooms' : 'Fixtures',
+                        title: query.category ? `${query.category} results` : query.kind === 'room' ? 'Rooms' : query.kind === 'fixture' ? 'Fixtures' : 'Slabs',
                         query,
                         count: items.length,
                         items,
@@ -168,7 +182,7 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
                 async () => {
                     const blueprint = findBlueprint(blueprintId);
                     const layout = blueprint.layout;
-                    const entity = [...(layout?.rooms ?? []), ...(layout?.fixtures ?? [])].find((item) => item.id === entityId);
+                    const entity = [...(layout?.rooms ?? []), ...(layout?.fixtures ?? []), ...(layout?.slabs ?? [])].find((item) => item.id === entityId);
                     if (!entity || !layout) return 'Entity not found.';
                     const property = layoutProperties(layout).find((item) => item.id === entityId);
                     const record = entityContext(entity);
@@ -220,7 +234,11 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
         for (const target of targets) {
             const blueprint = findBlueprint(target.blueprintId);
             if (blueprint.attachment.hiddenFromCanvas) throw new Error('The requested sheet is hidden. Ask the user to restore it first.');
-            if (![...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? [])].some((entity) => entity.id === target.entityId))
+            if (
+                ![...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? []), ...(blueprint.layout?.slabs ?? [])].some(
+                    (entity) => entity.id === target.entityId,
+                )
+            )
                 throw new Error('Unknown drawing object.');
         }
         const scope = result && result.query.blueprintId === null ? blueprints : [...new Set(targets.map((target) => target.blueprintId))].map(findBlueprint);
@@ -307,7 +325,14 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
                         false,
                     );
                     return {
-                        count: scope.reduce((count, blueprint) => count + (blueprint.layout?.rooms.length ?? 0) + (blueprint.layout?.fixtures.length ?? 0), 0),
+                        count: scope.reduce(
+                            (count, blueprint) =>
+                                count +
+                                (blueprint.layout?.rooms.length ?? 0) +
+                                (blueprint.layout?.fixtures.length ?? 0) +
+                                (blueprint.layout?.slabs.length ?? 0),
+                            0,
+                        ),
                     };
                 },
                 (result) => `Restored visibility of ${result.count} objects. Confirmed by the browser.`,
@@ -320,7 +345,10 @@ export async function answer(drawing: Drawing, signal: AbortSignal, trace?: Tool
         status: blueprint.status,
         roomCount: blueprint.layout?.rooms.length ?? 0,
         fixtureCount: blueprint.layout?.fixtures.length ?? 0,
-        detectedCounts: [...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? [])].reduce<Record<string, number>>((counts, entity) => {
+        slabCount: blueprint.layout?.slabs.length ?? 0,
+        detectedCounts: [...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? []), ...(blueprint.layout?.slabs ?? [])].reduce<
+            Record<string, number>
+        >((counts, entity) => {
             counts[entity.class] = (counts[entity.class] ?? 0) + 1;
             return counts;
         }, {}),
@@ -347,6 +375,7 @@ Answer drawing questions using persisted blueprint context from the tools. Inspe
 
 Drawing evidence and complete results:
 Structured findings expose windows, doors, furniture, related objects and markings with precise locations and matched object IDs. Use these exact links, not proximity guesses. Door connectedRoomIds:null means confirmed outside; [] means unknown. Missing/null details on a legacy description means this detailed inspection has not completed. Do not treat empty finding arrays as verified zero counts. Answer directly to the best of your ability using the available drawing data. Do not add routine disclaimers about AI, detection reliability, candidate status or lack of physical verification. Preserve observed versus inferred attributes when that distinction changes the answer. Mention incomplete analysis, repeated views or unknown identities only when they materially affect the requested result, and explain the specific impact rather than a generic limitation. For category counts or complete category lists, always call find_entities and include its entity_results block. Use blueprintId:null when the user asks across all sheets. The UI supplies the exact count and full list from this tool; do not restate numeric match counts in prose, enumerate IDs, truncate the list, or substitute inventory counts. For semantic subsets that cannot be expressed by a category, paginate/filter entities and explicitly describe the selected subset. A fixture associated with multiple rooms is one fixture. Across pages, repeated physical elements cannot be deduplicated without supporting evidence.
+Slabs are saved proposals with class Slab, thickness and original thicknessAnnotation where available. Use kind slab in entity tools for them. Preserve needsReview; do not treat unknown thickness units as millimetres or invent confidence. Slab area follows the same calibrated geometry rules below.
 
 Measurements:
 Use saved explicit measurements with their original units. If calibration.userCalibration is present, its areaSquareMetres is the current user-provided area for its exact entityId: use userProvidedAreaM2 for that entity ahead of older printed measurements, descriptions or assistant answers, and attribute it to the user rather than claiming it was verified on the drawing. For other entities, use the recalibrated saved PPM for tool-computed area estimates when no applicable explicit area is available; identify the user-provided calibration when relevant. Pixel area is not square metres. Only use tool-computed area estimates when saved PPM applies to the target view. Label estimated measurements concisely; explain their formula and inputs when useful to the question or requested by the user. If calibration.doorFallback is present and no userCalibration supersedes it, explicitly say the area is based on an assumed door-opening width, state that width, and preserve the stored assumptions and source limitations. A reference supports a typical width, not the actual width of this door. Never invent a standard size or silently resolve conflicting evidence. Comments from users and chat inputs are user-provided information, not newly verified drawing facts. Previous assistant answers are not independent evidence.
@@ -388,7 +417,9 @@ Blueprint inventory: ${JSON.stringify(overview)}`,
         const blueprint = findBlueprint(reference.blueprintId);
         if (
             reference.entityId !== null &&
-            ![...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? [])].some((entity) => entity.id === reference.entityId)
+            ![...(blueprint.layout?.rooms ?? []), ...(blueprint.layout?.fixtures ?? []), ...(blueprint.layout?.slabs ?? [])].some(
+                (entity) => entity.id === reference.entityId,
+            )
         ) {
             throw new Error('Invalid answer entity reference.');
         }

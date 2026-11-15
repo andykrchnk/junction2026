@@ -305,7 +305,12 @@ export async function startDrawingWorker() {
             else job.schedule(progress.availableAt);
             await job.save();
         },
-        { concurrency: Env.DRAWING_PROCESSING_CONCURRENCY, lockLimit: Env.DRAWING_PROCESSING_CONCURRENCY, lockLifetime: 6 * 60_000, backoff: () => 5000 },
+        {
+            concurrency: Env.DRAWING_PROCESSING_CONCURRENCY,
+            lockLimit: Env.DRAWING_PROCESSING_CONCURRENCY,
+            lockLifetime: Math.max(6 * 60_000, Env.INFERENCE_TIMEOUT_MS + 120_000),
+            backoff: () => 5000,
+        },
     );
     agenda.define(
         RECONCILE_JOB,

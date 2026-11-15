@@ -73,22 +73,43 @@ class Fixture(Model):
     measurements: FixtureMeasurements = Field(default_factory=FixtureMeasurements)
 
 
+class SlabThickness(Model):
+    value: float = Field(gt=0, allow_inf_nan=False)
+    # Unknown drawing units are not guessed from conventions.
+    unit: Literal["mm", "cm", "m", "ft", "in"] | None = None
+
+
+class SlabMeasurements(Model):
+    thickness: SlabThickness | None = None
+
+
+class Slab(Model):
+    id: str
+    class_: Literal["Slab"] = Field(default="Slab", alias="class")
+    geometry: Geometry
+    measurements: SlabMeasurements = Field(default_factory=SlabMeasurements)
+    thickness_annotation: str | None = None
+    needs_review: Literal[True] = True
+
+
+
 class ProcessingResponse(Model):
     coordinate_system: Literal["image_pixels"] = "image_pixels"
     image: ImageSize
     rooms: list[Room]
     fixtures: list[Fixture]
+    slabs: list[Slab] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_objects(self):
-        ids = [obj.id for obj in self.rooms + self.fixtures]
+        ids = [obj.id for obj in self.rooms + self.fixtures + self.slabs]
         if len(set(ids)) != len(ids):
             raise ValueError("Duplicate object IDs")
         room_ids = {room.id for room in self.rooms}
         for fixture in self.fixtures:
             if not set(fixture.room_ids).issubset(room_ids):
                 raise ValueError("Dangling fixture room association")
-        for obj in self.rooms + self.fixtures:
+        for obj in self.rooms + self.fixtures + self.slabs:
             geo = obj.geometry.model_dump()
             rings = (
                 geo["coordinates"]

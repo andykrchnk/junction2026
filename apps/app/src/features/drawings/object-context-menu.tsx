@@ -74,6 +74,8 @@ export function ObjectContextMenu({
         property?.type === 'room'
             ? blueprint?.layout?.rooms.find((item) => item.id === property.id)
             : blueprint?.layout?.fixtures.find((item) => item.id === property?.id);
+    const slab = property?.type === 'slab' ? blueprint?.layout?.slabs.find((item) => item.id === property.id) : null;
+    const thickness = slab?.measurements.thickness;
     return (
         <>
             <ContextMenu open={open && !!property} onOpenChange={setOpen}>
@@ -124,7 +126,15 @@ export function ObjectContextMenu({
                             area={formatDetectedObjectArea({ drawing, page, property, index })}
                             enrichment={entity?.enrichment}
                             onClose={() => setOpen(false)}
-                        />
+                        >
+                            {slab && (
+                                <div className="mt-3 space-y-2 border-t pt-3 text-xs">
+                                    <p className="font-medium">Needs review</p>
+                                    <p>Thickness: {thickness ? `${thickness.value} ${thickness.unit ?? '(unit unspecified)'}` : 'Not available'}</p>
+                                    {slab.thickness_annotation && <p className="text-muted-foreground">Drawing note: {slab.thickness_annotation}</p>}
+                                </div>
+                            )}
+                        </DetectedElementCard>
                     )}
                     <MenuItem
                         index={0}
@@ -136,7 +146,7 @@ export function ObjectContextMenu({
                                 onAsk({ context: { ...menuTarget.context, label: property.label }, layoutRevision: blueprint.layout.revision });
                         }}
                     />
-                    {blueprint && property && (
+                    {blueprint && property && (property.type === 'room' || property.type === 'icon') && (
                         <EntityClassMenu
                             drawing={drawing}
                             blueprint={blueprint}
@@ -172,7 +182,9 @@ export function ObjectContextMenu({
                     />
                     <MenuItem
                         index={3}
-                        label={deleting ? 'Deleting…' : property?.type === 'room' ? 'Delete room' : 'Delete fixture'}
+                        label={
+                            deleting ? 'Deleting…' : property?.type === 'room' ? 'Delete room' : property?.type === 'slab' ? 'Delete slab' : 'Delete fixture'
+                        }
                         icon={Trash2}
                         destructive
                         closeOnClick={false}
@@ -185,7 +197,7 @@ export function ObjectContextMenu({
                                     blueprintId: blueprint.id,
                                     revision: blueprint.layout.revision,
                                     entityId: property.id,
-                                    kind: property.type === 'room' ? 'room' : 'fixture',
+                                    kind: property.type === 'room' ? 'room' : property.type === 'slab' ? 'slab' : 'fixture',
                                 },
                                 object: { page: blueprint.pageNumber, index },
                             }).catch(() => undefined); // The model exposes failures for retry in this menu.

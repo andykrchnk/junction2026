@@ -37,7 +37,7 @@ export async function resolveDoorPpm(params: DoorPpmParams): Promise<StoredPpmRe
         return { message: params.failureMessage };
     const doors = layoutProperties(layout)
         .filter((item) => item.type === 'icon' && item.label === 'Door')
-        .sort((a, b) => b.confidence - a.confidence)
+        .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))
         .slice(0, 6)
         .flatMap((door) => {
             const box = door.bbox;

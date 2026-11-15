@@ -1,10 +1,22 @@
-import { DetectedPropertyZod, type Blueprint, type LayoutRoom, type LayoutFixture, type DetectedProperty, type PredictionPage } from '@repo/types';
+import {
+    DetectedPropertyZod,
+    type Blueprint,
+    type ProcessingSlab,
+    type LayoutRoom,
+    type LayoutFixture,
+    type DetectedProperty,
+    type PredictionPage,
+} from '@repo/types';
 
 type GeometryCandidate = Pick<LayoutRoom | LayoutFixture, 'id' | 'class' | 'confidence' | 'geometry'>;
-export function layoutProperties(layout: Readonly<{ rooms: readonly GeometryCandidate[]; fixtures: readonly GeometryCandidate[] }>): DetectedProperty[] {
+type SlabCandidate = Pick<ProcessingSlab, 'id' | 'class' | 'geometry'>;
+export function layoutProperties(
+    layout: Readonly<{ rooms: readonly GeometryCandidate[]; fixtures: readonly GeometryCandidate[]; slabs?: readonly SlabCandidate[] }>,
+): DetectedProperty[] {
     return [
         ...layout.rooms.map((room) => ({ type: 'room' as const, entity: room })),
         ...layout.fixtures.map((fixture) => ({ type: 'icon' as const, entity: fixture })),
+        ...(layout.slabs ?? []).map((slab) => ({ type: 'slab' as const, entity: slab })),
     ].map(({ type, entity }) => {
         const polygons = entity.geometry.type === 'Polygon' ? [entity.geometry.coordinates] : entity.geometry.coordinates;
         const points = polygons.flat(2);
@@ -32,8 +44,8 @@ export function layoutProperties(layout: Readonly<{ rooms: readonly GeometryCand
             bbox,
             centroid: null,
             areaPixels,
-            confidence: entity.confidence,
-            scoreMeaning: 'processing_confidence',
+            confidence: 'confidence' in entity ? entity.confidence : null,
+            scoreMeaning: 'confidence' in entity ? 'processing_confidence' : null,
         });
     });
 }

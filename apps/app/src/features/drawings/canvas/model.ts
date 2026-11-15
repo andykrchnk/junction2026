@@ -20,7 +20,7 @@ import { $$drawings, type CanvasRegion } from '../model';
 export type ObjectSelection = { page: number; index: number };
 
 type SaveStatus = { type: 'saved' | 'dirty' | 'saving' } | { type: 'error'; message: string; conflict: boolean };
-const VisibilityZod = z.object({ room: z.boolean(), icon: z.boolean(), junction: z.boolean() });
+const VisibilityZod = z.object({ room: z.boolean(), icon: z.boolean(), slab: z.boolean().default(true), junction: z.boolean() });
 
 // Each mounted drawing owns its lifecycle; late requests cannot change another canvas.
 export function createCanvasModel(id: string, storageKey: string) {
@@ -67,7 +67,7 @@ export function createCanvasModel(id: string, storageKey: string) {
     >({ type: 'idle' });
     const $deleteError = createStore<{ blueprintId: string; entityId: string; message: string } | null>(null);
     const savedVisibility = VisibilityZod.safeParse(readLocal(`${storageKey}:layers`));
-    const $visibility = createStore(savedVisibility.success ? savedVisibility.data : { room: true, icon: true, junction: false });
+    const $visibility = createStore(savedVisibility.success ? savedVisibility.data : { room: true, icon: true, slab: true, junction: false });
     const loadFx = createEffect(async () => CanvasStateZod.parse(await trpcClient.drawings.getCanvas.query({ id })));
     const saveFx = createEffect(async (input: SaveCanvas) => CanvasStateZod.parse(await trpcClient.drawings.saveCanvas.mutate(input)));
     const retainRecoveryFx = createEffect((state: CanvasState) => writeLocal(`${storageKey}:recovery`, state));
@@ -166,7 +166,7 @@ export function createCanvasModel(id: string, storageKey: string) {
         target: $selection,
     });
     sample({ clock: allObjectsShown, fn: () => [], target: $hiddenObjects });
-    sample({ clock: allObjectsShown, fn: () => ({ room: true, icon: true, junction: true }), target: $visibility });
+    sample({ clock: allObjectsShown, fn: () => ({ room: true, icon: true, slab: true, junction: true }), target: $visibility });
     sample({ clock: [allObjectsShown, objectVisibilityChanged, visibilityChanged], fn: () => null, target: $agentVisibility });
     sample({ clock: agentSelectionApplied, fn: ({ requestId }) => requestId, target: $agentSelectionRequestId });
     sample({ clock: agentSelectionApplied, fn: ({ objects }) => objects, target: $selection });

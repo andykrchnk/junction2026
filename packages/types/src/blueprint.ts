@@ -178,7 +178,7 @@ export const DeleteEntityZod = z.object({
     blueprintId: z.string().min(1),
     revision: z.string().min(1),
     entityId: z.string().min(1),
-    kind: z.enum(['room', 'fixture']),
+    kind: z.enum(['room', 'fixture', 'slab']),
 });
 export type DeleteEntity = z.infer<typeof DeleteEntityZod>;
 
@@ -207,11 +207,12 @@ export const BlueprintLayoutZod = z
         summary: z.string(),
         rooms: z.array(LayoutRoomZod),
         fixtures: z.array(LayoutFixtureZod),
+        slabs: ProcessingPredictionZod.shape.slabs,
         limitations: z.array(z.string()),
         source: z.object({ prediction: PredictionPageZod.shape.raw, createdAt: z.string(), degraded: z.array(z.string()) }),
     })
     .superRefine((layout, ctx) => {
-        const ids = [...layout.rooms, ...layout.fixtures].map((entity) => entity.id);
+        const ids = [...layout.rooms, ...layout.fixtures, ...layout.slabs].map((entity) => entity.id);
         if (new Set(ids).size !== ids.length) ctx.addIssue({ code: 'custom', message: 'Duplicate layout entity IDs.' });
         const rooms = new Set(layout.rooms.map((room) => room.id));
         if (layout.fixtures.some((fixture) => fixture.roomIds.some((id) => !rooms.has(id)))) {

@@ -18,7 +18,7 @@ export async function renderDrawingCovers(pages: PredictionPage[], rasters?: Rea
     const views = sorted.map((page) => {
         if (rasters) return { page, x: 0, y: 0, width: page.width, height: page.height };
         const points = page.detectedProperties
-            .filter((property) => property.type === 'room')
+            .filter((property) => property.type === 'room' || property.type === 'slab')
             .flatMap((room) => {
                 if (room.geometry.type === 'Point') return [];
                 return room.geometry.type === 'Polygon' ? room.geometry.coordinates.flat() : room.geometry.coordinates.flat(2);
@@ -58,7 +58,7 @@ export async function renderDrawingCovers(pages: PredictionPage[], rasters?: Rea
             return (
                 sheet +
                 view.page.detectedProperties
-                    .filter((property) => property.type === 'room')
+                    .filter((property) => property.type === 'room' || property.type === 'slab')
                     .flatMap((room) => {
                         if (room.geometry.type === 'Point') return [];
                         const polygons = room.geometry.type === 'Polygon' ? [room.geometry.coordinates] : room.geometry.coordinates;

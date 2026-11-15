@@ -68,7 +68,7 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
                         {page.detectedProperties.map((property, index) => {
                             if (!visibility[property.type] || hiddenObjects.includes(`${page.page}:${index}`)) return null;
                             const isSelected = selected.some((item) => item.page === page.page && item.index === index);
-                            const label = `${property.label}, sheet ${page.page}, model score ${Math.round(property.confidence * 100)}%`;
+                            const label = `${property.label}, sheet ${page.page}${property.confidence === null ? ', needs review' : `, model score ${Math.round(property.confidence * 100)}%`}`;
                             const select = (additive: boolean) =>
                                 additive ? model.selectionToggled({ page: page.page, index }) : model.selected({ page: page.page, index });
                             const color = getDetectedObjectColor(property);
@@ -99,7 +99,7 @@ function DetectionSheet({ page, drawing, model }: Readonly<{ page: PredictionPag
                                 },
                                 style: { pointerEvents: 'all' as const, cursor: 'pointer', color },
                                 stroke: color,
-                                strokeWidth: property.type === 'room' ? 3 : 1.5,
+                                strokeWidth: property.type === 'room' || property.type === 'slab' ? 3 : 1.5,
                                 vectorEffect: 'non-scaling-stroke',
                             };
                             return (

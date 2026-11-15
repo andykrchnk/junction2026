@@ -200,7 +200,32 @@ function BlueprintProgress({
                     </div>
                 );
             })}
-            {blueprint.layout && (
+            {!!blueprint.layout?.slabs.length && (
+                <div className="space-y-2">
+                    <p className="text-xs font-medium">Slabs · {blueprint.layout.slabs.length} saved</p>
+                    {objects
+                        .filter((object) => object.property.type === 'slab')
+                        .map((object) => {
+                            const slab = blueprint.layout?.slabs.find((item) => item.id === object.property.id);
+                            const thickness = slab?.measurements.thickness;
+                            return (
+                                <ProgressStep
+                                    key={object.property.id}
+                                    title={object.name}
+                                    status={undefined}
+                                    detail="Needs review"
+                                    icon={<span className="size-2 shrink-0" style={{ backgroundColor: getDetectedObjectColor(object.property) }} />}
+                                >
+                                    <p>Thickness: {thickness ? `${thickness.value} ${thickness.unit ?? '(unit unspecified)'}` : 'Not available'}</p>
+                                    <Button size="sm" variant="ghost" disabled={blueprint.attachment.hiddenFromCanvas} onClick={() => onSelect(object)}>
+                                        {blueprint.attachment.hiddenFromCanvas ? 'Hidden from canvas' : 'Show on drawing'}
+                                    </Button>
+                                </ProgressStep>
+                            );
+                        })}
+                </div>
+            )}
+            {blueprint.layout && entities.length > 0 && (
                 <p className="text-xs">
                     {completed} / {entities.length} objects reviewed
                 </p>

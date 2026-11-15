@@ -25,9 +25,28 @@ const FixtureMeasurementsZod = z
         height: LengthMeasurementZod.nullable().default(null),
     })
     .strict();
+export const ProcessingSlabZod = z
+    .object({
+        id: z.string().min(1),
+        class: z.literal('Slab'),
+        geometry: ProcessingGeometryZod,
+        measurements: z
+            .object({
+                thickness: z
+                    .object({ value: z.number().finite().positive(), unit: z.enum(['mm', 'cm', 'm', 'ft', 'in']).nullable() })
+                    .strict()
+                    .nullable(),
+            })
+            .strict(),
+        thickness_annotation: z.string().nullable(),
+        needs_review: z.literal(true),
+    })
+    .strict();
+export type ProcessingSlab = z.infer<typeof ProcessingSlabZod>;
 export const ProcessingPredictionZod = z
     .object({
         coordinate_system: z.literal('image_pixels'),
+        slabs: z.array(ProcessingSlabZod).default([]),
         image: z.object({ width: z.number().int().positive(), height: z.number().int().positive() }).strict(),
         rooms: z.array(
             z
@@ -84,7 +103,7 @@ export const ProcessingPredictionZod = z
     })
     .strict()
     .superRefine((prediction, ctx) => {
-        const objects = [...prediction.rooms, ...prediction.fixtures];
+        const objects = [...prediction.rooms, ...prediction.fixtures, ...prediction.slabs];
         if (new Set(objects.map((object) => object.id)).size !== objects.length) {
             ctx.addIssue({ code: 'custom', message: 'Duplicate processing object IDs.' });
         }
@@ -128,7 +147,7 @@ export type ProcessingPrediction = z.infer<typeof ProcessingPredictionZod>;
 export type ProcessingGeometry = z.infer<typeof ProcessingGeometryZod>;
 export const DetectedPropertyZod = z.object({
     id: z.string().min(1),
-    type: z.enum(['room', 'icon', 'junction']),
+    type: z.enum(['room', 'icon', 'slab', 'junction']),
     label: z.string(),
     geometry: z.discriminatedUnion('type', [
         z.object({ type: z.literal('Polygon'), coordinates: z.array(z.array(PixelPointZod).min(4)).min(1) }),
@@ -138,8 +157,8 @@ export const DetectedPropertyZod = z.object({
     bbox: PixelBoxZod.nullable(),
     centroid: PixelPointZod.nullable(),
     areaPixels: z.number().nonnegative().nullable(),
-    confidence: ScoreZod,
-    scoreMeaning: z.enum(['component_mean_softmax', 'structural_heatmap_peak', 'processing_confidence']),
+    confidence: ScoreZod.nullable(),
+    scoreMeaning: z.enum(['component_mean_softmax', 'structural_heatmap_peak', 'processing_confidence']).nullable(),
 });
 export const PredictionPageZod = z.object({
     page: z.number().int().positive(),
