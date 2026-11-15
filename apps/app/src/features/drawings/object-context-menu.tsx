@@ -79,7 +79,7 @@ export function ObjectContextMenu({
                     />
                     <MenuItem
                         index={1}
-                        label="Adjust PPM"
+                        label="Adjust area"
                         disabled={!menuTarget || menuTarget.areaPixels === null || menuTarget.areaPixels <= 0 || drawing.busy}
                         onSelect={() => {
                             if (menuTarget && menuTarget.areaPixels !== null && menuTarget.areaPixels > 0 && !drawing.busy)

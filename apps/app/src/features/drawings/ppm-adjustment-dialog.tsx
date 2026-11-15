@@ -34,7 +34,7 @@ export function PpmAdjustmentDialog({ model }: Readonly<{ model: PpmAdjustmentMo
                     className="space-y-4"
                 >
                     <DialogHeader className="mb-0">
-                        <DialogTitle className="pr-7">Adjust PPM</DialogTitle>
+                        <DialogTitle className="pr-7">Adjust area</DialogTitle>
                         <DialogDescription>Use the known area of {target?.label ?? 'this object'} to update measurements on this sheet.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
