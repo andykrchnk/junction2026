@@ -16,8 +16,9 @@ export function ProgressStep({
     detail,
     icon,
     children,
-}: Readonly<{ title: string; status: TraceStatus; detail: string; icon?: ReactNode; children: ReactNode }>) {
-    const [open, setOpen] = useState(false);
+    defaultOpen = false,
+}: Readonly<{ title: string; status: TraceStatus; detail: string; icon?: ReactNode; children: ReactNode; defaultOpen?: boolean }>) {
+    const [open, setOpen] = useState(defaultOpen);
     return (
         <TraceCollapsible open={open} onOpenChange={setOpen}>
             <TraceCollapsibleTrigger className="w-full">

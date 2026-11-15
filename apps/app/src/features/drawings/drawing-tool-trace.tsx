@@ -59,6 +59,7 @@ export function DrawingToolTrace({ drawing, message, busy }: Readonly<{ drawing:
                 return (
                     <ProgressStep
                         key={attempt.id}
+                        defaultOpen
                         title={title}
                         status={running ? 'running' : failed ? 'error' : undefined}
                         detail={`${attempts.length > 1 ? `Attempt ${index + 1} · ` : ''}${ending ? duration(attempt.timestamp, ending.timestamp) : running ? 'In progress' : 'Interrupted'}`}
