@@ -17,7 +17,10 @@ export function DetectedElementCard({
     children?: ReactNode;
 }>) {
     const details = enrichment?.type === 'complete' ? enrichment.result : null;
-    const attributes = details?.attributes.filter((attribute) => attribute.source === 'observed' && String(attribute.value) !== details.name).slice(0, 3) ?? [];
+    const attributes =
+        details?.attributes
+            .filter((attribute) => attribute.source === 'observed' && !/\barea\b/i.test(attribute.name) && String(attribute.value) !== details.name)
+            .slice(0, 3) ?? [];
     return (
         <section aria-label="Detected element properties" className="max-h-[65svh] max-w-full overflow-auto border bg-card p-3 text-sm shadow-sm">
             <div className="flex items-center gap-3">

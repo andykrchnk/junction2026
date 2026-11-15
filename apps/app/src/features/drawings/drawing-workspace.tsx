@@ -13,7 +13,6 @@ import { $$drawings } from './model';
 import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { trpc } from '@/shared/trpc';
-import { EntityClassEditor } from './entity-class-editor';
 import { ObjectContextMenu } from './object-context-menu';
 
 const BlueprintCanvas = lazy(() => import('./blueprint-canvas'));
@@ -152,6 +151,8 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
             )}
             <ObjectContextMenu
                 drawing={drawing}
+                model={canvasModel}
+                preview={!!previewDrawing}
                 onAsk={(target) => {
                     setChatCollapsed(false);
                     commentsModel.modeChanged('default');
@@ -179,7 +180,6 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                 collapsed={layersCollapsed}
                 setCollapsed={setLayersCollapsed}
             />
-            <EntityClassEditor drawing={drawing} model={canvasModel} preview={!!previewDrawing} />
         </div>
     );
 }
