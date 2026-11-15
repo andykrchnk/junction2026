@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react';
+import { useUnit } from 'effector-react';
 import type { Drawing } from '@repo/types';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent } from '@repo/design-system/components/ui/context-menu';
-import { MessageSquare, ScanLine } from '@repo/design-system/lib/icons-remix';
+import { MessageSquare, ScanLine, Trash2 } from '@repo/design-system/lib/icons-remix';
 import { MenuItem } from '@repo/design-system/components/ui/menu-item';
 import { DetectedElementCard } from './detected-element-card';
 import { EntityClassMenu } from './entity-class-menu';
@@ -32,6 +33,12 @@ export function ObjectContextMenu({
     children: ReactNode;
     onAsk: (target: Pick<ObjectMenuTarget, 'context' | 'layoutRevision'>) => void;
 }>) {
+    const { deleting, deleteError, deleteEntity, classPending } = useUnit({
+        deleting: model.$deletingEntity,
+        deleteError: model.$deleteError,
+        deleteEntity: model.deleteEntityFx,
+        classPending: model.$classPending,
+    });
     const [open, setOpen] = useState(false);
     const [adjustmentModel] = useState(() => createPpmAdjustmentModel(drawing.id));
     const [menuTarget, setMenuTarget] = useState<ObjectMenuTarget | null>(null);
@@ -123,20 +130,26 @@ export function ObjectContextMenu({
                         index={0}
                         label="Ask"
                         icon={MessageSquare}
-                        disabled={preview || !menuTarget || drawing.busy}
+                        disabled={preview || !menuTarget || drawing.busy || deleting}
                         onSelect={() => {
                             if (menuTarget && blueprint?.layout && property && !preview && !drawing.busy)
                                 onAsk({ context: { ...menuTarget.context, label: property.label }, layoutRevision: blueprint.layout.revision });
                         }}
                     />
                     {blueprint && property && (
-                        <EntityClassMenu drawing={drawing} blueprint={blueprint} property={property} model={model} disabled={preview || drawing.busy} />
+                        <EntityClassMenu
+                            drawing={drawing}
+                            blueprint={blueprint}
+                            property={property}
+                            model={model}
+                            disabled={preview || drawing.busy || deleting}
+                        />
                     )}
                     <MenuItem
                         index={2}
                         label="Adjust area"
                         icon={ScanLine}
-                        disabled={preview || !menuTarget || menuTarget.areaPixels === null || menuTarget.areaPixels <= 0 || drawing.busy}
+                        disabled={preview || !menuTarget || menuTarget.areaPixels === null || menuTarget.areaPixels <= 0 || drawing.busy || deleting}
                         onSelect={() => {
                             if (
                                 menuTarget &&
@@ -157,6 +170,32 @@ export function ObjectContextMenu({
                                 });
                         }}
                     />
+                    <MenuItem
+                        index={3}
+                        label={deleting ? 'Deleting…' : property?.type === 'room' ? 'Delete room' : 'Delete fixture'}
+                        icon={Trash2}
+                        destructive
+                        closeOnClick={false}
+                        disabled={preview || !blueprint?.layout || !property || drawing.busy || deleting || classPending}
+                        onSelect={() => {
+                            if (!blueprint?.layout || !property || drawing.busy || deleting || classPending || preview) return;
+                            void deleteEntity({
+                                input: {
+                                    id: drawing.id,
+                                    blueprintId: blueprint.id,
+                                    revision: blueprint.layout.revision,
+                                    entityId: property.id,
+                                    kind: property.type === 'room' ? 'room' : 'fixture',
+                                },
+                                object: { page: blueprint.pageNumber, index },
+                            }).catch(() => undefined); // The model exposes failures for retry in this menu.
+                        }}
+                    />
+                    {deleteError && deleteError.blueprintId === blueprint?.id && deleteError.entityId === property?.id && (
+                        <p role="alert" className="px-3 py-2 text-xs text-destructive">
+                            {deleteError.message}
+                        </p>
+                    )}
                 </ContextMenuContent>
             </ContextMenu>
             <PpmAdjustmentDialog model={adjustmentModel} />

@@ -173,6 +173,15 @@ export const LayoutFixtureZod = ProcessingPredictionZod.shape.fixtures.element.o
     roomIds: ProcessingPredictionZod.shape.fixtures.element.shape.room_ids,
     enrichment: EntityEnrichmentZod,
 });
+export const DeleteEntityZod = z.object({
+    id: MongoIdZod,
+    blueprintId: z.string().min(1),
+    revision: z.string().min(1),
+    entityId: z.string().min(1),
+    kind: z.enum(['room', 'fixture']),
+});
+export type DeleteEntity = z.infer<typeof DeleteEntityZod>;
+
 export const UpdateEntityClassZod = z.discriminatedUnion('kind', [
     z.object({
         id: MongoIdZod,

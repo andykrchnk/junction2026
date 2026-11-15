@@ -21,6 +21,7 @@ import {
     CanvasStateZod,
     SaveCanvasZod,
     UpdateEntityClassZod,
+    DeleteEntityZod,
 } from '@repo/types';
 import { db } from '../../db';
 import { layoutProperties } from '../../db/drawing.schema';
@@ -32,6 +33,7 @@ import { getDrawing, processDrawing } from './operations';
 import { enqueueDrawing } from './processing-jobs';
 import { scanCommentsRouter } from './comments';
 import { updateEntityClass } from './entity-class';
+import { deleteEntity } from './delete-entity';
 
 export const drawingRouter = t.router({
     adjustPpm: protectedProcedure
@@ -140,6 +142,10 @@ export const drawingRouter = t.router({
             }),
         ),
     comments: scanCommentsRouter,
+    deleteEntity: protectedProcedure
+        .input(DeleteEntityZod)
+        .output(DrawingZod)
+        .mutation(({ input, ctx }) => deleteEntity(input, ctx.user.id)),
     updateEntityClass: protectedProcedure
         .input(UpdateEntityClassZod)
         .output(DrawingZod)
