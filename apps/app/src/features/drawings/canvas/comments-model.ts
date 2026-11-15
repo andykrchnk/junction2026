@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import { combine, createEffect, createEvent, createStore, sample } from 'effector';
 import { readonly } from 'patronum';
 import {
@@ -25,6 +26,9 @@ type PointAnnotationPreview = { page: number; point: { x: number; y: number }; t
 type AnnotationRequest = (AnnotationPreview | PointAnnotationPreview) & { messageId?: string };
 
 export function createCommentsModel(drawingId: string) {
+    const annotationFocusRequested = createEvent<z.infer<typeof annotationContextSchema>>();
+    const visibilityChanged = createEvent<boolean>();
+    const visibilityToggled = createEvent();
     const modeChanged = createEvent<'default' | 'comment' | 'annotate'>();
     const annotationSent = createEvent<AnnotationPreview>();
     const annotationDispatched = createEvent<{ messageId: string }>();
@@ -41,7 +45,9 @@ export function createCommentsModel(drawingId: string) {
     const saveRequested = createEvent();
     const deleteRequested = createEvent<string>();
     const deletionRouted = createEvent<{ id: string; kind: 'draft' | 'persisted' }>();
+    const $annotationFocus = createStore<{ context: z.infer<typeof annotationContextSchema> } | null>(null);
     const $focusRequest = createStore<{ id: string } | null>(null);
+    const $visible = createStore(true);
     const $mode = createStore<'default' | 'comment' | 'annotate'>('default');
     const $openId = createStore<string | null>(null);
     const $draft = createStore<DraftComment | null>(null);
@@ -139,6 +145,13 @@ export function createCommentsModel(drawingId: string) {
     const $creating = combine(createFx.pending, sendDraftFx.pending, (creating, sending) => creating || sending);
     const $annotationSending = combine(sendAnnotationFx.pending, sendDraftFx.pending, (sending, sendingDraft) => sending || sendingDraft);
 
+    sample({ clock: annotationFocusRequested, fn: (context) => ({ context }), target: $annotationFocus });
+    sample({ clock: visibilityToggled, source: $visible, fn: (visible) => !visible, target: visibilityChanged });
+    sample({ clock: visibilityChanged, target: $visible });
+    sample({ clock: visibilityChanged, filter: (visible) => !visible, fn: () => null, target: $openId });
+    sample({ clock: visibilityChanged, filter: (visible) => !visible, fn: () => 'default' as const, target: $mode });
+    sample({ clock: focusRequested, fn: () => true, target: $visible });
+    sample({ clock: modeChanged, filter: (mode) => mode === 'comment', fn: () => true, target: $visible });
     sample({ clock: annotationTextChanged, target: $annotationText });
     sample({
         clock: annotationSent,
@@ -165,8 +178,16 @@ export function createCommentsModel(drawingId: string) {
     sample({ clock: focusRequested, fn: (id) => ({ id }), target: $focusRequest });
     sample({ clock: focusRequested, target: $openId });
     sample({ clock: modeChanged, target: $mode });
+    sample({
+        clock: modeChanged,
+        source: $draft,
+        filter: (_, mode) => mode === 'comment',
+        fn: (draft) => draft?.id ?? null,
+        target: $openId,
+    });
     sample({ clock: modeChanged, filter: (mode) => mode === 'default', fn: () => null, target: $openId });
     sample({ clock: openChanged, target: $openId });
+    sample({ clock: draftCancelled, fn: () => 'default' as const, target: $mode });
     sample({ clock: draftCancelled, fn: () => null, target: [$draft, $openId, $error] });
     sample({
         clock: openChanged,
@@ -244,6 +265,11 @@ export function createCommentsModel(drawingId: string) {
     sample({ clock: deleteFx.done, source: $openId, filter: (openId, { params }) => openId === params.id, fn: () => null, target: $openId });
 
     return {
+        annotationFocusRequested,
+        $annotationFocus: readonly($annotationFocus),
+        visibilityChanged,
+        visibilityToggled,
+        $visible: readonly($visible),
         annotationSent,
         annotationTextChanged,
         $annotationText: readonly($annotationText),

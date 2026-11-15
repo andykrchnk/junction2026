@@ -239,10 +239,44 @@ function CanvasEditor({
         const points = coordinates.map(([x, y]) => transform.applyToPoint({ x: (x * shape.props.w) / page.width, y: (y * shape.props.h) / page.height }));
         if (points.length) activeEditor.zoomToBounds(Box.FromPoints(points).expandBy(32), { targetZoom: 2, animation: { duration: reducedMotion ? 0 : 350 } });
     }, [activeEditor, focus, drawing.blueprints, reducedMotion]);
+    const annotationFocus = useUnit(commentsModel.$annotationFocus);
+    const lastAnnotationFocus = useRef<typeof annotationFocus>(null);
+    useEffect(() => {
+        if (!activeEditor || !annotationFocus || lastAnnotationFocus.current === annotationFocus) return;
+        const context = annotationFocus.context;
+        const blueprint = drawing.blueprints.find((item) => item.pageNumber === context.sheet);
+        // A hidden sheet must stay hidden; consume the request without moving to an invisible target.
+        if (blueprint?.attachment.hiddenFromCanvas) {
+            lastAnnotationFocus.current = annotationFocus;
+            return;
+        }
+        const page = layoutPages(drawing.blueprints).find((page) => page.page === context.sheet);
+        const shape = activeEditor.getShape(createShapeId(`blueprint-${context.sheet}`));
+        if (!page || !shape || shape.type !== 'image') return;
+        lastAnnotationFocus.current = annotationFocus;
+        const index = context.entityId ? page.detectedProperties.findIndex((property) => property.id === context.entityId) : (context.element ?? 0) - 1;
+        if (index >= 0 && page.detectedProperties[index]) {
+            model.visibilityChanged({ type: page.detectedProperties[index].type, visible: true });
+            model.objectVisibilityChanged({ object: { page: context.sheet, index }, visible: true });
+            model.selected({ page: context.sheet, index });
+            model.focusRequested({ page: context.sheet, index });
+            return;
+        }
+        const [left, top, right, bottom] = context.boundsPx;
+        if (left === undefined || top === undefined || right === undefined || bottom === undefined) return;
+        const transform = activeEditor.getShapePageTransform(shape);
+        if (!transform) return;
+        const point = transform.applyToPoint({
+            x: ((left + right) / 2 / context.rasterWidth) * shape.props.w,
+            y: ((top + bottom) / 2 / context.rasterHeight) * shape.props.h,
+        });
+        model.selected(null);
+        activeEditor.centerOnPoint(point, { animation: { duration: reducedMotion ? 0 : 280 } });
+    }, [activeEditor, annotationFocus, drawing.blueprints, model, reducedMotion]);
     useHotkeys(
         'c',
         (event) => {
-            if (!activeEditor || event.repeat) return;
+            if (!activeEditor || event.repeat || event.shiftKey) return;
             const target = event.target instanceof Element ? event.target : null;
             if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
             commentsModel.modeChanged(commentMode === 'comment' ? 'default' : 'comment');
@@ -253,6 +287,19 @@ function CanvasEditor({
         { enabled: activeEditor !== null, preventDefault: true, eventListenerOptions: { capture: true } },
         [activeEditor, commentsModel, commentMode],
     );
+    useEffect(() => {
+        if (!activeEditor) return;
+        const toggleComments = (event: KeyboardEvent) => {
+            if (event.code !== 'KeyC' || !event.shiftKey || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+            const target = event.target instanceof Element ? event.target : null;
+            if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            commentsModel.visibilityToggled();
+        };
+        window.addEventListener('keydown', toggleComments, true);
+        return () => window.removeEventListener('keydown', toggleComments, true);
+    }, [activeEditor, commentsModel]);
     useHotkeys(
         'esc',
         (event) => {
@@ -453,6 +500,13 @@ function CanvasEditor({
                     if (event.button !== 0 || !event.isPrimary || !activeEditor || !event.target.closest('.tl-canvas')) return;
                     activeEditor.setCurrentTool('hand');
                     activeEditor.focus();
+                    if (openCommentId !== null) {
+                        if (draftComment?.id === openCommentId) commentsModel.draftCancelled();
+                        else commentsModel.modeChanged('default');
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return;
+                    }
                     if (commentMode !== 'comment') {
                         const element = event.target.closest('[data-detected-object]');
                         const page = Number(element?.getAttribute('data-detected-page'));
@@ -539,7 +593,10 @@ function CanvasEditor({
                     }}
                 >
                     <DetectionContext.Provider
-                        value={{ drawing: { ...drawing, blueprints: drawing.blueprints.filter((item) => !item.attachment.hiddenFromCanvas) }, model }}
+                        value={{
+                            drawing: { ...drawing, blueprints: drawing.blueprints.filter((item) => !item.attachment.hiddenFromCanvas) },
+                            model,
+                        }}
                     >
                         <Tldraw
                             getShapeVisibility={blueprintVisibility}

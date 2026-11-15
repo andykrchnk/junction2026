@@ -1,12 +1,12 @@
+import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { Input } from '@repo/design-system/components/ui/input';
-import { Tooltip } from '@repo/design-system/components/ui/tooltip';
 import { useQuery } from '@tanstack/react-query';
 import { useUnit } from 'effector-react';
 import type { Drawing, ScanComment } from '@repo/types';
 import { BrandLogo } from '@repo/design-system/components/ui/brand-logo';
 import { Button } from '@repo/design-system/components/ui/button';
-import { MessageAdd, Search } from '@repo/design-system/lib/icons-remix';
+import { Search } from '@repo/design-system/lib/icons-remix';
 import { trpc } from '@/shared/trpc';
 import type { CommentsModel } from './canvas/comments-model';
 
@@ -41,7 +41,8 @@ export function CommentAuthor({ comment }: Readonly<{ comment: ScanComment }>) {
 }
 
 export function DrawingComments({ drawing, model }: Readonly<{ drawing: Drawing; model: CommentsModel }>) {
-    const openId = useUnit(model.$openId);
+    const { openId, visible, visibilityChanged } = useUnit({ openId: model.$openId, visible: model.$visible, visibilityChanged: model.visibilityChanged });
+    const VisibilityIcon = visible ? Eye : EyeOff;
     const [search, setSearch] = useState('');
     const {
         data = [],
@@ -67,11 +68,15 @@ export function DrawingComments({ drawing, model }: Readonly<{ drawing: Drawing;
                 <h3 className="text-sm font-semibold">
                     Comments <span className="text-muted-foreground">{comments.length}</span>
                 </h3>
-                <Tooltip content="Add comment" shortcut="C">
-                    <Button size="compact" variant="ghost" disabled={!available} leadingIcon={MessageAdd} onClick={() => model.modeChanged('comment')}>
-                        Add comment
-                    </Button>
-                </Tooltip>
+                <Button
+                    size="icon-compact"
+                    variant="ghost"
+                    aria-label={visible ? 'Hide comments' : 'Show comments'}
+                    aria-pressed={visible}
+                    onClick={() => visibilityChanged(!visible)}
+                >
+                    <VisibilityIcon size={14} aria-hidden />
+                </Button>
             </div>
             <div className="relative">
                 <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -101,7 +106,7 @@ export function DrawingComments({ drawing, model }: Readonly<{ drawing: Drawing;
                     {query
                         ? 'No matching comments.'
                         : available
-                          ? 'Choose Add comment or press C, then click your blueprint.'
+                          ? 'Choose Comment or press C, then click your blueprint.'
                           : 'Upload a blueprint to start commenting.'}
                 </p>
             )}
