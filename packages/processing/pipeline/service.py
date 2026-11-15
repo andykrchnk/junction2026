@@ -151,10 +151,11 @@ async def processing(
                 result, degraded = await run_in_threadpool(
                     process, raster, encoded, request.app.state.settings
                 )
-            except WorkerFailure:
+            except WorkerFailure as error:
                 raise HTTPException(
-                    502, "Geometry worker unavailable or returned invalid data"
-                )
+                    error.status_code, str(error),
+                    headers={"Retry-After": "5"} if error.status_code == 503 else None,
+                ) from error
             except (ValueError, KeyError, TypeError):
                 raise HTTPException(502, "Processing output failed validation")
             headers = {"X-Processing-Degraded": ",".join(degraded)} if degraded else {}
@@ -200,7 +201,7 @@ async def legacy(
             raise HTTPException(
                 (
                     upstream.status_code
-                    if upstream.status_code in {413, 415, 422, 503}
+                    if upstream.status_code in {413, 415, 422, 503, 504}
                     else 502
                 ),
                 "Legacy inference request failed",
@@ -214,6 +215,8 @@ async def legacy(
                 else {}
             ),
         )
+    except httpx.TimeoutException:
+        raise HTTPException(504, "Legacy inference timed out")
     except httpx.HTTPError:
         raise HTTPException(502, "Legacy inference unavailable")
     finally:

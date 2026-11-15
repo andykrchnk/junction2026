@@ -290,3 +290,24 @@ proposals, with model-derived geometry and scores. Overlapping decoded openings
 are excluded; at most 64 additional candidates are retained. These candidates are
 marked `requires_verification` and cannot divide geometry before verification.
 The standardized pipeline admits them only after positive door verification.
+
+### Concurrent geometry requests
+
+The detail worker uses `INFERENCE_CONCURRENCY` slots (1 by default, 1–8).
+The Compose configurations set it from `GEOMETRY_CONCURRENCY`, defaulting to 3.
+The loaded CubiCasa model is shared read-only; each request owns its input,
+intermediate arrays, and output directory. PaddleOCR remains single-request
+because its predictor is shared and mutable. Forwarded requests use the target
+worker's capacity rather than holding a local inference slot.
+
+When all slots are occupied, the worker immediately returns HTTP 503 with
+`Retry-After: 5`. It does not keep a hidden queue behind an inference lock.
+The pipeline preserves this response so the backend's existing retry/job policy
+can reschedule the page. Requests that actually exceed the worker HTTP deadline
+return 504, not a generic 502. The 180-second deadline is unchanged.
+A timed-out caller does not forcibly terminate native inference; its slot stays
+occupied until inference finishes, preventing oversubscription.
+
+Worker logs include a generated request ID, model, and elapsed inference time;
+credentials and drawing contents are not logged. Tune capacity for GPU memory
+and drawing sizes; increasing it is not a guarantee of linear speedup.
