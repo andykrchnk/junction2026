@@ -216,7 +216,7 @@ function BlueprintProgress({
 }
 
 export function DrawingProgress({ drawing, busy, stage, onRetry }: Readonly<{ drawing: Drawing; busy: boolean; stage?: string; onRetry?: () => void }>) {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(true);
     const [now, setNow] = useState<number>(() => Date.now());
     useEffect(() => {
         if (!busy) return;
