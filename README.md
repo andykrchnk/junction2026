@@ -2,6 +2,19 @@
 
 Construction drawing intelligence workspace. The application foundation follows LEAF's engineering workflow and Renwio's TanStack Start, Hono/tRPC and Better Auth patterns.
 
+## License and submission
+
+Original project material is available under the [Junction 2026 Submission Review License](LICENSE).
+Contributors retain copyright in their respective contributions. Authorized Junction reviewers may
+inspect, build and run it for evaluation; other reuse requires separate permission. This is a
+submission-only license, not an open-source license.
+
+Junction 2026's [published FAQ](https://2026.hackjunction.com/#faq) says submissions use MIT.
+**Junction approval for an exception is required before relying on this submission-only license.**
+It does not override rights already granted under accepted event or challenge terms.
+See [third-party notices and unresolved permissions](THIRD_PARTY_NOTICES.md) for bundled code,
+fonts and challenge data, which retain their own terms.
+
 ## Applications
 
 - `apps/app` (`@repo/app`): TanStack Start in SPA mode, Fluid Functionalism components first with shadcn/ui fallback, Tailwind, TanStack Form, typed tRPC and Effector.
