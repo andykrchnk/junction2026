@@ -28,9 +28,8 @@ export function AppHeader({ accountName = 'Oscar', onSignOut, onHome }: Readonly
             <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                 <DropdownTrigger
                     render={
-                        <Button variant="ghost" className="sl-account">
+                        <Button variant="ghost" className="sl-account" aria-label="Account menu">
                             <span className="sl-avatar">{accountName.slice(0, 1).toUpperCase()}</span>
-                            <span>{accountName}</span>
                         </Button>
                     }
                 />

@@ -21,7 +21,6 @@
     background: color-mix(in srgb, var(--primary) 50%, transparent);
     font-size: 14px;
     font-weight: var(--weight-medium);
-    margin-right: 8px;
 }
 .sl-account {
     max-width: 240px;

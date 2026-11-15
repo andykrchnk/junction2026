@@ -14,7 +14,7 @@ import { Button } from '@repo/design-system/components/ui/button';
 import { $$user } from '@/entities/user/model';
 import { trpc } from '@/shared/trpc';
 import { EntityClassEditor } from './entity-class-editor';
-import { PpmAdjustmentMenu } from './ppm-adjustment-menu';
+import { ObjectContextMenu } from './object-context-menu';
 
 const BlueprintCanvas = lazy(() => import('./blueprint-canvas'));
 export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: string; userId: string; previewDrawing?: Drawing }>) {
@@ -150,11 +150,18 @@ export function WorkspacePanels({ id, userId, previewDrawing }: Readonly<{ id: s
                     {visibleError}
                 </p>
             )}
-            <PpmAdjustmentMenu drawing={drawing}>
+            <ObjectContextMenu
+                drawing={drawing}
+                onAsk={(target) => {
+                    setChatCollapsed(false);
+                    commentsModel.modeChanged('default');
+                    $$drawings.objectAttached({ id, ...target });
+                }}
+            >
                 <section aria-label="Blueprint canvas" className="absolute inset-0 z-0">
                     {canvas}
                 </section>
-            </PpmAdjustmentMenu>
+            </ObjectContextMenu>
             <SessionChatPanel
                 commentsModel={commentsModel}
                 drawing={drawing}

@@ -1,5 +1,5 @@
 import { AnnotationChatNavigation } from './drawing-annotation';
-import { MessageSquare } from '@repo/design-system/lib/icons-remix';
+import { MessageSquare, X } from '@repo/design-system/lib/icons-remix';
 import { DrawingComments } from './drawing-comments';
 import type { CommentsModel } from './canvas/comments-model';
 import { useEffect, useRef, useState } from 'react';
@@ -12,7 +12,8 @@ import type { Drawing } from '@repo/types';
 import { AskUserQuestions } from '@repo/design-system/components/ui/ask-user-questions';
 import { Button } from '@repo/design-system/components/ui/button';
 import { InputMessage } from '@repo/design-system/components/ui/input-message';
-import { annotationMarker, annotationContextSchema } from './annotation-context';
+import { Badge } from '@repo/design-system/components/ui/badge';
+import { annotationMarker, annotationContextSchema, objectAnnotationContext } from './annotation-context';
 import { ChatMessage } from '@repo/design-system/components/ui/chat-message';
 import { trpc } from '@/shared/trpc';
 import { $$drawings } from './model';
@@ -56,7 +57,8 @@ function UserQuestion({ question, model, drawing }: Readonly<{ question: string;
 }
 
 export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id: string; previewDrawing?: Drawing; commentsModel?: CommentsModel }>) {
-    const { draft, error, activity, asking, outgoing, stages, stopping } = useUnit({
+    const { draft, error, activity, asking, outgoing, stages, stopping, objectAttachments } = useUnit({
+        objectAttachments: $$drawings.$objectAttachments,
         stopping: $$drawings.$stopping,
         outgoing: $$drawings.$outgoing,
         stages: $$drawings.$stages,
@@ -80,7 +82,32 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
     });
     const [tab, setTab] = useState<number>(0);
     const endRef = useRef<HTMLDivElement>(null);
+    const composerRef = useRef<HTMLDivElement>(null);
+    const focusedAttachmentRef = useRef<string | null>(null);
     const submissionsRef = useRef(new Set<string>());
+    const attachment = objectAttachments[id];
+    const composerBlocked =
+        !drawing?.blueprints.length ||
+        drawing.busy ||
+        (activity[id] ?? 0) > 0 ||
+        asking ||
+        !!outgoing[id] ||
+        !!drawing?.messages.some((message) => !message.answer);
+    useEffect(() => {
+        if (!attachment?.requestId) return;
+        setTab(0);
+    }, [id, attachment?.requestId]);
+    useEffect(() => {
+        const requestId = attachment?.requestId;
+        if (!requestId || focusedAttachmentRef.current === requestId || composerBlocked || tab !== 0) return;
+        const frame = requestAnimationFrame(() => {
+            const input = composerRef.current?.querySelector<HTMLTextAreaElement>('textarea');
+            if (!input || input.disabled) return;
+            input.focus();
+            focusedAttachmentRef.current = requestId;
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [id, attachment?.requestId, composerBlocked, tab]);
     useEffect(() => {
         endRef.current?.scrollIntoView({ block: 'nearest' });
     }, [drawing?.messages.length, drawing?.messages.at(-1)?.answer, drawing?.blueprints, outgoing[id]]);
@@ -104,22 +131,43 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
     const activeQuestion = drawing.busy ? drawing.messages.find((message) => !message.answer) : undefined;
     const latestMessage = messages.at(-1);
     const answer = latestMessage?.answer;
-    const clarification = !pending && answer?.status === 'needs_clarification' ? answer.clarificationQuestion : null;
+    const clarification = !attachment && !pending && answer?.status === 'needs_clarification' ? answer.clarificationQuestion : null;
     const clarificationId = latestMessage?.id ?? 'clarification';
     const visibleError = error?.id === id ? error.message : drawing.error;
-    const ask = (message: Drawing['messages'][number]) => {
+    const ask = (message: Drawing['messages'][number], attachmentRequestId?: string) => {
         if (!drawing.blueprints.length || busy || asking || submissionsRef.current.has(id)) return;
         submissionsRef.current.add(id);
         $$drawings.draftChanged('');
         void $$drawings
-            .askFx({ id, message })
+            .askFx({ id, message, attachmentRequestId })
             .catch(() => {})
             .finally(() => submissionsRef.current.delete(id));
     };
     const send = (value: string) => {
-        const question = value.trim();
-        if (!question || question.length > questionLimit || pending) return;
-        ask({ id: crypto.randomUUID(), question, answer: null });
+        const text = value.trim();
+        if (!text || pending) return;
+        const context = attachment
+            ? objectAnnotationContext({ drawing, blueprintId: attachment.context.blueprintId, entityId: attachment.context.entityId })
+            : null;
+        if (
+            attachment &&
+            (!context ||
+                drawing.blueprints.find((blueprint) => blueprint.id === attachment.context.blueprintId)?.layout?.revision !== attachment.layoutRevision)
+        ) {
+            $$drawings.questionRejected({ id, message: 'This object has changed. Remove the attachment and select it again before sending.' });
+            return;
+        }
+        const question = context ? `${text}${annotationMarker}${JSON.stringify(context)}` : text;
+        if (question.length > questionLimit) {
+            $$drawings.questionRejected({ id, message: 'Use a shorter message. The message and attached object context must fit within 4,000 characters.' });
+            return;
+        }
+        ask({ id: crypto.randomUUID(), question, answer: null }, attachment?.requestId);
+    };
+    const selectAttachment = () => {
+        if (!attachment) return;
+        const context = objectAnnotationContext({ drawing, blueprintId: attachment.context.blueprintId, entityId: attachment.context.entityId });
+        if (context?.element) $$drawings.canvasSelectionRequested({ id, page: context.sheet, index: context.element - 1 });
     };
 
     return (
@@ -225,7 +273,27 @@ export function DrawingChat({ id, previewDrawing, commentsModel }: Readonly<{ id
                             <div ref={endRef} />
                         </div>
                     </div>
-                    <div className="max-h-[50%] shrink-0 overflow-y-auto p-3">
+                    <div ref={composerRef} className="max-h-[50%] shrink-0 space-y-2 overflow-y-auto p-3">
+                        {attachment && (
+                            <Badge color="gray" className="max-w-full gap-1">
+                                <button
+                                    type="button"
+                                    className="min-w-0 truncate text-left"
+                                    onClick={selectAttachment}
+                                    aria-label={`Select attached ${attachment.context.label} on canvas`}
+                                >
+                                    Selected area · {attachment.context.label} · Sheet {attachment.context.sheet}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="flex size-5 shrink-0 items-center justify-center"
+                                    aria-label="Remove object attachment"
+                                    onClick={() => $$drawings.objectAttachmentRemoved(id)}
+                                >
+                                    <X className="size-3" />
+                                </button>
+                            </Badge>
+                        )}
                         {clarification ? (
                             <fieldset disabled={busy || asking} className="min-w-0 border-0 p-0">
                                 <legend className="text-primary mb-2 text-xs font-medium">More information needed</legend>

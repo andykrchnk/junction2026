@@ -3,13 +3,25 @@ import type { Drawing } from '@repo/types';
 import { ContextMenu, ContextMenuTrigger, ContextMenuContent } from '@repo/design-system/components/ui/context-menu';
 import { MenuItem } from '@repo/design-system/components/ui/menu-item';
 import { layoutPages } from './layout';
-import { createPpmAdjustmentModel, type PpmAdjustmentTarget } from './ppm-adjustment-model';
+import { createPpmAdjustmentModel } from './ppm-adjustment-model';
 import { PpmAdjustmentDialog } from './ppm-adjustment-dialog';
+import { objectAnnotationContext, type ObjectAnnotationContext } from './annotation-context';
 
-export function PpmAdjustmentMenu({ drawing, children }: Readonly<{ drawing: Drawing; children: ReactNode }>) {
+type ObjectMenuTarget = Readonly<{
+    context: ObjectAnnotationContext;
+    layoutRevision: string;
+    areaPixels: number | null;
+    currentAreaSquareMetres: number | null;
+}>;
+
+export function ObjectContextMenu({
+    drawing,
+    children,
+    onAsk,
+}: Readonly<{ drawing: Drawing; children: ReactNode; onAsk: (target: Pick<ObjectMenuTarget, 'context' | 'layoutRevision'>) => void }>) {
     const [adjustmentModel] = useState(() => createPpmAdjustmentModel(drawing.id));
-    const [menuTarget, setMenuTarget] = useState<PpmAdjustmentTarget | null>(null);
-    const targetFor = (target: EventTarget): PpmAdjustmentTarget | null => {
+    const [menuTarget, setMenuTarget] = useState<ObjectMenuTarget | null>(null);
+    const targetFor = (target: EventTarget): ObjectMenuTarget | null => {
         if (!(target instanceof Element)) return null;
         const element = target.closest('[data-detected-object]');
         if (!element) return null;
@@ -17,18 +29,18 @@ export function PpmAdjustmentMenu({ drawing, children }: Readonly<{ drawing: Dra
         const index = Number(element.getAttribute('data-detected-index'));
         const blueprint = drawing.blueprints.find((item) => item.pageNumber === pageNumber);
         const property = layoutPages(drawing.blueprints).find((page) => page.page === pageNumber)?.detectedProperties[index];
-        if (!blueprint?.layout || !property || property.areaPixels === null || !Number.isFinite(property.areaPixels) || property.areaPixels <= 0) return null;
+        if (!blueprint?.layout || !property) return null;
+        const context = objectAnnotationContext({ drawing, blueprintId: blueprint.id, entityId: property.id });
+        if (!context) return null;
         const ppm = blueprint.ppm?.value;
         return {
-            blueprintId: blueprint.id,
-            entityId: property.id,
+            context,
             layoutRevision: blueprint.layout.revision,
-            label: property.label,
             areaPixels: property.areaPixels,
             currentAreaSquareMetres:
                 blueprint.ppm?.userCalibration?.entityId === property.id
                     ? blueprint.ppm.userCalibration.areaSquareMetres
-                    : ppm
+                    : ppm && property.areaPixels !== null
                       ? property.areaPixels / (ppm * ppm)
                       : null,
         };
@@ -59,10 +71,26 @@ export function PpmAdjustmentMenu({ drawing, children }: Readonly<{ drawing: Dra
                 <ContextMenuContent>
                     <MenuItem
                         index={0}
-                        label="Adjust PPM"
+                        label="Ask"
                         disabled={!menuTarget || drawing.busy}
                         onSelect={() => {
-                            if (menuTarget && !drawing.busy) adjustmentModel.targetOpened(menuTarget);
+                            if (menuTarget && !drawing.busy) onAsk({ context: menuTarget.context, layoutRevision: menuTarget.layoutRevision });
+                        }}
+                    />
+                    <MenuItem
+                        index={1}
+                        label="Adjust PPM"
+                        disabled={!menuTarget || menuTarget.areaPixels === null || menuTarget.areaPixels <= 0 || drawing.busy}
+                        onSelect={() => {
+                            if (menuTarget && menuTarget.areaPixels !== null && menuTarget.areaPixels > 0 && !drawing.busy)
+                                adjustmentModel.targetOpened({
+                                    blueprintId: menuTarget.context.blueprintId,
+                                    entityId: menuTarget.context.entityId,
+                                    label: menuTarget.context.label,
+                                    layoutRevision: menuTarget.layoutRevision,
+                                    areaPixels: menuTarget.areaPixels,
+                                    currentAreaSquareMetres: menuTarget.currentAreaSquareMetres,
+                                });
                         }}
                     />
                 </ContextMenuContent>

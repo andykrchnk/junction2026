@@ -16,7 +16,7 @@ import { queryClient, trpc, trpcClient } from '@/shared/trpc';
 import { $$drawings } from '../model';
 import { layoutPages } from '../layout';
 import { hasAgentMention, removeAgentMention } from '../agent-mention';
-import { annotationContextSchema, annotationMarker } from '../annotation-context';
+import { annotationContextSchema, annotationMarker, objectAnnotationContext } from '../annotation-context';
 
 type DraftComment = Pick<CommentCreate, 'id' | 'page' | 'text'> & CommentTarget;
 export type AnnotationPreview = { page: number; index: number; property: DetectedProperty; text: string };
@@ -107,17 +107,20 @@ export function createCommentsModel(drawingId: string) {
             Math.max(...points.map(([x]) => x)),
             Math.max(...points.map(([, y]) => y)),
         ].map((value) => Math.round(value));
-        const context = annotationContextSchema.parse({
-            blueprintId: blueprint.id,
-            entityId: property?.id ?? null,
-            sheet: selection.page,
-            element: 'index' in selection ? selection.index + 1 : null,
-            label: property?.label ?? 'Point',
-            type: property?.type ?? 'point',
-            boundsPx: bounds,
-            rasterWidth: page.width,
-            rasterHeight: page.height,
-        });
+        const context = property
+            ? objectAnnotationContext({ drawing, blueprintId: blueprint.id, entityId: property.id })
+            : annotationContextSchema.parse({
+                  blueprintId: blueprint.id,
+                  entityId: null,
+                  sheet: selection.page,
+                  element: null,
+                  label: 'Point',
+                  type: 'point',
+                  boundsPx: bounds,
+                  rasterWidth: page.width,
+                  rasterHeight: page.height,
+              });
+        if (!context) throw new Error('This selection has no valid location. Select the element again before sending.');
         const question = `${selection.text.trim()}${annotationMarker}${JSON.stringify(context)}`;
         if (question.length > 4000) throw new Error('Shorten your question to leave room for the selected location context.');
         const messageId = selection.messageId ?? crypto.randomUUID();
